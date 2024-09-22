@@ -5,20 +5,30 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
+#include <mtl/algorithms.h>
 #include <stdexcept>
 #include <initializer_list>
 
 // The namespace where the ADTs are.
-namespace mystl {
-    /* The vector ADT, it can expand its data array to double size when space is not enought. */
+namespace mtl {
+    /* The vector ADT, it can expand its data array to double size when space is not enough. */
     template <typename T>
     class vector {
     private:
-        T* data_;   // the array contain the data
-        size_t size_;  // the number of the elements
-        size_t capacity_;   // the length of the array
-        const static size_t DEFAULT_CAPACITY = 100;   // the default capacity, vector ensures that the capacity won't be smaller than it
-        void expand(size_t new_size);  // expand the array, the new capacity is new_size * 2
+        // the array contain the data
+        T* data_;   
+
+        // the number of the elements
+        size_t size_;  
+
+        // the length of the array
+        size_t capacity_;   
+
+        // the default capacity, vector ensures that the capacity won't be smaller than it
+        const static size_t DEFAULT_CAPACITY = 100;   
+
+        // expand the array, the new capacity is new_size * 2
+        void expand(size_t new_size);  
 
         /* allocate a new array with length capacity
            it don't delete the original array */
@@ -69,7 +79,12 @@ namespace mystl {
         }
 
         // delete the array and assign nullptr to data_
-        void clear();
+        void clear() {
+            delete [] data_;
+            data_ = nullptr; 
+            size_ = 0;
+            capacity_ = 0;
+        }
 
         /* return the reference to the element at position index 
             it don't check the boundary */
@@ -85,6 +100,8 @@ namespace mystl {
         // the const version
         T& at(size_t index);  
 
+        // return a vector contains the elements [begin, stop)
+        vector<T> splice(size_t begin, size_t stop);
 
         // append an element to the end of the vector
         void push_back(const T& elem);   
@@ -104,8 +121,10 @@ namespace mystl {
         // using the right-value reference
         bool insert(size_t index, T&& elem) noexcept;        
 
-        // insert elements with initializer_list
-        bool insert(size_t index, std::initializer_list<T>&& elems) noexcept;   
+        /* insert another from another container (deep copy) with iterators
+           which provide ++, --, ==, and != operators*/
+        template <typename InputIterator>
+        bool insert(size_t index, InputIterator begin, InputIterator end);
 
         // remove the elements at position index
         bool remove(size_t index) noexcept;    
@@ -165,6 +184,11 @@ namespace mystl {
             // compare the pointer
             bool operator==(const const_iterator& ci) const {
                 return elem_ == ci.elem_;
+            }
+
+            // compare the pointer
+            bool operator!=(const const_iterator& ci) const {
+                return elem_ != ci.elem_;
             }
 
             // move n items next, it don't check the boundary
@@ -255,11 +279,13 @@ namespace mystl {
     };
 
     template <typename T>
-    vector<T>::vector() : data_{nullptr}, size_{0}, capacity_(DEFAULT_CAPACITY) {}
+    vector<T>::vector() : size_{0}, capacity_(DEFAULT_CAPACITY) {
+        allocate(capacity_); 
+    }
 
     template <typename T>
-    vector<T>::vector(size_t size) : size_{size} {
-        capacity_ = size_ * 2;
+    vector<T>::vector(size_t size) : size_{0} {
+        capacity_ = size * 2;
         capacity_ = capacity_ > DEFAULT_CAPACITY ? capacity_ : DEFAULT_CAPACITY;
         allocate(capacity_);
     }
@@ -290,19 +316,12 @@ namespace mystl {
     vector<T>::vector(vector<T>&& vec) noexcept :
         data_{vec.data_}, size_{vec.size_}, capacity_{vec.capacity_} {
         vec.data_ = nullptr;
+        vec.clear();
     }
 
     template <typename T>
     vector<T>::~vector() {
         delete[] data_;
-    }
-
-    template <typename T>
-    void vector<T>::clear() {
-        delete [] data_;
-        data_ = nullptr;
-        size_ = 0;
-        capacity_ = 0;
     }
 
     template <typename T>
@@ -328,6 +347,17 @@ namespace mystl {
     T& vector<T>::at(size_t index) {
         return const_cast<T&>(static_cast<const vector<T>>(*this).at(index));
     }
+
+    template <typename T>
+    vector<T> vector<T>::splice(size_t begin, size_t stop) {
+        size_t size = stop - begin;
+        vector<T> vec(size);
+        for (size_t i = 0; i < size; ++i) {
+            vec.data_[i] = data_[begin + i];
+        }
+
+        return vec;
+    }
     
     template <typename T>
     void vector<T>::shrink() noexcept {
@@ -348,7 +378,7 @@ namespace mystl {
             expand(size_);
         }
         data_[size_] = elem;
-        ++size_
+        ++size_;
     }
 
     template <typename T>
@@ -384,6 +414,7 @@ namespace mystl {
             data_[i] = std::move(data_[i - 1]);
         }
         data_[index] = elem;
+        ++size_;
         return true;
     }
 
@@ -399,32 +430,34 @@ namespace mystl {
             data_[i] = std::move(data_[i - 1]);
         }
         data_[index] = std::move(elem);
+        ++size_;
         return true;
     }
 
-    template <typename T>
-    bool vector<T>::insert(size_t index, std::initializer_list<T>&& elems) noexcept{
+    template <typename T> template <typename InputIterator>
+    bool vector<T>::insert(size_t index, InputIterator begin, InputIterator end) {
         // check the validity of index
         if (index > size_) {
             return false;
         }
 
+        size_t len = count_length(begin, end);
+
         // check whether the capacity is big enough
-        size_t new_size = size_ + elems.size();
-        if (new_size > capacity_) {
-            expand(new_size);
+        size_ += len;
+        if (size_ > capacity_) {
+            expand(size_);
         }
 
         // move elements backward
-        for (size_t i = new_size - 1; i >= index + elems.size(); ++i) {
-            data_[i] = data_[i - elems.size()];
+        for (size_t i = size_ - 1; i >= index + len; --i) {
+            data_[i] = data_[i - len]; 
         }
 
         // place elements in the gap
-        auto itr = elems.begin();
-        for (size_t i = index; i < index + elems.size(); ++i) {
-            data_[i] = std::move(*itr);
-            ++itr;
+        auto itr = begin;
+        for (size_t i = index; itr != end ; ++i, ++itr) {
+            data_[i] = *itr;
         }
 
         return true;
@@ -496,19 +529,23 @@ namespace mystl {
         size_ = vec.size_;
         capacity_ = vec.capacity_;
         data_ = vec.data_;
+
         vec.data_ = nullptr;
+        vec.clear();
 
         return *this;
     }
 
     template<typename T>
     void vector<T>::expand(size_t new_size) {
+        if (new_size * 2 < capacity_) {
+            return;
+        }
         // backup the original array
         auto old = data_;
 
         // create a new array
         capacity_ = new_size * 2;
-        capacity_ = capacity_ > DEFAULT_CAPACITY ? capacity_ : DEFAULT_CAPACITY;
         allocate(capacity_);
 
         // move the elements

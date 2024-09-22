@@ -7,7 +7,7 @@
 
 #include <initializer_list>
 
-namespace mystl {
+namespace mtl {
     template <typename T>
     class list {
         private:
