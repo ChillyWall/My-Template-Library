@@ -74,6 +74,29 @@ void test_push_pop_shrink(ostream& os) {
     }
 }
 
+void test_iterator(ostream& os) {
+    vector<int> vec;
+    for (int i = 0; i < 100; ++i) {
+        vec.push_back(i);
+    }
+
+    print_vector(os, vec);
+    os << "print the vector with iterator: \n";
+    for (auto itr = vec.begin(); itr != vec.end(); ++itr) {
+        os << *itr << ", ";
+    }
+
+    os << "\nprint the elements with even indices: \n";
+    for (auto itr = vec.begin(); itr < vec.end(); itr += 2) {
+        os << *itr << ", ";
+    }
+
+    os << "\nprint the vector in reversed order: \n";
+    for (auto itr = vec.end() - 1ULL; itr >= vec.begin(); --itr) {
+        os << *itr << ", ";
+    }
+}
+
 void test_insert_remove(ostream& os) {
     vector<int> vec;
     for (int i = 0; i < 10; ++i) {
@@ -83,23 +106,28 @@ void test_insert_remove(ostream& os) {
     os << "The original vector: " << endl;
     print_vector(os, vec);
 
-    vec.insert(5, 10);
+    auto itr = vec.insert(vec.begin() + 5, 10);
     os << "after inserting 10 at position 5: " << endl;
     print_vector(os, vec);
+    os << "the returned iterator points to: " << *itr << endl;
 
     vector<int> vec1({11, 12, 13, 14});
 
-    vec.insert(2, vec1.begin(), vec1.end());
+    itr = vec.insert(vec.begin() + 2, vec1.begin(), vec1.end());
     os << "after inserting {11, 12, 13, 14} at position 2" << endl;
     print_vector(os, vec);
+    os << "the returned iterator points to: " << *itr << endl;
 
-    vec.remove(4);
+    itr = vec.remove(vec.begin() + 4);
     os << "after removing at position 4" << endl;
     print_vector(os, vec);
+    os << "the returned iterator points to: " << *itr << endl;
 
-    vec.remove(2, 7);
+    itr = vec.remove(vec.begin() + 2, vec.begin() + 7);
     os << "after removing range [2, 7)" << endl;
     print_vector(os, vec);
+    os << "the returned iterator points to: " << *itr << endl;
+
 }
 
 int main() {
@@ -109,6 +137,9 @@ int main() {
     ofstream ofs2("test_push_pop_shrink.txt");
     test_push_pop_shrink(ofs2);
 
-    ofstream ofs3("test_insert_remove.txt");
-    test_insert_remove(ofs3);
+    ofstream ofs3("test_iterator.txt");
+    test_iterator(ofs3);
+
+    ofstream ofs4("test_insert_remove.txt");
+    test_insert_remove(ofs4);
 }

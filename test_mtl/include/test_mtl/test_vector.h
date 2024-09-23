@@ -4,15 +4,18 @@
 #include <iostream>
 #include <mtl/vector.h>
 
-void test_constructor(std::ostream& os);
-void test_push_pop_shrink(std::ostream& os);
-void test_insert_remove(std::ostream& os);
+using std::ostream;
+
+void test_constructor(ostream& os);
+void test_push_pop_shrink(ostream& os);
+void test_iterator(ostream& os);
+void test_insert_remove(ostream& os);
 
 template <typename T>
-void print_vector(std::ostream& os, const typename mtl::vector<T>& vec);
+void print_vector(ostream& os, const typename mtl::vector<T>& vec);
 
 template <typename T>
-void print_vector(std::ostream& os, const typename mtl::vector<T>& vec) {
+void print_vector(ostream& os, const typename mtl::vector<T>& vec) {
     using std::endl;
     os << "The size: " << vec.size() << endl
        << "The capacity: " << vec.capacity() << endl
