@@ -2,23 +2,68 @@
 #define ALGORITHMS_H
 
 #include <iostream>
+#include <test_mtl/myutils.h>
 
 namespace mtl {
     /*  count how many elements between two iterators
-        type: Iteator, which must provides ++ and != operator
-    */
+        type: Iteator, which must provides ++ and != operators */
     template <typename Iterator>
     size_t count_length(Iterator begin, Iterator end);
 
     template <typename Iterator>
+    void inplace_quicksort(Iterator begin, Iterator end);
+
+    template <typename Iterator>
+    Iterator partition(Iterator begin, Iterator end) noexcept;
+
+    template <typename T>
+    void swap(T& a, T& b) noexcept;
+
+    template <typename Iterator>
     size_t count_length(Iterator begin, Iterator end) {
-        size_t size = 0;
+        size_t len = 0;
         while (begin != end) {
             ++begin;
-            ++size;
+            ++len;
         }
 
-        return size;
+        return len;
+    }
+
+    template <typename Iterator>
+    void inplace_quicksort(Iterator begin, Iterator end) {
+        if (begin < end) {
+            auto mid = partition(begin, end);
+            inplace_quicksort(begin, mid - 1);
+            inplace_quicksort(mid + 1, end);
+        }
+    }
+
+    template <typename Iterator>
+    Iterator partition(Iterator begin, Iterator end) noexcept {
+        // the pivot
+        auto pivot = *begin;
+        while (begin < end) {
+            while (begin < end && pivot <= *end) {
+                --end;
+            }
+            *begin = *end;
+            while (begin < end && pivot >= *begin) {
+                ++begin;
+            }
+            *end = *begin;
+        }
+
+        *begin = std::move(pivot);
+        
+        return begin;
+    }
+
+    template <typename T>
+    void swap(T& a, T& b) noexcept {
+        auto c = std::move(a);
+        a = std::move(b);
+        b = std::move(c);
     }
 }
 

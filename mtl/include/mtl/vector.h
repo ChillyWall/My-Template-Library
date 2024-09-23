@@ -25,7 +25,7 @@ namespace mtl {
         size_t capacity_;   
 
         // the default capacity, vector ensures that the capacity won't be smaller than it
-        const static size_t DEFAULT_CAPACITY = 100;   
+        const static size_t DEFAULT_CAPACITY = 128;   
 
         // expand the array, the new capacity is new_size * 2
         void expand(size_t new_size);  
@@ -89,7 +89,7 @@ namespace mtl {
                 return elem_ != ci.elem_;
             }
 
-            operator bool() const {
+            explicit operator bool() const {
                 return elem_;
             }
 
@@ -120,7 +120,7 @@ namespace mtl {
         class iterator : public const_iterator {
         public:
             iterator() = default;
-            iterator(T* elem);
+            explicit iterator(T* elem);
             iterator(const iterator& itr);
             iterator(iterator&& itr) noexcept;
             ~iterator() override = default;
@@ -217,14 +217,14 @@ namespace mtl {
 
         const T& front() const {
             if (size_ == 0) {
-                throw std::runtime_error("There's no element in this vector.");
+                throw std::out_of_range("There's no element in this vector.");
             }
             return data_[0];
         }
 
         const T& back() const {
             if (size_ == 0) {
-                throw std::runtime_error("There's no element in this vector.");
+                throw std::out_of_range("There's no element in this vector.");
             }
             return data_[size_ - 1];
         }
@@ -310,13 +310,12 @@ namespace mtl {
     };
 
     template <typename T>
-    vector<T>::vector() : size_{0}, capacity_(DEFAULT_CAPACITY) {
+    vector<T>::vector() : size_(0), capacity_(DEFAULT_CAPACITY) {
         allocate(capacity_); 
     }
 
     template <typename T>
-    vector<T>::vector(size_t size) : size_{0} {
-        capacity_ = size * 2;
+    vector<T>::vector(size_t size) : size_(0), capacity_(size * 2) {
         capacity_ = capacity_ > DEFAULT_CAPACITY ? capacity_ : DEFAULT_CAPACITY;
         allocate(capacity_);
     }
@@ -329,7 +328,7 @@ namespace mtl {
         allocate(capacity_);
         auto itr = elems.begin();
         for (size_t i = 0; i < size_; ++i) {
-            data_[i] = *itr;
+            data_[i] = std::move(*itr);
             ++itr;
         }
     }
@@ -424,7 +423,7 @@ namespace mtl {
     template <typename T>
     void vector<T>::pop_back() {
         if (size_ == 0) {
-            throw std::runtime_error("There's no element to be popped out.");
+            throw std::out_of_range("There's no element to be popped out.");
         }
         --size_;
     }
@@ -482,7 +481,7 @@ namespace mtl {
         if (size_ > capacity_) {
             size_t len2 = count_length(this->begin(), index);
             expand(size_);
-            index = this->begin() + len;
+            index = this->begin() + len2;
         }
 
         // move elements backward
@@ -594,16 +593,13 @@ namespace mtl {
     }
 
     template <typename T>
-    vector<T>::const_iterator::const_iterator(T* elem) {
-        elem_ = elem;
-    }
+    vector<T>::const_iterator::const_iterator(T* elem) : elem_(elem) {}
 
     template <typename T>
     vector<T>::const_iterator::const_iterator(const const_iterator& ci) : elem_{ci.elem_} {}
 
     template <typename T>
-    vector<T>::const_iterator::const_iterator(const_iterator&& ci) noexcept {
-        elem_ = ci.elem_;
+    vector<T>::const_iterator::const_iterator(const_iterator&& ci) noexcept : elem_(ci.elem_) {
         ci.elem_ = nullptr;
     }
 
