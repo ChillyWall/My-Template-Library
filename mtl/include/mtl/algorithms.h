@@ -6,10 +6,13 @@
 
 namespace mtl {
     /*  count how many elements between two iterators
-        type: Iteator, which must provides ++ and != operators */
+        type: Iterator, which must provides ++ and != operators */
     template <typename Iterator>
     size_t count_length(Iterator begin, Iterator end);
 
+    /* sort the array in the original place (it will change the array directly)
+       type Iterator, which should provides ++, -- and != operators 
+       begin points to the first element, end points to the last element.*/
     template <typename Iterator>
     void inplace_quicksort(Iterator begin, Iterator end);
 
@@ -32,10 +35,10 @@ namespace mtl {
 
     template <typename Iterator>
     void inplace_quicksort(Iterator begin, Iterator end) {
-        if (begin < end) {
+        if (begin != end) {
             auto mid = partition(begin, end);
-            inplace_quicksort(begin, mid - 1);
-            inplace_quicksort(mid + 1, end);
+            inplace_quicksort(begin, mid);
+            inplace_quicksort(++mid, end);
         }
     }
 
@@ -43,19 +46,17 @@ namespace mtl {
     Iterator partition(Iterator begin, Iterator end) noexcept {
         // the pivot
         auto pivot = *begin;
-        while (begin < end) {
-            while (begin < end && pivot <= *end) {
+        while (begin != end) {
+            while (begin != end && pivot <= *end) {
                 --end;
             }
             *begin = *end;
-            while (begin < end && pivot >= *begin) {
+            while (begin != end && pivot >= *begin) {
                 ++begin;
             }
             *end = *begin;
         }
-
         *begin = std::move(pivot);
-        
         return begin;
     }
 
