@@ -23,9 +23,8 @@ namespace mtl {
             Node(const T& elem, Node* prev, Node* next);
             Node(T&& elem, Node* prev, Node* next) noexcept;
             Node(const Node& node) = delete;
-            Node(Node&& node) noexcept;
 
-            ~Node() = default;
+            ~Node();
 
             const T& elem() const {
                 return elem_;
@@ -40,7 +39,7 @@ namespace mtl {
             }
 
             bool is_head() const {
-                return !prev_
+                return !prev_;
             }
 
             friend class list<T>;
@@ -68,11 +67,10 @@ namespace mtl {
             }
 
             const T& operator*() const {
-                if (node_->prev_) {
-                    return node_->elem();
-                } else {
-                    throw std::runtime_error("This iterator is null.")
+                if (node_->is_head() || node_->is_tail()) {
+                    throw std::runtime_error("This iterator is null.");
                 }
+                return node_->elem();
             }
 
             T& operator*() {
@@ -134,11 +132,12 @@ namespace mtl {
         };
 
         class iterator : public const_iterator {
+            public:
             iterator();
             explicit iterator(Node* node);
             iterator(const iterator& itr);
             iterator(iterator&& itr) noexcept;
-            virtual ~iterator() = default;
+            ~iterator() = default;
 
             iterator& operator=(const iterator& itr) {
                 const_iterator::operator=(itr);
@@ -172,7 +171,7 @@ namespace mtl {
 
             iterator operator--(int) {
                 auto old = *this;
-                const_iterator::operator--(int);
+                const_iterator::operator--();
                 return old;
             }
 
@@ -214,6 +213,14 @@ namespace mtl {
         list<T>& operator=(list<T>&& l) noexcept;
 
         void clear();
+
+        bool empty() const {
+            return size_ == 0;
+        }
+
+        size_t size() const {
+            return size_;
+        }
 
         void push_back(const T& elem);
         void push_back(T&& elem) noexcept;
@@ -267,11 +274,6 @@ namespace mtl {
     list<T>::Node::Node(T&& elem, Node* prev, Node* next) noexcept : elem_(std::move(elem)), prev_(prev), next_(next) {}
 
     template <typename T>
-    list<T>::Node::Node(Node&& node) noexcept : elem_(std::move(node.elem_)), prev_(node.prev_), next_(node.next_) {
-        node.next_ = node.prev_ = nullptr;
-    }
-
-    template <typename T>
     list<T>::Node::~Node() {
         delete next_;
     }
@@ -313,7 +315,7 @@ namespace mtl {
     template <typename T>
     void list<T>::init() {
         head_ = new Node();
-        tail = new Node();
+        tail_ = new Node();
         head_->next_ = tail_;
         tail_->prev_ = head_;
         size_ = 0;
@@ -328,19 +330,19 @@ namespace mtl {
     list<T>::list(const list<T>& l) {
         init();
         for (auto itr = l.begin(); itr != l.end(); ++itr) {
-            push__back(*itr);
+            push_back(*itr);
         }
     }
 
     template <typename T>
-    list<T>::list(list<T>&& l) noexcept : head_(head_), tail_(tal_), size_(l.size_) {
-        l.head_ = l.tail_ = nullptr;
+    list<T>::list(list<T>&& l) noexcept : head_(l.head_), tail_(l.tail_), size_(l.size_) {
+        l.init();
     }
 
     template <typename T>
-    list<T>::list(std::initializer_list<T>&& init) noexcept {
+    list<T>::list(std::initializer_list<T>&& il) noexcept {
         init();
-        for (auto itr = init.begin(); itr != l.end(); ++itr) {
+        for (auto itr = il.begin(); itr != il.end(); ++itr) {
             push_back(std::move(*itr));
         }
     }
@@ -371,30 +373,30 @@ namespace mtl {
     list<T>& list<T>::operator=(list<T>&& l) noexcept {
         clear();
         head_ = l.head_;
-        next_ = l.next_;
+        tail_ = l.tail_;
         size_ = l.size_;
-        l.head_ = l.next_ = nullptr;
+        l.init();
     }
 
     template <typename T>
     void list<T>::push_back(const T& elem) {
-        Node* node = new Node(elem, tail, tail_->prev_);
-        tail_->prev->next_ = node;
-        tail_->prev = node;
+        Node* node = new Node(elem, tail_->prev_, tail_);
+        tail_->prev_->next_ = node;
+        tail_->prev_ = node;
         ++size_;
     }
 
     template <typename T>
     void list<T>::push_back(T&& elem) noexcept {
-        Node* node = new Node(std::move(elem), tail, tail_->prev_);
-        tail_->prev->next_ = node;
-        tail_->prev = node;
+        Node* node = new Node(std::move(elem), tail_->prev_, tail_);
+        tail_->prev_->next_ = node;
+        tail_->prev_ = node;
         ++size_;
     }
 
     template <typename T>
     void list<T>::push_front(const T& elem) {
-        Node* node = new Node(elem, head_->next_, head_);
+        Node* node = new Node(elem, head_, head_->next_);
         head_->next_->prev_ = node;
         head_->next_ = node;
         ++size_;
@@ -402,7 +404,7 @@ namespace mtl {
 
     template <typename T>
     void list<T>::push_front(T&& elem) noexcept {
-        Node* node = new Node(elem, head_->next_, head_);
+        Node* node = new Node(elem, head_, head_->next_);
         head_->next_->prev_ = node;
         head_->next_ = node;
         ++size_;
@@ -410,7 +412,7 @@ namespace mtl {
 
     template <typename T>
     void list<T>::pop_back() {
-        if (size_ == 0) {
+        if (empty()) {
             throw std::out_of_range("There's no element to be popped out.");
         }
 
@@ -418,12 +420,13 @@ namespace mtl {
         node->prev_->next_ = tail_;
         tail_->prev_ = node->prev_;
         node->prev_ = node->next_ = nullptr;
+        --size_;
         delete node;
     }
 
     template <typename T>
     void list<T>::pop_front() {
-        if (size_ == 0) {
+        if (empty()) {
             throw std::out_of_range("There's no element to e popped out.");
         }
 
@@ -431,6 +434,7 @@ namespace mtl {
         node->next_->prev_ = head_;
         head_->next_ = node->next_;
         node->prev_ = node->next_ = nullptr;
+        --size_;
         delete node;
     }
 
@@ -439,6 +443,7 @@ namespace mtl {
         Node* new_node = new Node(elem, itr.node_->prev_, itr.node_);
         itr.node_->prev_->next_ = new_node;
         itr.node_->prev_ = new_node;
+        ++size_;
         return itr;
     }
 
@@ -447,6 +452,7 @@ namespace mtl {
         Node* new_node = new Node(std::move(elem), itr.node_->prev_, itr.node_);
         itr.node_->prev_->next_ = new_node;
         itr.node_->prev_ = new_node;
+        ++size_;
         return itr;       
     }
 
@@ -459,13 +465,19 @@ namespace mtl {
         itr.node_ = node->next_;
 
         node->prev_->next_ = node->next_;
-        node->next_->prev_ = node->prev;
+        node->next_->prev_ = node->prev_;
         node->prev_ = node->next_ = nullptr;
         delete node;
+        --size_;
+        return itr;
     }
 
     template <typename T>
     typename list<T>::iterator list<T>::remove(iterator start, iterator stop) {
+        if (start == stop) {
+            return stop;
+        }
+        size_ -= count_length(start, stop);
         start.node_->prev_->next_ = stop.node_;
         stop.node_->prev_->next_ = nullptr;
         stop.node_->prev_ = start.node_->prev_;
@@ -477,7 +489,7 @@ namespace mtl {
     template <typename T> 
     template <typename InputIterator>
     typename list<T>::iterator list<T>::insert(iterator itr, InputIterator start, InputIterator stop) {
-        for (auto in_itr = start; itr != stop; ++itr) {
+        for (auto in_itr = start; in_itr != stop; ++in_itr) {
             itr = insert(itr, *in_itr);
         }
         return itr;

@@ -2,7 +2,6 @@
 #define ALGORITHMS_H
 
 #include <iostream>
-#include <test_mtl/myutils.h>
 
 namespace mtl {
     /*  count how many elements between two iterators
