@@ -45,7 +45,7 @@ namespace mtl {
 
         /* the iterator that cannot modify the element it refers but can change which object if refers */
         class const_iterator {
-        protected:
+        private:
             T* elem_;   // pointer to the element
         public:
             const_iterator() = default;
@@ -250,7 +250,7 @@ namespace mtl {
         void shrink() noexcept;  
         
         /* insert an element at position index, r
-        eturn an iterator pointing to the next cell */
+        return an iterator pointing to the next cell */
         iterator insert(iterator index, const T& elem) noexcept;   
 
         // using the right-value reference
@@ -293,7 +293,7 @@ namespace mtl {
             return cbegin();
         }
 
-        // return a const_iteartor when the object is const
+        // return a const_iterator when the object is const
         const_iterator end() const {
             return cend();
         }
@@ -695,27 +695,27 @@ namespace mtl {
 
     template <typename T>
     typename vector<T>::iterator& vector<T>::iterator::operator++() {
-        ++const_iterator::elem_;
+        const_iterator::operator++();
         return *this;
     }
 
     template <typename T>
     typename vector<T>::iterator vector<T>::iterator::operator++(int) {
         auto old = *this;
-        ++const_iterator::elem_;
+        const_iterator::operator++();
         return old;
     }
 
     template <typename T>
     typename vector<T>::iterator& vector<T>::iterator::operator--() {
-        --const_iterator::elem_;
+        const_iterator::operator--();
         return *this;
     }
 
     template <typename T>
     typename vector<T>::iterator vector<T>::iterator::operator--(int) {
         auto old = *this;
-        --const_iterator::elem_;
+        const_iterator::operator--();
         return old;
     }
 }

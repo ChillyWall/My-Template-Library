@@ -37,24 +37,26 @@ namespace mtl {
     void inplace_quicksort(Iterator begin, Iterator end) {
         if (begin != end) {
             auto mid = partition(begin, end);
-            inplace_quicksort(begin, mid);
-            inplace_quicksort(++mid, end);
+            if (mid != begin)
+                inplace_quicksort(begin, mid - 1);
+            if (mid != end)
+                inplace_quicksort(mid + 1, end);
         }
     }
 
     template <typename Iterator>
     Iterator partition(Iterator begin, Iterator end) noexcept {
         // the pivot
-        auto pivot = *begin;
+        auto pivot = std::move(*begin);
         while (begin != end) {
             while (begin != end && pivot <= *end) {
                 --end;
             }
-            *begin = *end;
+            *begin = std::move(*end);
             while (begin != end && pivot >= *begin) {
                 ++begin;
             }
-            *end = *begin;
+            *end = std::move(*begin);
         }
         *begin = std::move(pivot);
         return begin;
