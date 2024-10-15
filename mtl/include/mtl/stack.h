@@ -1,72 +1,71 @@
-#ifndef STACK_H
-#define STACK_H
+#ifndef MTL_STACK_H
+#define MTL_STACK_H
 
-#include <mtl/vector.h>
-#include <initializer_list>
+#include <mtl/basic_vector.h>
 
 namespace mtl {
     template <typename T>
-    class stack {
+    class stack : public basic_vector<T> {
         private:
-        vector<T>* data_;
+        size_t size_;
 
         public:
         stack();
-        stack(std::initializer_list<T>&& il) noexcept;
         explicit stack(size_t size_);
         stack(const stack<T>& rhs);
         stack(stack<T>&& rhs) noexcept;
-        ~stack();
+        virtual ~stack() = default;
 
         bool empty() const {
-            return data_->empty();
+            return size_ == 0;
         }
 
         size_t size() const {
-            return data_->size();
+            return size_;
         }
 
         void push(const T& elem) {
-            data_.push_back(elem);
+            if (size_ >= basic_vector<T>::capacity()) {
+                basic_vector<T>::expand(size_ * 2);
+            }
+            basic_vector<T>::operator[](size_) = elem;
+            ++size_;
         }
 
         void push(T&& elem) noexcept {
-            data_.push_back(std::move(elem));
+            if (size_ >= basic_vector<T>::capacity()) {
+                basic_vector<T>::expand(size_ * 2);
+            }
+            basic_vector<T>::operator[](size_) = std::move(elem);
+            ++size_;
         }
 
         void pop() {
-            data_.pop_back();
+            --size_;
         }
 
         const T& top() const {
-            return data_.back();
+            if (size_ == 0)
+                throw std::out_of_range("There's no element to be popped out.");
+
+            return data_[size_ - 1];
         }
 
         T& top() {
-            return data_.back();
+            return const_cast<T&>(static_cast<const stack<T>*>(this)->top());
         }
     };
 
     template <typename T>
-    stack<T>::stack() : data_(new vector<T>()) {}
+    stack<T>::stack() : size_(0) {}
     
     template <typename T>
-    stack<T>::stack(std::initializer_list<T>&& il) noexcept : data_(new vector<T>(std::move(il))) {}
+    stack<T>::stack(size_t s) : size_(0), basic_vector<T>(s) {}
 
     template <typename T>
-    stack<T>::stack(size_t s) : data_(new vector<T>(s)) {}
+    stack<T>::stack(const stack<T>& rhs) : size_(rhs.size_), basic_vector<T>(rhs) {}
 
-    template <typename T>
-    stack<T>::stack(const stack<T>& rhs) : data_(new vector<T>(*rhs.data_)) {}
-
-    template <typename T>
-    stack<T>::stack(stack<T>&& rhs) noexcept : data_(rhs.data_) {
-        rhs.data_ = nullptr;
-    }
-
-    template <typename T>
-    stack<T>::~stack() {
-        delete data_;
-    }
+    template <typename T> stack<T>::stack(stack<T>&& rhs) noexcept :
+        size_(rhs.size()), basic_vector<T>(std::move(rhs)) {}
 }
 #endif

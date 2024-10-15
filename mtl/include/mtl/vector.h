@@ -2,47 +2,33 @@
 // Created by metal on 2024/9/18.
 //
 
-#ifndef VECTOR_H
-#define VECTOR_H
+#ifndef MTL_VECTOR_H
+#define MTL_VECTOR_H
 
 #include <mtl/algorithms.h>
 #include <stdexcept>
 #include <initializer_list>
+#include <mtl/basic_vector.h>
 
 // The namespace where the ADTs are.
 namespace mtl {
     /* The vector ADT, it can expand its data array to double size when space is not enough. */
     template <typename T>
-    class vector {
+    class vector : public basic_vector<T> {
     private:
-        // the array contain the data
-        T* data_;   
-
-        // the number of the elements
-        size_t size_;  
-
-        // the length of the array
-        size_t capacity_;   
-
-        // the default capacity, vector ensures that the capacity won't be smaller than it
-        const static size_t DEFAULT_CAPACITY = 128;   
-
-        /* allocate a new array with length capacity
-           it don't delete the original array */
-        void allocate(size_t capacity) {
-            data_ = new T [capacity];
-        }
+        // the number of elements
+        size_t size_;
 
         /* the iterator that cannot modify the element it refers but can change which object if refers */
         class const_iterator {
         private:
-            T* elem_;   // pointer to the element
+            const T* elem_;   // pointer to the element
         public:
-            const_iterator() = default;
+            const_iterator();
             virtual ~const_iterator() = default;
 
             // construct from pointer
-            explicit const_iterator(T* elem);   
+            explicit const_iterator(const T* elem);   
 
             const_iterator(const const_iterator& ci);
             const_iterator(const_iterator&& ci) noexcept;
@@ -162,7 +148,7 @@ namespace mtl {
         vector(vector<T>&& vec) noexcept;  
 
         // the destructor
-        ~vector();   
+        virtual ~vector() = default;
 
         // return whether the vector is empty
         [[nodiscard]] bool empty() const {
@@ -176,26 +162,18 @@ namespace mtl {
 
         // return the capacity
         [[nodiscard]] size_t capacity() const {
-            return capacity_;
+            return basic_vector<T>::capacity();
         }
 
         // delete the array and assign nullptr to data_
         void clear() {
-            delete [] data_;
-            data_ = nullptr; 
+            basic_vector<T>::clear();
             size_ = 0;
-            capacity_ = 0;
         }
 
-        // expand the array, the new capacity is new_size
-        void expand(size_t new_capacity) noexcept;
-
-        /* return the reference to the element at position index 
-            it don't check the boundary */
-        const T& operator[](size_t index) const;
-
-        // the const version
-        T& operator[](size_t index);  
+        void expand(size_t new_capacity) {
+            basic_vector<T>::expand(new_capacity);
+        }
 
         /* the same with operator[] but check the boundary 
             it throw an out_of_range exception */
@@ -211,22 +189,22 @@ namespace mtl {
             if (size_ == 0) {
                 throw std::out_of_range("There's no element in this vector.");
             }
-            return data_[0];
+            return basic_vector<T>::operator[](0);
         }
 
         const T& back() const {
             if (size_ == 0) {
                 throw std::out_of_range("There's no element in this vector.");
             }
-            return data_[size_ - 1];
+            return basic_vector<T>::operator[](size_ - 1);
         }
 
         T& front() {
-            return const_cast<T&>(static_cast<const vector<T>* >(this)->front());
+            return const_cast<T&>(static_cast<const vector<T>*>(this)->front());
         }
 
         T& back() {
-            return const_cast<T&>(static_cast<const vector<T>* >(this)->back());
+            return const_cast<T&>(static_cast<const vector<T>*>(this)->back());
         }
 
         // append an element to the end of the vector
@@ -238,8 +216,10 @@ namespace mtl {
         // remove the last element (simply decrease the size_)
         void pop_back();     
 
-        // reduce the length of the array to size_ * 2
-        void shrink() noexcept;  
+        // reduce the length of the array to size_
+        void shrink() {
+            basic_vector<T>::shrink(size_);
+        }
         
         /* insert an element at position index, r
         return an iterator pointing to the next cell */
@@ -261,7 +241,7 @@ namespace mtl {
 
         // return whether two vector is equal (whether the data_ is equal)
         bool operator==(const vector<T>& vec) const {
-            return data_ == vec.data_;
+            return basic_vector<T>::data() == vec.data();
         }
 
         // the copy assignment operator
@@ -272,12 +252,12 @@ namespace mtl {
 
         // return a const_iterator pointing to the position 0
         const_iterator cbegin() const {
-            return const_iterator(data_);
+            return const_iterator(basic_vector<T>::data());
         }
 
         // return a const_iterator pointing to the position after the last element
         const_iterator cend() const {
-            return const_iterator(&(data_[size_]));
+            return const_iterator(basic_vector<T>::data() + size_);
         }
 
         // return a const_iterator when the object is const
@@ -292,74 +272,43 @@ namespace mtl {
 
         // return an iterator pointing to the first element
         iterator begin() {
-            return iterator(data_);
+            return iterator(basic_vector<T>::data());
         }
 
         // return an iterator pointing to the element behind the last one
         iterator end() {
-            return iterator(&(data_[size_]));
+            return iterator(basic_vector<T>::data() + size_);
         }
     };
 
     template <typename T>
-    vector<T>::vector() : size_(0), capacity_(DEFAULT_CAPACITY) {
-        allocate(capacity_); 
-    }
+    vector<T>::vector() : size_(0) {}
 
     template <typename T>
-    vector<T>::vector(size_t s) : size_(0), capacity_(s * 2) {
-        capacity_ = capacity_ > DEFAULT_CAPACITY ? capacity_ : DEFAULT_CAPACITY;
-        allocate(capacity_);
-    }
+    vector<T>::vector(size_t n) : size_(0), basic_vector<T>(n) {}
 
     template <typename T>
-    vector<T>::vector(std::initializer_list<T>&& elems) noexcept :
-        size_{elems.size()} {
-        capacity_ = size_ * 2;
-        capacity_ = capacity_ > DEFAULT_CAPACITY ? capacity_ : DEFAULT_CAPACITY;
-        allocate(capacity_);
-        auto itr = elems.begin();
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = std::move(*itr);
-            ++itr;
+    vector<T>::vector(std::initializer_list<T>&& il) noexcept : size_(il.size()), basic_vector<T>(il.size()) {
+        auto itr = il.begin();
+        auto data_ = basic_vector<T>::data();
+        for (int i = 0; i < size_; ++i) {
+            data_[i] = std::move(*(itr++));
         }
     }
 
     template <typename T>
-    vector<T>::vector(const vector<T>& vec) :
-        size_{vec.size_}, capacity_{vec.capacity_} {
-        allocate(capacity_);
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = vec.data_[i];
-        }
-    }
+    vector<T>::vector(const vector<T>& rhs) : size_(rhs.size_), basic_vector<T>(rhs) {}
 
     template <typename T>
-    vector<T>::vector(vector<T>&& vec) noexcept :
-        data_{vec.data_}, size_{vec.size_}, capacity_{vec.capacity_} {
-        vec.data_ = nullptr;
-        vec.clear();
-    }
-
-    template <typename T>
-    vector<T>::~vector() {
-        delete[] data_;
-    }
-
-    template <typename T>
-    const T& vector<T>::operator[](size_t index) const {
-        return data_[index];
-    }
-
-    template <typename T>
-    T& vector<T>::operator[](size_t index) {
-        return const_cast<T&>(static_cast<const vector<T>>(*this)[index]);
+    vector<T>::vector(vector<T>&& rhs) noexcept : 
+        size_(rhs.size_), basic_vector<T>(std::move(rhs)) {
+        rhs.size_ = 0;
     }
 
     template <typename T>
     const T& vector<T>::at(size_t index) const {
         if (index < size_) {
-            return data_[index];
+            return basic_vector<T>::operator[](index);
         } else {
             throw std::out_of_range("The index is out of range.");
         }
@@ -367,7 +316,7 @@ namespace mtl {
 
     template <typename T>
     T& vector<T>::at(size_t index) {
-        return const_cast<T&>(static_cast<const vector<T>>(*this).at(index));
+        return const_cast<T&>(static_cast<const vector<T>*>(this)->at(index));
     }
 
     template <typename T>
@@ -375,40 +324,27 @@ namespace mtl {
         size_t size = stop - begin;
         vector<T> vec(size);
         for (size_t i = 0; i < size; ++i) {
-            vec.data_[i] = data_[begin + i];
+            vec[i] = basic_vector<T>::operator[](begin + i);
         }
 
         return vec;
     }
-    
-    template <typename T>
-    void vector<T>::shrink() noexcept {
-        capacity_ = size_ * 2;
-        capacity_ = capacity_ > DEFAULT_CAPACITY ? capacity_ : DEFAULT_CAPACITY;
-        auto old = data_;
-        allocate(capacity_);
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = std::move(old[i]);
-        }
-
-        delete [] old;
-    }
 
     template <typename T>
     void vector<T>::push_back(const T& elem) {
-        if (size_ >= capacity_) {
-            expand(size_ * 2);
+        if (size_ >= basic_vector<T>::capacity()) {
+            basic_vector<T>::expand(size_ * 2);
         }
-        data_[size_] = elem;
+        basic_vector<T>::operator[](size_) = elem;
         ++size_;
     }
 
     template <typename T>
     void vector<T>::push_back(T&& elem) noexcept {
-        if (size_ >= capacity_) {
-            expand(size_ * 2);
+        if (size_ >= basic_vector<T>::capacity()) {
+            basic_vector<T>::expand(size_ * 2);
         }
-        data_[size_] = std::move(elem);
+        basic_vector<T>::operator[](size_) = std::move(elem);
         ++size_;
     }
 
@@ -427,9 +363,9 @@ namespace mtl {
             return iterator();
         }
         // check the capacity
-        if (size_ >= capacity_) {
+        if (size_ >= basic_vector<T>::capacity()) {
             size_t len = count_length(this->begin(), index);
-            expand(size_ * 2);
+            basic_vector<T>::expand(size_ * 2);
             index = this->begin() + len;
         }
 
@@ -446,9 +382,9 @@ namespace mtl {
         if (index > this->end()) {
             return iterator();
         }
-        if (size_ >= capacity_) {
+        if (size_ >= basic_vector<T>::capacity()) {
             size_t len = count_length(this->begin(), index);
-            expand(size_ * 2);
+            basic_vector<T>::expand(size_ * 2);
             index = this->begin() + len;
         }
         for (iterator i = this->end(), j = i - 1; i != index; --i, --j) {
@@ -470,9 +406,9 @@ namespace mtl {
 
         // check whether the capacity is big enough
         size_ += len;
-        if (size_ > capacity_) {
+        if (size_ > basic_vector<T>::capacity()) {
             size_t len2 = count_length(this->begin(), index);
-            expand(size_ * 2);
+            basic_vector<T>::expand(size_ * 2);
             index = this->begin() + len2;
         }
 
@@ -525,67 +461,10 @@ namespace mtl {
     }
 
     template <typename T>
-    vector<T>& vector<T>::operator=(const vector<T>& vec) {
-        // process the self-assignment
-        if (this == &vec) {
-            return *this;
-        }
-
-        // delete original array
-        clear();
-        size_ = vec.size_;
-        capacity_ = vec.capacity_;
-        allocate(capacity_);
-
-        // copy every element
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = vec.data_[i];
-        }
-
-        return *this;
-    }
+    vector<T>::const_iterator::const_iterator() : elem_(nullptr) {}
 
     template <typename T>
-    vector<T>& vector<T>::operator=(vector<T>&& vec) noexcept {
-        if (this == &vec) {
-            return *this;
-        }
-        // delete original array
-        clear();
-
-        // copy the object
-        size_ = vec.size_;
-        capacity_ = vec.capacity_;
-        data_ = vec.data_;
-
-        vec.data_ = nullptr;
-        vec.clear();
-
-        return *this;
-    }
-
-    template<typename T>
-    void vector<T>::expand(size_t new_capacity) noexcept {
-        if (new_capacity <= capacity_) {
-            return;
-        }
-        // backup the original array
-        auto old = data_;
-
-        // create a new array
-        capacity_ = new_capacity;
-        allocate(capacity_);
-
-        // move the elements
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = std::move(old[i]);
-        }
-
-        delete [] old;
-    }
-
-    template <typename T>
-    vector<T>::const_iterator::const_iterator(T* elem) : elem_(elem) {}
+    vector<T>::const_iterator::const_iterator(const T* elem) : elem_(elem) {}
 
     template <typename T>
     vector<T>::const_iterator::const_iterator(const const_iterator& ci) : elem_{ci.elem_} {}

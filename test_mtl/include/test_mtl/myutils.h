@@ -30,7 +30,7 @@ void print_vector(ostream& os, const vector<T>& v) {
         os << *i << ", ";
     }
 
-    os << "\n";
+    os << std::endl;
 }
 
 
@@ -46,7 +46,7 @@ void print(ostream& os, const Container& c) {
     for (auto i = c.begin(); i != c.end(); ++i) {
         os << *i << ", ";
     }
-    os << "\n";
+    os << std::endl;
 }
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef DEQUE_H
-#define DEQUE_H
+#ifndef MTL_DEQUE_H
+#define MTL_DEQUE_H
 
 #include <mtl/list>
 #include <initializer_list>

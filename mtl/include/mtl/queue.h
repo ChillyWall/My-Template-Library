@@ -1,5 +1,5 @@
-#ifndef QUEUE_H
-#define QUEUE_H
+#ifndef MTL_QUEUE_H
+#define MTL_QUEUE_H
 
 #include <initializer_list>
 #include <mtl/list.h>
@@ -26,15 +26,15 @@ namespace mtl {
             return data_->empty();
         }
 
-        void enqueue(const T& elem) {
+        void push(const T& elem) {
             data_->push_back(elem);
         }
 
-        void enqueue(T&& elem) noexcept {
+        void push(T&& elem) noexcept {
             data_->push_back(std::move(elem));
         }
 
-        void dequeue() {
+        void pop() {
             data_->pop_front();
         }
 
