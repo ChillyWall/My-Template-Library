@@ -68,7 +68,9 @@ namespace mtl {
     queue<T>::queue(const queue& rhs) : data_(new list<T>(*rhs.data_)) {}
 
     template <typename T>
-    queue<T>::queue(queue<T>&& rhs) noexcept : data_(std::move(*rhs.data_)) {}
+    queue<T>::queue(queue<T>&& rhs) noexcept : data_(rhs.data_) {
+        rhs.data_ = nullptr;
+    }
 
     template <typename T>
     queue<T>::~queue() {

@@ -27,20 +27,10 @@ namespace mtl {
         // the default capacity, vector ensures that the capacity won't be smaller than it
         const static size_t DEFAULT_CAPACITY = 128;   
 
-        // expand the array, the new capacity is new_size * 2
-        void expand(size_t new_size);  
-
         /* allocate a new array with length capacity
            it don't delete the original array */
         void allocate(size_t capacity) {
             data_ = new T [capacity];
-        }
-
-        // check whether the capacity is enough and expand when needed
-        void check_capacity() {
-            if (size_ == capacity_) {
-                expand(size_);
-            }
         }
 
         /* the iterator that cannot modify the element it refers but can change which object if refers */
@@ -174,7 +164,6 @@ namespace mtl {
         // the destructor
         ~vector();   
 
-
         // return whether the vector is empty
         [[nodiscard]] bool empty() const {
             return size_ == 0;
@@ -197,6 +186,9 @@ namespace mtl {
             size_ = 0;
             capacity_ = 0;
         }
+
+        // expand the array, the new capacity is new_size
+        void expand(size_t new_capacity) noexcept;
 
         /* return the reference to the element at position index 
             it don't check the boundary */
@@ -405,7 +397,7 @@ namespace mtl {
     template <typename T>
     void vector<T>::push_back(const T& elem) {
         if (size_ >= capacity_) {
-            expand(size_);
+            expand(size_ * 2);
         }
         data_[size_] = elem;
         ++size_;
@@ -414,7 +406,7 @@ namespace mtl {
     template <typename T>
     void vector<T>::push_back(T&& elem) noexcept {
         if (size_ >= capacity_) {
-            expand(size_);
+            expand(size_ * 2);
         }
         data_[size_] = std::move(elem);
         ++size_;
@@ -437,7 +429,7 @@ namespace mtl {
         // check the capacity
         if (size_ >= capacity_) {
             size_t len = count_length(this->begin(), index);
-            expand(size_);
+            expand(size_ * 2);
             index = this->begin() + len;
         }
 
@@ -456,7 +448,7 @@ namespace mtl {
         }
         if (size_ >= capacity_) {
             size_t len = count_length(this->begin(), index);
-            expand(size_);
+            expand(size_ * 2);
             index = this->begin() + len;
         }
         for (iterator i = this->end(), j = i - 1; i != index; --i, --j) {
@@ -480,7 +472,7 @@ namespace mtl {
         size_ += len;
         if (size_ > capacity_) {
             size_t len2 = count_length(this->begin(), index);
-            expand(size_);
+            expand(size_ * 2);
             index = this->begin() + len2;
         }
 
@@ -573,20 +565,20 @@ namespace mtl {
     }
 
     template<typename T>
-    void vector<T>::expand(size_t new_size) {
-        if (new_size * 2 < capacity_) {
+    void vector<T>::expand(size_t new_capacity) noexcept {
+        if (new_capacity <= capacity_) {
             return;
         }
         // backup the original array
         auto old = data_;
 
         // create a new array
-        capacity_ = new_size * 2;
+        capacity_ = new_capacity;
         allocate(capacity_);
 
         // move the elements
         for (size_t i = 0; i < size_; ++i) {
-            data_[i] = old[i];
+            data_[i] = std::move(old[i]);
         }
 
         delete [] old;
