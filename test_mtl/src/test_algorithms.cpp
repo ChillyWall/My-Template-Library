@@ -12,8 +12,8 @@ void test_quicksort(ostream& os) {
 
     std::random_device rd;
     std::default_random_engine e(rd());
-    std::uniform_int_distribution<> uid(-10000, 10000);
-    for (size_t i = 0; i < 1000; ++i) {
+    std::uniform_int_distribution<> uid(-100000, 100000);
+    for (size_t i = 0; i < 10000; ++i) {
         vec.push_back(uid(e));
     }
 
@@ -21,7 +21,7 @@ void test_quicksort(ostream& os) {
     print(os, vec);
 
     auto start = system_clock::now();
-    mtl::inplace_quicksort(vec.begin(), vec.end() - 1);
+    mtl::inplace_quicksort(vec.begin(), vec.end());
     auto end = system_clock::now();
     auto duration = duration_cast<microseconds>(end - start);
     os << "Time costs: " << double(duration.count()) * microseconds::period::num / microseconds::period::den << "\n";

@@ -11,7 +11,7 @@ namespace mtl {
 
     /* sort the array in the original place (it will change the array directly)
        type Iterator, which should provides ++, -- and != operators 
-       begin points to the first element, end points to the last element.*/
+       the ranges is [begin, end), return the iterator to the first element of the second group */
     template <typename Iterator>
     void inplace_quicksort(Iterator begin, Iterator end);
 
@@ -36,10 +36,8 @@ namespace mtl {
     void inplace_quicksort(Iterator begin, Iterator end) {
         if (begin != end) {
             auto mid = partition(begin, end);
-            if (mid != begin)
-                inplace_quicksort(begin, mid - 1);
-            if (mid != end)
-                inplace_quicksort(mid + 1, end);
+            inplace_quicksort(begin, mid);
+            inplace_quicksort(mid + 1, end);
         }
     }
 
@@ -48,14 +46,21 @@ namespace mtl {
         // the pivot
         auto pivot = std::move(*begin);
         while (begin != end) {
-            while (begin != end && pivot <= *end) {
+            do {
                 --end;
+            } while (begin != end && pivot < *end);
+            if (begin == end) {
+                break;
             }
             *begin = std::move(*end);
-            while (begin != end && pivot >= *begin) {
+
+            do {
                 ++begin;
+            } while (begin != end && pivot > *begin);
+
+            if (begin != end) {
+                *end = std::move(*begin);
             }
-            *end = std::move(*begin);
         }
         *begin = std::move(pivot);
         return begin;
