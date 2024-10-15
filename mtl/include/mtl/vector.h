@@ -160,7 +160,7 @@ namespace mtl {
         vector();  
 
         // construct the vector with particular size
-        explicit vector(size_t size);   
+        explicit vector(size_t s);   
 
         // construct from initializer list, the size will be the same with the il.
         vector(std::initializer_list<T>&& elems) noexcept;   
@@ -315,7 +315,7 @@ namespace mtl {
     }
 
     template <typename T>
-    vector<T>::vector(size_t size) : size_(0), capacity_(size * 2) {
+    vector<T>::vector(size_t s) : size_(0), capacity_(s * 2) {
         capacity_ = capacity_ > DEFAULT_CAPACITY ? capacity_ : DEFAULT_CAPACITY;
         allocate(capacity_);
     }
