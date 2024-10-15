@@ -8,5 +8,5 @@
 using std::ostream;
 
 void test_quicksort(ostream& os);
-
+void test_mergesort(ostream& os);
 #endif
