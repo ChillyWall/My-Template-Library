@@ -33,7 +33,6 @@ void print_vector(ostream& os, const vector<T>& v) {
     os << std::endl;
 }
 
-
 /* To print the basic information of a container and all of its elements. 
     Type Container: it should provide begin() and end(), which return a iterator.
     The type of elements should overload operator<< */
