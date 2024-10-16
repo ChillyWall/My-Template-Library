@@ -9,6 +9,8 @@
 #include <initializer_list>
 
 namespace mtl {
+    typedef unsigned long long size_t;
+
     template <typename T>
     class list {
         private:

@@ -4,6 +4,8 @@
 #include <initializer_list>
 
 namespace mtl {
+    typedef unsigned long long size_t;
+
     template <typename T>
     class basic_vector {
     private:
@@ -32,7 +34,7 @@ namespace mtl {
         void expand(size_t new_capacity) noexcept;
         void shrink(size_t new_capacity) noexcept;
 
-        void clear() {
+        virtual void clear() {
             delete [] data_;
             capacity_ = DEFAULT_CAPACITY;
             allocate(capacity_);
@@ -42,6 +44,10 @@ namespace mtl {
             return capacity_;
         }
 
+        basic_vector& operator=(const basic_vector& rhs);
+        basic_vector& operator=(basic_vector&& rhs) noexcept;
+
+    protected:
         const T* data() const {
             return data_;
         }
@@ -49,20 +55,6 @@ namespace mtl {
         T* data() {
             return data_;
         }
-
-        /* return the reference to the element at position index 
-           it don't check the boundary */
-        const T& operator[](size_t index) const {
-            return data_[index];
-        }
-
-        // the const version
-        T& operator[](size_t index) {
-            return const_cast<T&>(static_cast<const basic_vector<T>*>(this)->operator[](index));
-        }
-
-        basic_vector& operator=(const basic_vector& rhs);
-        basic_vector& operator=(basic_vector&& rhs) noexcept;
     };
 
     template <typename T>

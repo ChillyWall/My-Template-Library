@@ -166,13 +166,20 @@ namespace mtl {
         }
 
         // delete the array and assign nullptr to data_
-        void clear() {
+        virtual void clear() {
             basic_vector<T>::clear();
             size_ = 0;
         }
 
-        void expand(size_t new_capacity) {
-            basic_vector<T>::expand(new_capacity);
+        /* return the reference to the element at position index 
+           it don't check the boundary */
+        virtual const T& operator[](size_t index) const {
+            return basic_vector<T>::data()[index];
+        }
+
+        // the const version
+        virtual T& operator[](size_t index) {
+            return basic_vector<T>::data()[index];
         }
 
         /* the same with operator[] but check the boundary 
@@ -189,14 +196,14 @@ namespace mtl {
             if (size_ == 0) {
                 throw std::out_of_range("There's no element in this vector.");
             }
-            return basic_vector<T>::operator[](0);
+            return basic_vector<T>::data()[0];
         }
 
         const T& back() const {
             if (size_ == 0) {
                 throw std::out_of_range("There's no element in this vector.");
             }
-            return basic_vector<T>::operator[](size_ - 1);
+            return basic_vector<T>::data[size_ - 1];
         }
 
         T& front() {
@@ -216,11 +223,6 @@ namespace mtl {
         // remove the last element (simply decrease the size_)
         void pop_back();     
 
-        // reduce the length of the array to size_
-        void shrink() {
-            basic_vector<T>::shrink(size_);
-        }
-        
         /* insert an element at position index, r
         return an iterator pointing to the next cell */
         iterator insert(iterator index, const T& elem) noexcept;   
@@ -308,7 +310,7 @@ namespace mtl {
     template <typename T>
     const T& vector<T>::at(size_t index) const {
         if (index < size_) {
-            return basic_vector<T>::operator[](index);
+            return basic_vector<T>::data[index];
         } else {
             throw std::out_of_range("The index is out of range.");
         }
@@ -324,7 +326,7 @@ namespace mtl {
         size_t size = stop - begin;
         vector<T> vec(size);
         for (size_t i = 0; i < size; ++i) {
-            vec[i] = basic_vector<T>::operator[](begin + i);
+            vec[i] = basic_vector<T>::data[begin + i];
         }
 
         return vec;
@@ -335,7 +337,7 @@ namespace mtl {
         if (size_ >= basic_vector<T>::capacity()) {
             basic_vector<T>::expand(size_ * 2);
         }
-        basic_vector<T>::operator[](size_) = elem;
+        basic_vector<T>::data[size_] = elem;
         ++size_;
     }
 
@@ -344,7 +346,7 @@ namespace mtl {
         if (size_ >= basic_vector<T>::capacity()) {
             basic_vector<T>::expand(size_ * 2);
         }
-        basic_vector<T>::operator[](size_) = std::move(elem);
+        basic_vector<T>::data[size_] = std::move(elem);
         ++size_;
     }
 

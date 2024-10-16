@@ -1,6 +1,7 @@
 #ifndef MTL_STACK_H
 #define MTL_STACK_H
 
+#include <initializer_list>
 #include <mtl/basic_vector.h>
 
 namespace mtl {
@@ -12,6 +13,7 @@ namespace mtl {
         public:
         stack();
         explicit stack(size_t size_);
+        stack(std::initializer_list<T>&& il) noexcept;
         stack(const stack<T>& rhs);
         stack(stack<T>&& rhs) noexcept;
         virtual ~stack() = default;
@@ -61,6 +63,10 @@ namespace mtl {
     
     template <typename T>
     stack<T>::stack(size_t s) : size_(0), basic_vector<T>(s) {}
+
+    template <typename T>
+    stack<T>::stack(std::initializer_list<T>&& il) noexcept :
+        size_(0), basic_vector<T>(std::move(il)) {}
 
     template <typename T>
     stack<T>::stack(const stack<T>& rhs) : size_(rhs.size_), basic_vector<T>(rhs) {}
