@@ -37,11 +37,19 @@ namespace mtl {
     template <typename Iterator>
     Iterator find_mid(Iterator begin, Iterator end);
 
+    /* swap two object, note that it uses std::move */
     template <typename T>
     void swap(T& a, T& b) noexcept;
 
+    /* replace the sequence [begin1, end1) with [begin2, end2), note that it uses std::move 
+       you should ensure the length of the ranges are the same and it won't be checked */
     template <typename Iterator1, typename Iterator2>
     void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) noexcept;
+
+    /* copy the sequence [begin2, end2) into the sequence [begin1, end1)
+       you should ensure the length of the two ranges are the same and it won't be checked */
+    template <typename Iterator1, typename Iterator2>
+    void copy(Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2);
 
     template <typename Iterator>
     size_t count_length(Iterator begin, Iterator end) {
@@ -99,6 +107,13 @@ namespace mtl {
     void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) noexcept {
         while (begin1 != end1 && begin2 != end2) {
             *(begin1++) = std::move(*(begin2++));
+        }
+    }
+
+    template <typename Iterator1, typename Iterator2>
+    void copy(Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) {
+        while (begin1 != end1 && begin2 != end2) {
+            *(begin1++) = *(begin2++);
         }
     }
 

@@ -127,16 +127,18 @@ namespace mtl {
         --size_;
         size_t pos = 1;
         while ((pos << 1) <= size_) {
-            pos <<= 1;
-            if (pos + 1 <= size_) {
-                pos = data[pos] > data[pos + 1] ? pos + 1 : pos;
+            size_t child = pos << 1;
+            if (child + 1 <= size_) {
+                child = data[child] > data[child + 1] ? child + 1 : child;
             }
-            if (data[pos] < temp) {
-                data[pos >> 1] = std::move(data[pos]);
+            if (data[child] < temp) {
+                data[pos] = std::move(data[child]);
+                pos = child;
             } else {
                 break;
             }
         }
+        data[pos] = std::move(temp);
     }
 }
 #endif
