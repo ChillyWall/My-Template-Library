@@ -39,7 +39,11 @@ namespace mtl {
 
     /* swap two object, note that it uses std::move */
     template <typename T>
-    void swap(T& a, T& b) noexcept;
+    inline void swap(T& a, T& b) noexcept {
+        auto c = std::move(a);
+        a = std::move(b);
+        b = std::move(c);
+    }
 
     /* replace the sequence [begin1, end1) with [begin2, end2), note that it uses std::move 
        you should ensure the length of the ranges are the same and it won't be checked */
@@ -94,13 +98,6 @@ namespace mtl {
         }
         *begin = std::move(pivot);
         return begin;
-    }
-
-    template <typename T>
-    void swap(T& a, T& b) noexcept {
-        auto c = std::move(a);
-        a = std::move(b);
-        b = std::move(c);
     }
 
     template <typename Iterator1, typename Iterator2>
