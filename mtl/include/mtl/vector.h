@@ -165,6 +165,10 @@ namespace mtl {
             return basic_vector<T>::capacity();
         }
 
+        virtual void shrink() {
+            basic_vector<T>::shrink(size_);
+        }
+
         // delete the array and assign nullptr to data_
         virtual void clear() {
             basic_vector<T>::clear();
