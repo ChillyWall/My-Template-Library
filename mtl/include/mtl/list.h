@@ -15,12 +15,12 @@ namespace mtl {
     class list {
         private:
         class Node {
-            private:
+        private:
             T elem_;
             Node* next_;
             Node* prev_;
 
-            public:
+        public:
             Node();
             Node(const T& elem, Node* prev, Node* next);
             Node(T&& elem, Node* prev, Node* next) noexcept;
@@ -243,20 +243,15 @@ namespace mtl {
         const_iterator cbegin() const {
             return const_iterator(head_->next_);
         }
+
         const_iterator cend() const {
             return const_iterator(tail_);
-        }
-
-        const_iterator begin() const {
-            return cbegin();
-        }
-        const_iterator end() const {
-            return cend();
         }
 
         iterator begin() {
             return iterator(head_->next_);
         }
+
         iterator end() {
             return iterator(tail_); 
         }

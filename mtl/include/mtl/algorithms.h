@@ -71,7 +71,8 @@ namespace mtl {
         if (begin != end) {
             auto mid = partition(begin, end);
             inplace_quicksort(begin, mid);
-            inplace_quicksort(mid + 1, end);
+            ++mid;
+            inplace_quicksort(mid, end);
         }
     }
 

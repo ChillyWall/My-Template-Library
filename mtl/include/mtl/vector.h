@@ -266,16 +266,6 @@ namespace mtl {
             return const_iterator(basic_vector<T>::data() + size_);
         }
 
-        // return a const_iterator when the object is const
-        const_iterator begin() const {
-            return cbegin();
-        }
-
-        // return a const_iterator when the object is const
-        const_iterator end() const {
-            return cend();
-        }
-
         // return an iterator pointing to the first element
         iterator begin() {
             return iterator(basic_vector<T>::data());

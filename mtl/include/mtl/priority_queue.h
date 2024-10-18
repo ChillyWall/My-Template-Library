@@ -25,9 +25,9 @@ namespace mtl {
             }
         }
 
-        // to percolate up, to ensure the heap order after push
+        // to percolate up from the last element, to ensure the heap order after push
         void percolate_up();
-        // to percolate down, to ensure the heap order after pop
+        // to percolate down from position 1, to ensure the heap order after pop
         void percolate_down();
 
     public:
@@ -113,7 +113,9 @@ namespace mtl {
         size_t pos = size_;
         auto data = basic_vector<T>::data();
         T temp = std::move(data[pos]);
-        while (temp < data[pos >> 1]) {
+
+        while (temp < data[pos >> 1]) { // pos >> 1 is equivalent to pos / 2.
+            // move the parent down
             data[pos] = std::move(data[pos >> 1]);
             pos >>= 1;
         }
@@ -126,11 +128,13 @@ namespace mtl {
         T temp = std::move(data[size_]); 
         --size_;
         size_t pos = 1;
-        while ((pos << 1) <= size_) {
+        while ((pos << 1) <= size_) { // pos << 1 is equivalent to pos * 2
             size_t child = pos << 1;
+            // choose the smaller child
             if (child + 1 <= size_) {
                 child = data[child] > data[child + 1] ? child + 1 : child;
             }
+            // move the child up
             if (data[child] < temp) {
                 data[pos] = std::move(data[child]);
                 pos = child;
