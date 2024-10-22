@@ -5,6 +5,4 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_SOURCE_DIR .)
 
-set(MTL_INCLUDE ${CMAKE_SOURCE_DIR}/mtl/include)
-
 add_subdirectory(test_mtl)
