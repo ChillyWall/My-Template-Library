@@ -9,7 +9,7 @@ namespace mtl {
     template <typename Iterator>
     size_t count_length(Iterator begin, Iterator end);
 
-    /* type Iterator: this type should overload +, -, ++, --, ==, != and * operators, 
+    /* type Iterator: this type should overload +, -, ++, --, ==, != and * operators,
        operator*() is used to dereference and return type is T&  */
 
     /* sort the array in place in ascending order (it will change the array directly)
@@ -32,7 +32,7 @@ namespace mtl {
     template <typename Iterator>
     void inplace_merge(Iterator begin, Iterator mid, Iterator end) noexcept;
 
-    /* find the middle point of a sequence by fast and slow pointers 
+    /* find the middle point of a sequence by fast and slow pointers
        if there are even numbers of elements, the smaller one will be returned */
     template <typename Iterator>
     Iterator find_mid(Iterator begin, Iterator end);
@@ -45,7 +45,7 @@ namespace mtl {
         b = std::move(c);
     }
 
-    /* replace the sequence [begin1, end1) with [begin2, end2), note that it uses std::move 
+    /* replace the sequence [begin1, end1) with [begin2, end2), note that it uses std::move
        you should ensure the length of the ranges are the same and it won't be checked */
     template <typename Iterator1, typename Iterator2>
     void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) noexcept;

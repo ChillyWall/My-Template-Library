@@ -3,6 +3,8 @@
 
 #include <initializer_list>
 #include "basic_vector.h"
+#include <utility>
+#include <stdexcept>
 
 namespace mtl {
     template <typename T>
@@ -50,7 +52,7 @@ namespace mtl {
             if (size_ == 0)
                 throw std::out_of_range("There's no element to be popped out.");
 
-            return data_[size_ - 1];
+            return basic_vector<T>::data()[size_ - 1];
         }
 
         T& top() {
@@ -60,7 +62,7 @@ namespace mtl {
 
     template <typename T>
     stack<T>::stack() : size_(0) {}
-    
+
     template <typename T>
     stack<T>::stack(size_t s) : size_(0), basic_vector<T>(s) {}
 

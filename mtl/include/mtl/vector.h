@@ -28,12 +28,12 @@ namespace mtl {
             virtual ~const_iterator() = default;
 
             // construct from pointer
-            explicit const_iterator(const T* elem);   
+            explicit const_iterator(const T* elem);
 
             const_iterator(const const_iterator& ci);
             const_iterator(const_iterator&& ci) noexcept;
-            // return a reference to the element           
-            const T& operator*() const;   
+            // return a reference to the element
+            const T& operator*() const;
 
             // compare the pointer
             bool operator>(const const_iterator& ci) const {
@@ -91,7 +91,7 @@ namespace mtl {
             const_iterator operator--(int);
         };
 
-        /* The normal iterator which derived from the const_iterator 
+        /* The normal iterator which derived from the const_iterator
            Both the value of the element and which element it refers are modifiable */
         class iterator : public const_iterator {
         public:
@@ -120,7 +120,7 @@ namespace mtl {
             iterator operator-(size_t n) {
                 auto new_itr = *this;
                 return new_itr.operator-=(n);
-            } 
+            }
 
             iterator& operator=(const iterator& itr);
             iterator& operator=(iterator&& itr) noexcept;
@@ -133,19 +133,19 @@ namespace mtl {
 
     public:
         // the default constructor
-        vector();  
+        vector();
 
         // construct the vector with particular size
-        explicit vector(size_t s);   
+        explicit vector(size_t s);
 
         // construct from initializer list, the size will be the same with the il.
-        vector(std::initializer_list<T>&& elems) noexcept;   
+        vector(std::initializer_list<T>&& elems) noexcept;
 
         // copy constructor
-        vector(const vector<T>& vec);  
+        vector(const vector<T>& vec);
 
         // moving copy constructor
-        vector(vector<T>&& vec) noexcept;  
+        vector(vector<T>&& vec) noexcept;
 
         // the destructor
         virtual ~vector() = default;
@@ -175,7 +175,7 @@ namespace mtl {
             size_ = 0;
         }
 
-        /* return the reference to the element at position index 
+        /* return the reference to the element at position index
            it don't check the boundary */
         virtual const T& operator[](size_t index) const {
             return basic_vector<T>::data()[index];
@@ -186,12 +186,12 @@ namespace mtl {
             return basic_vector<T>::data()[index];
         }
 
-        /* the same with operator[] but check the boundary 
+        /* the same with operator[] but check the boundary
             it throw an out_of_range exception */
         const T& at(size_t index) const;
 
         // the const version
-        T& at(size_t index);  
+        T& at(size_t index);
 
         // return a vector contains the elements [begin, stop)
         vector<T> splice(size_t begin, size_t stop);
@@ -219,20 +219,20 @@ namespace mtl {
         }
 
         // append an element to the end of the vector
-        void push_back(const T& elem);   
+        void push_back(const T& elem);
 
         // the version using right-value reference
-        void push_back(T&& elem) noexcept;   
+        void push_back(T&& elem) noexcept;
 
         // remove the last element (simply decrease the size_)
-        void pop_back();     
+        void pop_back();
 
         /* insert an element at position index, r
         return an iterator pointing to the next cell */
-        iterator insert(iterator index, const T& elem) noexcept;   
+        iterator insert(iterator index, const T& elem) noexcept;
 
         // using the right-value reference
-        iterator insert(iterator index, T&& elem) noexcept;        
+        iterator insert(iterator index, T&& elem) noexcept;
 
         /* insert another from another container (deep copy) with iterators
            which provide ++, --, ==, and != operators*/
@@ -240,10 +240,10 @@ namespace mtl {
         iterator insert(iterator index, InputIterator begin, InputIterator end);
 
         // remove the elements at position index
-        iterator remove(iterator index) noexcept;    
+        iterator remove(iterator index) noexcept;
 
         // remove the range [begin, stop)
-        iterator remove(iterator begin, iterator stop) noexcept;  
+        iterator remove(iterator begin, iterator stop) noexcept;
 
         // return whether two vector is equal (whether the data_ is equal)
         bool operator==(const vector<T>& vec) const {
@@ -251,10 +251,10 @@ namespace mtl {
         }
 
         // the copy assignment operator
-        vector<T>& operator=(const vector<T>& vec);  
+        vector<T>& operator=(const vector<T>& vec);
 
         // the moving assignment operator
-        vector<T>& operator=(vector<T>&& vec) noexcept;  
+        vector<T>& operator=(vector<T>&& vec) noexcept;
 
         // return a const_iterator pointing to the position 0
         const_iterator cbegin() const {
@@ -306,7 +306,7 @@ namespace mtl {
     vector<T>::vector(const vector<T>& rhs) : size_(rhs.size_), basic_vector<T>(rhs) {}
 
     template <typename T>
-    vector<T>::vector(vector<T>&& rhs) noexcept : 
+    vector<T>::vector(vector<T>&& rhs) noexcept :
         size_(rhs.size_), basic_vector<T>(std::move(rhs)) {
         rhs.size_ = 0;
     }
@@ -398,7 +398,7 @@ namespace mtl {
         }
         *index = std::move(elem);
         ++size_;
-        return ++index; 
+        return ++index;
     }
 
     template <typename T> template <typename InputIterator>

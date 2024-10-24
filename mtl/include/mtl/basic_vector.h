@@ -1,6 +1,7 @@
 #ifndef MTL_BASIC_VECTOR_H
 #define MTL_BASIC_VECTOR_H
 
+#include <utility>
 #include <initializer_list>
 
 namespace mtl {
@@ -10,13 +11,13 @@ namespace mtl {
     class basic_vector {
     private:
         // the array contain the data
-        T* data_;   
+        T* data_;
 
         // the length of the array
-        size_t capacity_;   
+        size_t capacity_;
 
         // the default capacity, basic_vector ensures that the capacity won't be smaller than it
-        const static size_t DEFAULT_CAPACITY = 128;   
+        const static size_t DEFAULT_CAPACITY = 128;
 
         /* allocate a new array with length capacity
            it don't delete the original array */
@@ -59,7 +60,7 @@ namespace mtl {
 
     template <typename T>
     basic_vector<T>::basic_vector() : capacity_(DEFAULT_CAPACITY) {
-        allocate(capacity_); 
+        allocate(capacity_);
     }
 
     template <typename T>

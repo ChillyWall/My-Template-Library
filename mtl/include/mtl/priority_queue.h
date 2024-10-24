@@ -2,6 +2,7 @@
 #define MTL_PRIORITY_QUEUE_H
 
 #include "basic_vector.h"
+#include <stdexcept>
 
 namespace mtl {
     /* The priority queue ADT, implemented by basic_vector so that it could dynamicly expand its capacity. */
@@ -13,7 +14,7 @@ namespace mtl {
 
         // check whether the queue is empty, if true, throw a out_of_range exception
         void check_empty() {
-            if (size_ == o) {
+            if (basic_vector<T>::size() == 0) {
                 throw std::out_of_range("There's no element.");
             }
         }
@@ -26,9 +27,9 @@ namespace mtl {
         }
 
         // to percolate up from the last element, to ensure the heap order after push
-        void percolate_up();
+        void percolate_up() noexcept;
         // to percolate down from position 1, to ensure the heap order after pop
-        void percolate_down();
+        void percolate_down() noexcept;
 
     public:
         priority_queue();
@@ -125,7 +126,7 @@ namespace mtl {
     template <typename T>
     void priority_queue<T>::percolate_down() noexcept {
         auto data = basic_vector<T>::data();
-        T temp = std::move(data[size_]); 
+        T temp = std::move(data[size_]);
         --size_;
         size_t pos = 1;
         while ((pos << 1) <= size_) { // pos << 1 is equivalent to pos * 2

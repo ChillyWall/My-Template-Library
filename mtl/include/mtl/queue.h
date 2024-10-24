@@ -75,7 +75,7 @@ namespace mtl {
     template <typename T>
     queue<T>::~queue() {
         delete data_;
-    }   
+    }
 }
 
 #endif

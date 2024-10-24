@@ -1,6 +1,8 @@
 #ifndef MTL_AVL_TREE_H
 #define MTL_AVL_TREE_H
 
+#include <utility>
+
 namespace mtl {
     typedef unsigned long long size_t;
 
@@ -206,7 +208,7 @@ namespace mtl {
         }
 
         static Node* find_min(Node* node);
-        static Node* find_max(Node* node);       
+        static Node* find_max(Node* node);
 
     public:
         avl_tree();
@@ -277,9 +279,9 @@ namespace mtl {
             return iterator(find_min(root_));
         }
 
-        iterator find_max() [
+        iterator find_max() {
             return iterator(find_max(root_));
-        ]
+        }
     };
 
     template <typename T>
@@ -287,7 +289,7 @@ namespace mtl {
         if (this->empty()) {
             return false;
         }
-        auto t = root;
+        auto t = root_;
         while (true) {
             if (elem > t->element) {
                 if (t->has_right()) {
@@ -320,7 +322,7 @@ namespace mtl {
     }
 
     template <typename T>
-    typename avl_tree<T>::Node* avl_tree<T>::find_max(Node* t) {
+    typename avl_tree<T>::Node* avl_tree<T>::find_max(Node* node) {
         if (!node) {
             return node;
         }

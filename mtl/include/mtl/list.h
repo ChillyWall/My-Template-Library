@@ -86,7 +86,7 @@ namespace mtl {
             const_iterator& operator++() {
                 if (node_->is_tail()) {
                     throw std::out_of_range("This iterator has gone out of range.");
-                } 
+                }
                 node_ = node_->next_;
                 return *this;
             }
@@ -159,7 +159,7 @@ namespace mtl {
             iterator operator++(int) {
                 auto old = *this;
                 const_iterator::operator++();
-                return old;                
+                return old;
             }
 
             iterator& operator--() {
@@ -249,7 +249,7 @@ namespace mtl {
         }
 
         iterator end() {
-            return iterator(tail_); 
+            return iterator(tail_);
         }
 
         const_iterator head() const {
@@ -454,7 +454,7 @@ namespace mtl {
         itr.node_->prev_->next_ = new_node;
         itr.node_->prev_ = new_node;
         ++size_;
-        return itr;       
+        return itr;
     }
 
     template <typename T>
@@ -487,7 +487,7 @@ namespace mtl {
         return stop;
     }
 
-    template <typename T> 
+    template <typename T>
     template <typename InputIterator>
     typename list<T>::iterator list<T>::insert(iterator itr, InputIterator start, InputIterator stop) {
         for (auto in_itr = start; in_itr != stop; ++in_itr) {
