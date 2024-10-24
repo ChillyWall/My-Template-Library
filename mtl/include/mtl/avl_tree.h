@@ -2,10 +2,9 @@
 #define MTL_AVL_TREE_H
 
 #include <utility>
+#include "types.h"
 
 namespace mtl {
-    typedef unsigned long long size_t;
-
     template <typename T>
     class avl_tree {
     private:

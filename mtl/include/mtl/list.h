@@ -1,16 +1,11 @@
-//
-// Created by metal on 2024/9/19.
-//
-
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
 
 #include "algorithms.h"
 #include <initializer_list>
+#include "types.h"
 
 namespace mtl {
-    typedef unsigned long long size_t;
-
     template <typename T>
     class list {
         private:

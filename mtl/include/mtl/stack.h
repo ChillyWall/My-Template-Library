@@ -5,6 +5,7 @@
 #include "basic_vector.h"
 #include <utility>
 #include <stdexcept>
+#include "types.h"
 
 namespace mtl {
     template <typename T>

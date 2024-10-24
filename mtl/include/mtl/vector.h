@@ -1,7 +1,3 @@
-//
-// Created by metal on 2024/9/18.
-//
-
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 

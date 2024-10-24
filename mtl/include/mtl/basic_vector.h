@@ -3,10 +3,9 @@
 
 #include <utility>
 #include <initializer_list>
+#include "types.h"
 
 namespace mtl {
-    typedef unsigned long long size_t;
-
     template <typename T>
     class basic_vector {
     private:
