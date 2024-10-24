@@ -275,6 +275,16 @@ namespace mtl {
         iterator end() {
             return iterator(basic_vector<T>::data() + size_);
         }
+
+        // return a const_iterator pointing to the position 0
+        const_iterator begin() const {
+            return const_iterator(basic_vector<T>::data());
+        }
+
+        // return a const_iterator pointing to the position after the last element
+        const_iterator end() const {
+            return const_iterator(basic_vector<T>::data() + size_);
+        }
     };
 
     template <typename T>
@@ -331,7 +341,7 @@ namespace mtl {
         if (size_ >= basic_vector<T>::capacity()) {
             basic_vector<T>::expand(size_ * 2);
         }
-        basic_vector<T>::data[size_] = elem;
+        basic_vector<T>::data()[size_] = elem;
         ++size_;
     }
 
@@ -340,7 +350,7 @@ namespace mtl {
         if (size_ >= basic_vector<T>::capacity()) {
             basic_vector<T>::expand(size_ * 2);
         }
-        basic_vector<T>::data[size_] = std::move(elem);
+        basic_vector<T>::data()[size_] = std::move(elem);
         ++size_;
     }
 

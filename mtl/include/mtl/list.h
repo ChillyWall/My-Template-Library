@@ -259,6 +259,14 @@ namespace mtl {
         const_iterator head() const {
             return iterator(head_);
         }
+
+        const_iterator begin() const {
+            return const_iterator(head_->next_);
+        }
+
+        const_iterator end() const {
+            return const_iterator(tail_);
+        }
     };
 
     template <typename T>
