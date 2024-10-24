@@ -75,10 +75,6 @@ namespace mtl {
                 return node_->elem();
             }
 
-            T& operator*() {
-                return const_cast<T&>(static_cast<const const_iterator*>(this)->operator*());
-            }
-
             bool operator==(const const_iterator& ci) const {
                 return node_ == ci.node_;
             }
