@@ -4,3 +4,4 @@ CMakePresets.json
 .coc-workspace-settings.json
 .clangd/
 compile_commands.json
+Testing/

@@ -13,7 +13,7 @@ void test_quicksort(ostream& os) {
     std::random_device rd;
     std::default_random_engine e(rd());
     std::uniform_int_distribution<> uid(-100000, 100000);
-    for (size_t i = 0; i < 10000; ++i) {
+    for (mtl::size_t i = 0; i < 10000; ++i) {
         vec.push_back(uid(e));
     }
 
@@ -37,7 +37,7 @@ void test_mergesort(ostream& os) {
     std::random_device rd;
     std::default_random_engine e(rd());
     std::uniform_int_distribution<> uid(-100000, 100000);
-    for (size_t i = 0; i < 10000; ++i) {
+    for (mtl::size_t i = 0; i < 10000; ++i) {
         vec.push_back(uid(e));
     }
 
