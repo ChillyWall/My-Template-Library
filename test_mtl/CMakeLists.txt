@@ -4,11 +4,7 @@ target_include_directories(test_vector PUBLIC ${CMAKE_SOURCE_DIR}/mtl/include)
 
 add_executable(test_algorithms src/test_algorithms.cpp)
 target_include_directories(test_algorithms PUBLIC include)
-<<<<<<< HEAD
-target_include_directories(test_algorithms PUBLIC ${MTL_INCLUDE})
-=======
 target_include_directories(test_algorithms PUBLIC ${CMAKE_SOURCE_DIR}/mtl/include)
->>>>>>> origin/master
 
 add_executable(test_list src/test_list.cpp)
 target_include_directories(test_list PUBLIC include)
