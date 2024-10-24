@@ -55,7 +55,7 @@ namespace mtl {
             }
 
             friend class avl_tree<T>;
-            friend class const_iterator<T>;
+            friend class const_iterator;
         };
 
         class const_iterator {

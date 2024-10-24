@@ -1,7 +1,7 @@
 #ifndef MTL_DEQUE_H
 #define MTL_DEQUE_H
 
-#include <mtl/list.h>
+#include "list.h"
 #include <initializer_list>
 
 namespace mtl {

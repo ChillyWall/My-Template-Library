@@ -1,7 +1,7 @@
 #ifndef MTL_PRIORITY_QUEUE_H
 #define MTL_PRIORITY_QUEUE_H
 
-#include <mtl/basic_vector.h>
+#include "basic_vector.h"
 
 namespace mtl {
     /* The priority queue ADT, implemented by basic_vector so that it could dynamicly expand its capacity. */

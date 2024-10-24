@@ -2,7 +2,7 @@
 #define MTL_STACK_H
 
 #include <initializer_list>
-#include <mtl/basic_vector.h>
+#include "basic_vector.h"
 
 namespace mtl {
     template <typename T>

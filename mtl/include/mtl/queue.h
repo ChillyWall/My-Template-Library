@@ -2,7 +2,7 @@
 #define MTL_QUEUE_H
 
 #include <initializer_list>
-#include <mtl/list.h>
+#include "list.h"
 
 namespace mtl {
     template <typename T>

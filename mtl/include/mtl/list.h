@@ -5,7 +5,7 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
 
-#include <mtl/algorithms.h>
+#include "algorithms.h"
 #include <initializer_list>
 
 namespace mtl {

@@ -5,10 +5,10 @@
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 
-#include <mtl/algorithms.h>
+#include "algorithms.h"
 #include <stdexcept>
 #include <initializer_list>
-#include <mtl/basic_vector.h>
+#include "basic_vector.h"
 
 // The namespace where the ADTs are.
 namespace mtl {
