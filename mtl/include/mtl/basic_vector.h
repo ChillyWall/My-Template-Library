@@ -2,7 +2,6 @@
 #define MTL_BASIC_VECTOR_H
 
 #include <utility>
-#include <initializer_list>
 #include "types.h"
 
 namespace mtl {
