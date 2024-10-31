@@ -1,9 +1,10 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
 
-#include "algorithms.h"
+#include <mtl/algorithms.h>
 #include <initializer_list>
-#include "types.h"
+#include <stdexcept>
+#include <mtl/types.h>
 
 namespace mtl {
     template <typename T>
@@ -17,11 +18,10 @@ namespace mtl {
 
         public:
             Node();
-            Node(const T& elem, Node* prev, Node* next);
             Node(T&& elem, Node* prev, Node* next) noexcept;
             Node(const Node& node) = delete;
 
-            ~Node();
+            ~Node() noexcept;
 
             const T& elem() const {
                 return elem_;
@@ -51,7 +51,7 @@ namespace mtl {
             explicit const_iterator(Node* node);
             const_iterator(const const_iterator& ci);
             const_iterator(const_iterator&& ci) noexcept;
-            virtual ~const_iterator() = default;
+            virtual ~const_iterator() noexcept = default;
 
             const_iterator& operator=(const const_iterator& ci) {
                 node_ = ci.node_;
@@ -130,7 +130,7 @@ namespace mtl {
             explicit iterator(Node* node);
             iterator(const iterator& itr);
             iterator(iterator&& itr) noexcept;
-            ~iterator() = default;
+            virtual ~iterator() noexcept = default;
 
             iterator& operator=(const iterator& itr) {
                 const_iterator::operator=(itr);
@@ -194,13 +194,18 @@ namespace mtl {
         size_t size_;
 
         void init();
+        void check_empty() {
+            if (empty()) {
+                EmptyContainer("There's no element to be popped out.");
+            }
+        }
 
         public:
         list();
         list(const list<T>& l);
         list(list<T>&& l) noexcept;
         list(std::initializer_list<T>&& init) noexcept;
-        ~list();
+        ~list() noexcept;
 
         list<T>& operator=(const list<T>& l);
         list<T>& operator=(list<T>&& l) noexcept;
@@ -215,15 +220,12 @@ namespace mtl {
             return size_;
         }
 
-        void push_back(const T& elem);
         void push_back(T&& elem) noexcept;
-        void push_front(const T& elem);
         void push_front(T&& elem) noexcept;
 
         void pop_front();
         void pop_back();
 
-        iterator insert(iterator itr, const T& elem);
         iterator insert(iterator itr, T&& elem);
         iterator remove(iterator itr);
         iterator remove(iterator start, iterator stop);
@@ -262,15 +264,11 @@ namespace mtl {
 
     template <typename T>
     list<T>::Node::Node() : elem_(), prev_(nullptr), next_(nullptr) {}
+    template <typename T>
+    list<T>::Node::Node(T&& elem, Node* prev, Node* next) noexcept : elem_(std::forward<T>(elem)), prev_(prev), next_(next) {}
 
     template <typename T>
-    list<T>::Node::Node(const T& elem, Node* prev, Node* next) : elem_(elem), prev_(prev), next_(next) {}
-
-    template <typename T>
-    list<T>::Node::Node(T&& elem, Node* prev, Node* next) noexcept : elem_(std::move(elem)), prev_(prev), next_(next) {}
-
-    template <typename T>
-    list<T>::Node::~Node() {
+    list<T>::Node::~Node() noexcept {
         delete next_;
     }
 
@@ -344,7 +342,7 @@ namespace mtl {
     }
 
     template <typename T>
-    list<T>::~list() {
+    list<T>::~list() noexcept {
         delete head_;
     }
 
@@ -375,32 +373,16 @@ namespace mtl {
     }
 
     template <typename T>
-    void list<T>::push_back(const T& elem) {
-        Node* node = new Node(elem, tail_->prev_, tail_);
-        tail_->prev_->next_ = node;
-        tail_->prev_ = node;
-        ++size_;
-    }
-
-    template <typename T>
     void list<T>::push_back(T&& elem) noexcept {
-        Node* node = new Node(std::move(elem), tail_->prev_, tail_);
+        Node* node = new Node(std::forward<T>(elem), tail_->prev_, tail_);
         tail_->prev_->next_ = node;
         tail_->prev_ = node;
-        ++size_;
-    }
-
-    template <typename T>
-    void list<T>::push_front(const T& elem) {
-        Node* node = new Node(elem, head_, head_->next_);
-        head_->next_->prev_ = node;
-        head_->next_ = node;
         ++size_;
     }
 
     template <typename T>
     void list<T>::push_front(T&& elem) noexcept {
-        Node* node = new Node(elem, head_, head_->next_);
+        Node* node = new Node(std::forward<T>(elem), head_, head_->next_);
         head_->next_->prev_ = node;
         head_->next_ = node;
         ++size_;
@@ -408,9 +390,7 @@ namespace mtl {
 
     template <typename T>
     void list<T>::pop_back() {
-        if (empty()) {
-            throw std::out_of_range("There's no element to be popped out.");
-        }
+        check_empty();
 
         Node* node = tail_->prev_;
         node->prev_->next_ = tail_;
@@ -422,9 +402,7 @@ namespace mtl {
 
     template <typename T>
     void list<T>::pop_front() {
-        if (empty()) {
-            throw std::out_of_range("There's no element to e popped out.");
-        }
+        check_empty();
 
         Node* node = head_->next_;
         node->next_->prev_ = head_;
@@ -435,17 +413,8 @@ namespace mtl {
     }
 
     template <typename T>
-    typename list<T>::iterator list<T>::insert(iterator itr, const T& elem) {
-        Node* new_node = new Node(elem, itr.node_->prev_, itr.node_);
-        itr.node_->prev_->next_ = new_node;
-        itr.node_->prev_ = new_node;
-        ++size_;
-        return itr;
-    }
-
-    template <typename T>
     typename list<T>::iterator list<T>::insert(iterator itr, T&& elem) {
-        Node* new_node = new Node(std::move(elem), itr.node_->prev_, itr.node_);
+        Node* new_node = new Node(std::forward<T>(elem), itr.node_->prev_, itr.node_);
         itr.node_->prev_->next_ = new_node;
         itr.node_->prev_ = new_node;
         ++size_;
@@ -454,7 +423,7 @@ namespace mtl {
 
     template <typename T>
     typename list<T>::iterator list<T>::remove(iterator itr) {
-        if (itr.node_->is_head() || itr.node_->is_tail()) {
+        if (itr.node_->is_head() || itr.node_->is_tail() || bool(itr)) {
             throw std::out_of_range("This iterator had tried to remove a nonexisting element.");
         }
         Node* node = itr.node_;

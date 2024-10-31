@@ -1,80 +1,62 @@
 #ifndef MTL_STACK_H
 #define MTL_STACK_H
 
-#include <initializer_list>
-#include "basic_vector.h"
 #include <utility>
-#include <stdexcept>
-#include "types.h"
+#include <mtl/types.h>
+#include <mtl/vector.h>
 
 namespace mtl {
-    template <typename T>
-    class stack : public basic_vector<T> {
+    template <typename T, typename allocator = vector<T>>
+    class stack {
         private:
-        size_t size_;
+        allocator* data_;
 
         public:
         stack();
         explicit stack(size_t size_);
-        stack(std::initializer_list<T>&& il) noexcept;
-        stack(const stack<T>& rhs);
-        stack(stack<T>&& rhs) noexcept;
-        virtual ~stack() = default;
+        stack(const stack<T, allocator>& rhs);
+        stack(stack<T, allocator>&& rhs) noexcept;
+        virtual ~stack();
 
         bool empty() const {
-            return size_ == 0;
+            data_->empty();
         }
 
         size_t size() const {
-            return size_;
+            return data_->size();
         }
 
-        void push(const T& elem) {
-            if (size_ >= basic_vector<T>::capacity()) {
-                basic_vector<T>::expand(size_ * 2);
-            }
-            basic_vector<T>::operator[](size_) = elem;
-            ++size_;
-        }
-
-        void push(T&& elem) noexcept {
-            if (size_ >= basic_vector<T>::capacity()) {
-                basic_vector<T>::expand(size_ * 2);
-            }
-            basic_vector<T>::operator[](size_) = std::move(elem);
-            ++size_;
+        void push(T&& elem) {
+            data_->push_back(std::forward<T>(elem));
         }
 
         void pop() {
-            --size_;
+            data_->pop_back();
         }
 
         const T& top() const {
-            if (size_ == 0)
-                throw std::out_of_range("There's no element to be popped out.");
-
-            return basic_vector<T>::data()[size_ - 1];
+            data_->back();
         }
 
         T& top() {
-            return const_cast<T&>(static_cast<const stack<T>*>(this)->top());
+            return data_->back();
         }
     };
 
-    template <typename T>
-    stack<T>::stack() : size_(0) {}
+    template <typename T, typename allocator>
+    stack<T, allocator>::stack() : data_(new allocator()) {}
 
-    template <typename T>
-    stack<T>::stack(size_t s) : size_(0), basic_vector<T>(s) {}
+    template <typename T, typename allocator>
+    stack<T, allocator>::stack(size_t s) : data_(new allocator(s)) {}
 
-    template <typename T>
-    stack<T>::stack(std::initializer_list<T>&& il) noexcept :
-        size_(0), basic_vector<T>(std::move(il)) {}
+    template <typename T, typename allocator>
+    stack<T, allocator>::stack(const stack<T, allocator>& rhs) : 
+        data_(new allocator(*rhs.data_)) {}
 
-    template <typename T>
-    stack<T>::stack(const stack<T>& rhs) : size_(rhs.size_), basic_vector<T>(rhs) {}
-
-    template <typename T> stack<T>::stack(stack<T>&& rhs) noexcept :
-        size_(rhs.size()), basic_vector<T>(std::move(rhs)) {}
+    template <typename T, typename allocator>
+    stack<T, allocator>::stack(stack<T, allocator>&& rhs) noexcept :
+        data_(rhs.data_) {
+        rhs.data_ = nullptr;
+    }
 }
 #endif

@@ -1,8 +1,8 @@
 #ifndef MTL_BASIC_VECTOR_H
 #define MTL_BASIC_VECTOR_H
 
+#include <mtl/types.h>
 #include <utility>
-#include "types.h"
 
 namespace mtl {
     template <typename T>
@@ -14,13 +14,14 @@ namespace mtl {
         // the length of the array
         size_t capacity_;
 
-        // the default capacity, basic_vector ensures that the capacity won't be smaller than it
+        // the default capacity, basic_vector ensures that the capacity won't be
+        // smaller than it
         const static size_t DEFAULT_CAPACITY = 128;
 
-        /* allocate a new array with length capacity
+        /* allocate a new array with length size
            it don't delete the original array */
         void allocate(size_t size) {
-            data_ = new T [size];
+            data_ = new T[size];
         }
 
     public:
@@ -30,11 +31,15 @@ namespace mtl {
         basic_vector(basic_vector<T>&& rhs) noexcept;
         virtual ~basic_vector();
 
+        // To expand the array to the new capacity
         void expand(size_t new_capacity) noexcept;
+        // To shrink the array to the new capacaty
         void shrink(size_t new_capacity) noexcept;
 
+        /* delete the old array and allocate a new one with
+           size DEFAULT_CAPACITY */
         virtual void clear() {
-            delete [] data_;
+            delete[] data_;
             capacity_ = DEFAULT_CAPACITY;
             allocate(capacity_);
         }
@@ -47,10 +52,12 @@ namespace mtl {
         basic_vector& operator=(basic_vector&& rhs) noexcept;
 
     protected:
+        // the interface for derived classes to get data_
         const T* data() const {
             return data_;
         }
 
+        // the interface for derived classes to get data_
         T* data() {
             return data_;
         }
@@ -68,7 +75,8 @@ namespace mtl {
     }
 
     template <typename T>
-    basic_vector<T>::basic_vector(const basic_vector<T>& vec) : capacity_(vec.capacity_) {
+    basic_vector<T>::basic_vector(const basic_vector<T>& vec)
+        : capacity_(vec.capacity_) {
         allocate(capacity_);
         auto vec_data = vec.data_;
         for (size_t i = 0; i < capacity_; ++i) {
@@ -77,8 +85,8 @@ namespace mtl {
     }
 
     template <typename T>
-    basic_vector<T>::basic_vector(basic_vector<T>&& vec) noexcept :
-        data_(vec.data_), capacity_(vec.capacity_) {
+    basic_vector<T>::basic_vector(basic_vector<T>&& vec) noexcept
+        : data_(vec.data_), capacity_(vec.capacity_) {
         vec.data_ = nullptr;
         vec.clear();
     }
@@ -88,7 +96,7 @@ namespace mtl {
         delete[] data_;
     }
 
-    template<typename T>
+    template <typename T>
     void basic_vector<T>::expand(size_t new_capacity) noexcept {
         if (new_capacity <= capacity_) {
             return;
@@ -105,10 +113,10 @@ namespace mtl {
         }
         capacity_ = new_capacity;
 
-        delete [] old;
+        delete[] old;
     }
 
-    template<typename T>
+    template <typename T>
     void basic_vector<T>::shrink(size_t new_capacity) noexcept {
         if (new_capacity >= capacity_) {
             return;
@@ -117,7 +125,8 @@ namespace mtl {
         auto old = data_;
 
         // create a new array
-        capacity_ = new_capacity > DEFAULT_CAPACITY ? new_capacity : DEFAULT_CAPACITY;
+        capacity_ =
+            new_capacity > DEFAULT_CAPACITY ? new_capacity : DEFAULT_CAPACITY;
         allocate(capacity_);
 
         // move the elements
@@ -125,7 +134,7 @@ namespace mtl {
             data_[i] = std::move(old[i]);
         }
 
-        delete [] old;
+        delete[] old;
     }
 
     template <typename T>
@@ -136,7 +145,7 @@ namespace mtl {
         }
 
         // delete original array
-        delete [] data_;
+        delete[] data_;
 
         capacity_ = vec.capacity_;
         data_ = allocate(capacity_);
@@ -150,12 +159,13 @@ namespace mtl {
     }
 
     template <typename T>
-    basic_vector<T>& basic_vector<T>::operator=(basic_vector<T>&& vec) noexcept {
+    basic_vector<T>&
+    basic_vector<T>::operator=(basic_vector<T>&& vec) noexcept {
         if (this == &vec) {
             return *this;
         }
         // delete original array
-        delete [] data_;
+        delete[] data_;
 
         // copy the object
         capacity_ = vec.capacity_;
@@ -165,6 +175,6 @@ namespace mtl {
 
         return *this;
     }
-}
+} // namespace mtl
 
 #endif

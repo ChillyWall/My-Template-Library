@@ -1,23 +1,22 @@
 #ifndef MTL_QUEUE_H
 #define MTL_QUEUE_H
 
-#include <initializer_list>
-#include "list.h"
-#include "types.h"
+#include <alloca.h>
+#include <mtl/list.h>
+#include <mtl/types.h>
 
 namespace mtl {
-    template <typename T>
+    template <typename T, typename allocator = list<T>>
     class queue {
-        private:
-        list<T>* data_;
+    private:
+        allocator* data_;
 
-        public:
+    public:
         queue();
         explicit queue(size_t s);
-        explicit queue(std::initializer_list<T>&& il) noexcept;
-        queue(const queue<T>& rhs);
-        queue(queue<T>&& rhs) noexcept;
-        ~queue();
+        queue(const queue<T, allocator>& rhs);
+        queue(queue<T, allocator>&& rhs);
+        ~queue() noexcept;
 
         size_t size() const {
             return data_->size();
@@ -27,12 +26,12 @@ namespace mtl {
             return data_->empty();
         }
 
-        void push(const T& elem) {
-            data_->push_back(elem);
+        void clear() {
+            data_->clear();
         }
 
         void push(T&& elem) noexcept {
-            data_->push_back(std::move(elem));
+            data_->push_back(std::forward<T>(elem));
         }
 
         void pop() {
@@ -56,27 +55,25 @@ namespace mtl {
         }
     };
 
-    template <typename T>
-    queue<T>::queue() : data_(new list<T>()) {}
+    template <typename T, typename allocator>
+    queue<T, allocator>::queue() : data_(new allocator()) {}
 
-    template <typename T>
-    queue<T>::queue(size_t s) : data_(new list<T>(s)) {}
+    template <typename T, typename allocator>
+    queue<T, allocator>::queue(size_t s) : data_(new allocator(s)) {}
 
-    template <typename T>
-    queue<T>::queue(std::initializer_list<T>&& il) noexcept : data_(new list<T>(std::move(il))) {}
+    template <typename T, typename allocator>
+    queue<T, allocator>::queue(const queue<T, allocator>& rhs)
+        : data_(new allocator(*rhs.data_)) {}
 
-    template <typename T>
-    queue<T>::queue(const queue& rhs) : data_(new list<T>(*rhs.data_)) {}
-
-    template <typename T>
-    queue<T>::queue(queue<T>&& rhs) noexcept : data_(rhs.data_) {
-        rhs.data_ = nullptr;
+    template <typename T, typename allocator>
+    queue<T, allocator>::queue(queue<T, allocator>&& rhs) : data_(rhs.data_) {
+        rhs.data_ = new list<T>();
     }
 
-    template <typename T>
-    queue<T>::~queue() {
+    template <typename T, typename allocator>
+    queue<T, allocator>::~queue() noexcept {
         delete data_;
     }
-}
+} // namespace mtl
 
 #endif

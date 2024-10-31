@@ -1,35 +1,51 @@
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 
-#include "algorithms.h"
-#include <stdexcept>
+#include <mtl/algorithms.h>
+#include <mtl/basic_vector.h>
+#include <mtl/types.h>
 #include <initializer_list>
-#include "basic_vector.h"
+#include <stdexcept>
 
 // The namespace where the ADTs are.
 namespace mtl {
-    /* The vector ADT, it can expand its data array to double size when space is not enough. */
+    /* The vector ADT, it can expand its data array to double size when space is
+     * not enough. */
     template <typename T>
     class vector : public basic_vector<T> {
     private:
         // the number of elements
         size_t size_;
+        void check_capacity() {
+            if (size_ >= basic_vector<T>::capacity()) {
+                basic_vector<T>::expand(size_ * 2);
+            }
+        }
 
-        /* the iterator that cannot modify the element it refers but can change which object if refers */
+        void check_empty() {
+            if (empty()) {
+                throw EmptyContainer();
+            }
+        }
+
+        /* the iterator that cannot modify the element it refers but can change
+         * which object if refers */
         class const_iterator {
         private:
-            const T* elem_;   // pointer to the element
+            const T* elem_; // pointer to the element
+
         public:
             const_iterator();
             virtual ~const_iterator() = default;
-
             // construct from pointer
             explicit const_iterator(const T* elem);
-
             const_iterator(const const_iterator& ci);
             const_iterator(const_iterator&& ci) noexcept;
+
             // return a reference to the element
-            const T& operator*() const;
+            const T& operator*() const {
+                return *elem_;
+            }
 
             // compare the pointer
             bool operator>(const const_iterator& ci) const {
@@ -65,30 +81,68 @@ namespace mtl {
                 return elem_;
             }
 
-            const_iterator& operator=(const const_iterator& ci);
-            const_iterator& operator=(const_iterator&& ci) noexcept;
+            const_iterator& operator=(const const_iterator& ci) {
+                elem_ = ci.elem_;
+                return *this;
+            }
+
+            const_iterator& operator=(const_iterator&& ci) noexcept {
+                elem_ = ci.elem_;
+                ci.elem_ = nullptr;
+                return *this;
+            }
 
             // move n items next, it don't check the boundary
-            const_iterator operator+(size_t n);
+            const_iterator operator+(size_t n) {
+                auto new_itr = *this;
+                new_itr += n;
+                return new_itr;
+            }
             // move n items next, it don't check the boundary
-            const_iterator& operator+=(size_t n);
+            const_iterator& operator+=(size_t n) {
+                elem_ += n;
+                return *this;
+            }
             // move n items previous, it don't check the boundary
-            const_iterator operator-(size_t n);
+            const_iterator operator-(size_t n) {
+                auto new_itr = *this;
+                new_itr -= n;
+                return new_itr;
+            }
+
             // move n items previous, it don't check the boundary
-            const_iterator& operator-=(size_t n);
+            const_iterator& operator-=(size_t n) {
+                elem_ -= n;
+                return *this;
+            }
 
             // prefix increment
-            const_iterator& operator++();
+            const_iterator& operator++() {
+                ++elem_;
+                return *this;
+            }
             // postfix increment
-            const_iterator operator++(int);
+            const_iterator operator++(int) {
+                auto new_itr = *this;
+                ++elem_;
+                return new_itr;
+            }
             // prefix decrement
-            const_iterator& operator--();
+            const_iterator& operator--() {
+                --elem_;
+                return *this;
+            }
             // postfix decrement
-            const_iterator operator--(int);
+            const_iterator operator--(int) {
+                auto new_itr = *this;
+                --elem_;
+                return new_itr;
+            }
         };
 
         /* The normal iterator which derived from the const_iterator
-           Both the value of the element and which element it refers are modifiable */
+         * Both the value of the element and which element it refers are
+         * modifiable */
         class iterator : public const_iterator {
         public:
             iterator() = default;
@@ -118,13 +172,29 @@ namespace mtl {
                 return new_itr.operator-=(n);
             }
 
-            iterator& operator=(const iterator& itr);
-            iterator& operator=(iterator&& itr) noexcept;
+            iterator& operator=(iterator&& itr) {
+                const_iterator::operator=(std::forward(itr));
+                return *this;
+            }
 
-            iterator& operator++();
-            iterator operator++(int);
-            iterator& operator--();
-            iterator operator--(int);
+            iterator& operator++() {
+                const_iterator::operator++();
+                return *this;
+            }
+            iterator operator++(int) {
+                auto new_itr = *this;
+                const_iterator::operator++();
+                return *this;
+            }
+            iterator& operator--() {
+                const_iterator::operator--();
+                return *this;
+            }
+            iterator operator--(int) {
+                auto new_itr = *this;
+                const_iterator::operator--();
+                return *this;
+            }
         };
 
     public:
@@ -134,7 +204,8 @@ namespace mtl {
         // construct the vector with particular size
         explicit vector(size_t s);
 
-        // construct from initializer list, the size will be the same with the il.
+        /* construct from initializer list, the size will be the same with the
+         * il. */
         vector(std::initializer_list<T>&& elems) noexcept;
 
         // copy constructor
@@ -152,7 +223,7 @@ namespace mtl {
         }
 
         // return the size
-        [[nodiscard]] size_t  size() const {
+        [[nodiscard]] size_t size() const {
             return size_;
         }
 
@@ -172,7 +243,7 @@ namespace mtl {
         }
 
         /* return the reference to the element at position index
-           it don't check the boundary */
+         * it don't check the boundary */
         virtual const T& operator[](size_t index) const {
             return basic_vector<T>::data()[index];
         }
@@ -183,26 +254,24 @@ namespace mtl {
         }
 
         /* the same with operator[] but check the boundary
-            it throw an out_of_range exception */
+         * it throw an out_of_range exception */
         const T& at(size_t index) const;
 
-        // the const version
-        T& at(size_t index);
+        // the normal version
+        T& at(size_t index) {
+            return const_cast<T&>(static_cast<const vector<T>*>(this)->at(index));
+        }
 
         // return a vector contains the elements [begin, stop)
         vector<T> splice(size_t begin, size_t stop);
 
         const T& front() const {
-            if (size_ == 0) {
-                throw std::out_of_range("There's no element in this vector.");
-            }
+            check_empty();
             return basic_vector<T>::data()[0];
         }
 
         const T& back() const {
-            if (size_ == 0) {
-                throw std::out_of_range("There's no element in this vector.");
-            }
+            check_empty();
             return basic_vector<T>::data[size_ - 1];
         }
 
@@ -214,34 +283,39 @@ namespace mtl {
             return const_cast<T&>(static_cast<const vector<T>*>(this)->back());
         }
 
-        // append an element to the end of the vector
-        void push_back(const T& elem);
-
-        // the version using right-value reference
-        void push_back(T&& elem) noexcept;
+        // push a new element to back, with perfect forwarding
+        void push_back(T&& elem);
 
         // remove the last element (simply decrease the size_)
         void pop_back();
 
-        /* insert an element at position index, r
-        return an iterator pointing to the next cell */
-        iterator insert(iterator index, const T& elem) noexcept;
+        // push a new element to front, with perfect forwarding
+        void push_front(T&& elem) {
+            insert(begin(), std::forward<T>(elem));
+        }
 
-        // using the right-value reference
+        // remove the first element.
+        void pop_front() {
+            remove(begin());
+        }
+
+        /* insert an element at position index,
+         * return an iterator pointing to the next cell */
         iterator insert(iterator index, T&& elem) noexcept;
 
         /* insert another from another container (deep copy) with iterators
-           which provide ++, --, ==, and != operators*/
+         * which provide ++, --, ==, and != operators */
         template <typename InputIterator>
         iterator insert(iterator index, InputIterator begin, InputIterator end);
 
-        // remove the elements at position index
+        /* remove the elements at position index,
+         * return iterator to the next position */
         iterator remove(iterator index) noexcept;
 
         // remove the range [begin, stop)
         iterator remove(iterator begin, iterator stop) noexcept;
 
-        // return whether two vector is equal (whether the data_ is equal)
+        // return whether two vector is the same vector (whether the data_ is equal)
         bool operator==(const vector<T>& vec) const {
             return basic_vector<T>::data() == vec.data();
         }
@@ -257,7 +331,8 @@ namespace mtl {
             return const_iterator(basic_vector<T>::data());
         }
 
-        // return a const_iterator pointing to the position after the last element
+        /* return a const_iterator pointing to the position after the last
+         * element */
         const_iterator cend() const {
             return const_iterator(basic_vector<T>::data() + size_);
         }
@@ -277,20 +352,24 @@ namespace mtl {
             return const_iterator(basic_vector<T>::data());
         }
 
-        // return a const_iterator pointing to the position after the last element
+        /* return a const_iterator pointing to the position after the last
+         * element */
         const_iterator end() const {
             return const_iterator(basic_vector<T>::data() + size_);
         }
     };
 
     template <typename T>
-    vector<T>::vector() : size_(0) {}
+    vector<T>::vector() : size_(0) {
+    }
 
     template <typename T>
-    vector<T>::vector(size_t n) : size_(0), basic_vector<T>(n) {}
+    vector<T>::vector(size_t n) : size_(0), basic_vector<T>(n) {
+    }
 
     template <typename T>
-    vector<T>::vector(std::initializer_list<T>&& il) noexcept : size_(il.size()), basic_vector<T>(il.size()) {
+    vector<T>::vector(std::initializer_list<T>&& il) noexcept
+        : size_(il.size()), basic_vector<T>(il.size()) {
         auto itr = il.begin();
         auto data_ = basic_vector<T>::data();
         for (int i = 0; i < size_; ++i) {
@@ -299,11 +378,13 @@ namespace mtl {
     }
 
     template <typename T>
-    vector<T>::vector(const vector<T>& rhs) : size_(rhs.size_), basic_vector<T>(rhs) {}
+    vector<T>::vector(const vector<T>& rhs)
+        : size_(rhs.size_), basic_vector<T>(rhs) {
+    }
 
     template <typename T>
-    vector<T>::vector(vector<T>&& rhs) noexcept :
-        size_(rhs.size_), basic_vector<T>(std::move(rhs)) {
+    vector<T>::vector(vector<T>&& rhs) noexcept
+        : size_(rhs.size_), basic_vector<T>(std::move(rhs)) {
         rhs.size_ = 0;
     }
 
@@ -314,11 +395,6 @@ namespace mtl {
         } else {
             throw std::out_of_range("The index is out of range.");
         }
-    }
-
-    template <typename T>
-    T& vector<T>::at(size_t index) {
-        return const_cast<T&>(static_cast<const vector<T>*>(this)->at(index));
     }
 
     template <typename T>
@@ -333,20 +409,9 @@ namespace mtl {
     }
 
     template <typename T>
-    void vector<T>::push_back(const T& elem) {
-        if (size_ >= basic_vector<T>::capacity()) {
-            basic_vector<T>::expand(size_ * 2);
-        }
-        basic_vector<T>::data()[size_] = elem;
-        ++size_;
-    }
-
-    template <typename T>
-    void vector<T>::push_back(T&& elem) noexcept {
-        if (size_ >= basic_vector<T>::capacity()) {
-            basic_vector<T>::expand(size_ * 2);
-        }
-        basic_vector<T>::data()[size_] = std::move(elem);
+    void vector<T>::push_back(T&& elem) {
+        check_capacity();
+        basic_vector<T>::data()[size_] = std::forward<T>(elem);
         ++size_;
     }
 
@@ -359,28 +424,8 @@ namespace mtl {
     }
 
     template <typename T>
-    typename vector<T>::iterator vector<T>::insert(iterator index, const T& elem) noexcept {
-        // check the validity of index
-        if (index > this->end()) {
-            return iterator();
-        }
-        // check the capacity
-        if (size_ >= basic_vector<T>::capacity()) {
-            size_t len = count_length(this->begin(), index);
-            basic_vector<T>::expand(size_ * 2);
-            index = this->begin() + len;
-        }
-
-        for (iterator i = this->end(), j = i - 1; i > index; --i, --j) {
-            *i = std::move(*j);
-        }
-        *index = elem;
-        ++size_;
-        return ++index;
-    }
-
-    template <typename T>
-    typename vector<T>::iterator vector<T>::insert(iterator index, T&& elem) noexcept {
+    typename vector<T>::iterator vector<T>::insert(iterator index,
+                                                   T&& elem) noexcept {
         if (index > this->end()) {
             return iterator();
         }
@@ -392,13 +437,15 @@ namespace mtl {
         for (iterator i = this->end(), j = i - 1; i != index; --i, --j) {
             *i = std::move(*j);
         }
-        *index = std::move(elem);
+        *index = std::forward<T>(elem);
         ++size_;
         return ++index;
     }
 
-    template <typename T> template <typename InputIterator>
-    typename vector<T>::iterator vector<T>::insert(iterator index, InputIterator begin, InputIterator end) {
+    template <typename T>
+    template <typename InputIterator>
+    typename vector<T>::iterator
+    vector<T>::insert(iterator index, InputIterator begin, InputIterator end) {
         // check the validity of index
         if (index > this->end()) {
             return iterator();
@@ -415,12 +462,13 @@ namespace mtl {
         }
 
         // move elements backward
-        for (iterator i = this->end() - 1, j = i - len; i >= index + len; --i, --j) {
+        for (iterator i = this->end() - 1, j = i - len; i >= index + len;
+             --i, --j) {
             *i = *j;
         }
 
         // place elements in the gap
-        for (auto itr = begin; itr != end ; ++index, ++itr) {
+        for (auto itr = begin; itr != end; ++index, ++itr) {
             *index = *itr;
         }
 
@@ -444,7 +492,8 @@ namespace mtl {
     }
 
     template <typename T>
-    typename vector<T>::iterator vector<T>::remove(iterator begin, iterator stop) noexcept {
+    typename vector<T>::iterator vector<T>::remove(iterator begin,
+                                                   iterator stop) noexcept {
         // check whether the range is valid
         if (begin >= stop || begin >= this->end() || stop > this->end()) {
             return iterator();
@@ -469,80 +518,13 @@ namespace mtl {
     vector<T>::const_iterator::const_iterator(const T* elem) : elem_(elem) {}
 
     template <typename T>
-    vector<T>::const_iterator::const_iterator(const const_iterator& ci) : elem_{ci.elem_} {}
+    vector<T>::const_iterator::const_iterator(const const_iterator& ci)
+        : elem_ {ci.elem_} {}
 
     template <typename T>
-    vector<T>::const_iterator::const_iterator(const_iterator&& ci) noexcept : elem_(ci.elem_) {
+    vector<T>::const_iterator::const_iterator(const_iterator&& ci) noexcept
+        : elem_(ci.elem_) {
         ci.elem_ = nullptr;
-    }
-
-    template <typename T>
-    const T& vector<T>::const_iterator::operator*() const {
-        return *elem_;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator& vector<T>::const_iterator::operator=(const const_iterator& ci) {
-        elem_ = ci.elem_;
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator& vector<T>::const_iterator::operator=(const_iterator&& ci) noexcept{
-        elem_ = ci.elem_;
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator& vector<T>::const_iterator::operator+=(size_t n) {
-        elem_ += n;
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator& vector<T>::const_iterator::operator-=(size_t n) {
-        elem_ -= n;
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator vector<T>::const_iterator::operator+(size_t n) {
-        auto new_itr = *this;
-        new_itr += n;
-        return new_itr;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator vector<T>::const_iterator::operator-(size_t n) {
-        auto new_itr = *this;
-        new_itr -= n;
-        return new_itr;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator& vector<T>::const_iterator::operator++() {
-        ++elem_;
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator vector<T>::const_iterator::operator++(int) {
-        auto old = *this;
-        ++elem_;
-        return old;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator& vector<T>::const_iterator::operator--() {
-        --elem_;
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::const_iterator vector<T>::const_iterator::operator--(int) {
-        auto old = *this;
-        --elem_;
-        return old;
     }
 
     template <typename T>
@@ -552,44 +534,7 @@ namespace mtl {
     vector<T>::iterator::iterator(const iterator& itr) : const_iterator(itr) {}
 
     template <typename T>
-    vector<T>::iterator::iterator(iterator&& itr) noexcept : const_iterator(std::move(itr)) {}
-
-    template <typename T>
-    typename vector<T>::iterator& vector<T>::iterator::operator=(const iterator& itr) {
-        const_iterator::operator=(itr);
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::iterator& vector<T>::iterator::operator=(iterator&& itr) noexcept {
-        const_iterator::operator=(std::move(itr));
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::iterator& vector<T>::iterator::operator++() {
-        const_iterator::operator++();
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::iterator vector<T>::iterator::operator++(int) {
-        auto old = *this;
-        const_iterator::operator++();
-        return old;
-    }
-
-    template <typename T>
-    typename vector<T>::iterator& vector<T>::iterator::operator--() {
-        const_iterator::operator--();
-        return *this;
-    }
-
-    template <typename T>
-    typename vector<T>::iterator vector<T>::iterator::operator--(int) {
-        auto old = *this;
-        const_iterator::operator--();
-        return old;
-    }
-}
-#endif //VECTOR_H
+    vector<T>::iterator::iterator(iterator&& itr) noexcept
+        : const_iterator(std::forward<iterator>(itr)) {}
+} // namespace mtl
+#endif // VECTOR_H

@@ -1,7 +1,8 @@
 #ifndef MTL_PRIORITY_QUEUE_H
 #define MTL_PRIORITY_QUEUE_H
 
-#include "basic_vector.h"
+#include <mtl/basic_vector.h>
+#include <mtl/types.h>
 #include <stdexcept>
 
 namespace mtl {
@@ -15,7 +16,7 @@ namespace mtl {
         // check whether the queue is empty, if true, throw a out_of_range exception
         void check_empty() {
             if (basic_vector<T>::size() == 0) {
-                throw std::out_of_range("There's no element.");
+                throw EmptyContainer("There's no element.");
             }
         }
 
@@ -63,18 +64,10 @@ namespace mtl {
         }
 
         // push a new element
-        void push(const T& elem) {
-            check_expand();
-            ++size_;
-            basic_vector<T>::data()[size_] = elem;
-            percolate_up();
-        }
-
-        // push a new element
         void push(T&& elem) noexcept {
             check_expand();
             ++size_;
-            basic_vector<T>::data()[size_] = std::move(elem);
+            basic_vector<T>::data()[size_] = std::forward<T>(elem);
             percolate_up();
         }
 
