@@ -1,15 +1,15 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
 
-#include <mtl/algorithms.h>
 #include <initializer_list>
-#include <stdexcept>
+#include <mtl/algorithms.h>
 #include <mtl/types.h>
+#include <stdexcept>
 
 namespace mtl {
     template <typename T>
     class list {
-        private:
+    private:
         class Node {
         private:
             T elem_;
@@ -43,23 +43,17 @@ namespace mtl {
         };
 
         class const_iterator {
-            protected:
+        protected:
             Node* node_;
 
-            public:
+        public:
             const_iterator();
             explicit const_iterator(Node* node);
             const_iterator(const const_iterator& ci);
-            const_iterator(const_iterator&& ci) noexcept;
             virtual ~const_iterator() noexcept = default;
 
             const_iterator& operator=(const const_iterator& ci) {
                 node_ = ci.node_;
-                return *this;
-            }
-            const_iterator& operator=(const_iterator&& ci) noexcept {
-                node_ = ci.node_;
-                ci.node_ = nullptr;
                 return *this;
             }
 
@@ -80,7 +74,8 @@ namespace mtl {
 
             const_iterator& operator++() {
                 if (node_->is_tail()) {
-                    throw std::out_of_range("This iterator has gone out of range.");
+                    throw std::out_of_range(
+                        "This iterator has gone out of range.");
                 }
                 node_ = node_->next_;
                 return *this;
@@ -92,7 +87,8 @@ namespace mtl {
             }
             const_iterator& operator--() {
                 if (node_->is_head()) {
-                    throw std::out_of_range("This iterator has gone out of range.");
+                    throw std::out_of_range(
+                        "This iterator has gone out of range.");
                 }
                 node_ = node_->prev_;
                 return *this;
@@ -125,20 +121,14 @@ namespace mtl {
         };
 
         class iterator : public const_iterator {
-            public:
+        public:
             iterator();
             explicit iterator(Node* node);
             iterator(const iterator& itr);
-            iterator(iterator&& itr) noexcept;
             virtual ~iterator() noexcept = default;
 
             iterator& operator=(const iterator& itr) {
                 const_iterator::operator=(itr);
-                return *this;
-            }
-
-            iterator& operator=(iterator&& itr) noexcept {
-                const_iterator::operator=(std::move(itr));
                 return *this;
             }
 
@@ -200,7 +190,7 @@ namespace mtl {
             }
         }
 
-        public:
+    public:
         list();
         list(const list<T>& l);
         list(list<T>&& l) noexcept;
@@ -265,7 +255,8 @@ namespace mtl {
     template <typename T>
     list<T>::Node::Node() : elem_(), prev_(nullptr), next_(nullptr) {}
     template <typename T>
-    list<T>::Node::Node(T&& elem, Node* prev, Node* next) noexcept : elem_(std::forward<T>(elem)), prev_(prev), next_(next) {}
+    list<T>::Node::Node(T&& elem, Node* prev, Node* next) noexcept
+        : elem_(std::forward<T>(elem)), prev_(prev), next_(next) {}
 
     template <typename T>
     list<T>::Node::~Node() noexcept {
@@ -276,22 +267,20 @@ namespace mtl {
     list<T>::const_iterator::const_iterator(Node* node) : node_(node) {}
 
     template <typename T>
-    list<T>::const_iterator::const_iterator(const const_iterator& ci) : node_(ci.node_) {}
+    list<T>::const_iterator::const_iterator(const const_iterator& ci)
+        : node_(ci.node_) {}
 
     template <typename T>
-    list<T>::const_iterator::const_iterator(const_iterator&& ci) noexcept : node_(ci.node_) {
-        ci.node_ = nullptr;
-    }
-
-    template <typename T>
-    typename list<T>::const_iterator& list<T>::const_iterator::operator+=(size_t n) {
+    typename list<T>::const_iterator&
+    list<T>::const_iterator::operator+=(size_t n) {
         for (size_t i = 0; i < n; ++i)
             this->operator++();
         return *this;
     }
 
     template <typename T>
-    typename list<T>::const_iterator& list<T>::const_iterator::operator-=(size_t n) {
+    typename list<T>::const_iterator&
+    list<T>::const_iterator::operator-=(size_t n) {
         for (size_t i = 0; i < n; ++i)
             this->operator--();
         return *this;
@@ -302,9 +291,6 @@ namespace mtl {
 
     template <typename T>
     list<T>::iterator::iterator(const iterator& itr) : const_iterator(itr) {}
-
-    template <typename T>
-    list<T>::iterator::iterator(iterator&& itr) noexcept : const_iterator(std::move(itr)) {}
 
     template <typename T>
     void list<T>::init() {
@@ -329,7 +315,8 @@ namespace mtl {
     }
 
     template <typename T>
-    list<T>::list(list<T>&& l) noexcept : head_(l.head_), tail_(l.tail_), size_(l.size_) {
+    list<T>::list(list<T>&& l) noexcept
+        : head_(l.head_), tail_(l.tail_), size_(l.size_) {
         l.init();
     }
 
@@ -414,7 +401,8 @@ namespace mtl {
 
     template <typename T>
     typename list<T>::iterator list<T>::insert(iterator itr, T&& elem) {
-        Node* new_node = new Node(std::forward<T>(elem), itr.node_->prev_, itr.node_);
+        Node* new_node =
+            new Node(std::forward<T>(elem), itr.node_->prev_, itr.node_);
         itr.node_->prev_->next_ = new_node;
         itr.node_->prev_ = new_node;
         ++size_;
@@ -424,7 +412,8 @@ namespace mtl {
     template <typename T>
     typename list<T>::iterator list<T>::remove(iterator itr) {
         if (itr.node_->is_head() || itr.node_->is_tail() || bool(itr)) {
-            throw std::out_of_range("This iterator had tried to remove a nonexisting element.");
+            throw std::out_of_range(
+                "This iterator had tried to remove a nonexisting element.");
         }
         Node* node = itr.node_;
         itr.node_ = node->next_;
@@ -453,12 +442,15 @@ namespace mtl {
 
     template <typename T>
     template <typename InputIterator>
-    typename list<T>::iterator list<T>::insert(iterator itr, InputIterator start, InputIterator stop) {
+    typename list<T>::iterator
+    list<T>::insert(iterator itr, InputIterator start, InputIterator stop) {
         for (auto in_itr = start; in_itr != stop; ++in_itr) {
             itr = insert(itr, *in_itr);
         }
         return itr;
     }
-}
+} // namespace mtl
+//
 
-#endif //LIST_H
+#endif // LIST_H
+//

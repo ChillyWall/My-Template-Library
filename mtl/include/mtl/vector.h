@@ -1,10 +1,10 @@
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 
+#include <initializer_list>
 #include <mtl/algorithms.h>
 #include <mtl/basic_vector.h>
 #include <mtl/types.h>
-#include <initializer_list>
 #include <stdexcept>
 
 // The namespace where the ADTs are.
@@ -40,7 +40,6 @@ namespace mtl {
             // construct from pointer
             explicit const_iterator(const T* elem);
             const_iterator(const const_iterator& ci);
-            const_iterator(const_iterator&& ci) noexcept;
 
             // return a reference to the element
             const T& operator*() const {
@@ -83,12 +82,6 @@ namespace mtl {
 
             const_iterator& operator=(const const_iterator& ci) {
                 elem_ = ci.elem_;
-                return *this;
-            }
-
-            const_iterator& operator=(const_iterator&& ci) noexcept {
-                elem_ = ci.elem_;
-                ci.elem_ = nullptr;
                 return *this;
             }
 
@@ -148,7 +141,6 @@ namespace mtl {
             iterator() = default;
             explicit iterator(T* elem);
             iterator(const iterator& itr);
-            iterator(iterator&& itr) noexcept;
             ~iterator() override = default;
 
             T& operator*() {
@@ -170,11 +162,6 @@ namespace mtl {
             iterator operator-(size_t n) {
                 auto new_itr = *this;
                 return new_itr.operator-=(n);
-            }
-
-            iterator& operator=(iterator&& itr) {
-                const_iterator::operator=(std::forward(itr));
-                return *this;
             }
 
             iterator& operator++() {
@@ -259,7 +246,8 @@ namespace mtl {
 
         // the normal version
         T& at(size_t index) {
-            return const_cast<T&>(static_cast<const vector<T>*>(this)->at(index));
+            return const_cast<T&>(
+                static_cast<const vector<T>*>(this)->at(index));
         }
 
         // return a vector contains the elements [begin, stop)
@@ -315,7 +303,8 @@ namespace mtl {
         // remove the range [begin, stop)
         iterator remove(iterator begin, iterator stop) noexcept;
 
-        // return whether two vector is the same vector (whether the data_ is equal)
+        // return whether two vector is the same vector (whether the data_ is
+        // equal)
         bool operator==(const vector<T>& vec) const {
             return basic_vector<T>::data() == vec.data();
         }
@@ -360,12 +349,10 @@ namespace mtl {
     };
 
     template <typename T>
-    vector<T>::vector() : size_(0) {
-    }
+    vector<T>::vector() : size_(0) {}
 
     template <typename T>
-    vector<T>::vector(size_t n) : size_(0), basic_vector<T>(n) {
-    }
+    vector<T>::vector(size_t n) : size_(0), basic_vector<T>(n) {}
 
     template <typename T>
     vector<T>::vector(std::initializer_list<T>&& il) noexcept
@@ -379,8 +366,7 @@ namespace mtl {
 
     template <typename T>
     vector<T>::vector(const vector<T>& rhs)
-        : size_(rhs.size_), basic_vector<T>(rhs) {
-    }
+        : size_(rhs.size_), basic_vector<T>(rhs) {}
 
     template <typename T>
     vector<T>::vector(vector<T>&& rhs) noexcept
@@ -522,19 +508,9 @@ namespace mtl {
         : elem_ {ci.elem_} {}
 
     template <typename T>
-    vector<T>::const_iterator::const_iterator(const_iterator&& ci) noexcept
-        : elem_(ci.elem_) {
-        ci.elem_ = nullptr;
-    }
-
-    template <typename T>
     vector<T>::iterator::iterator(T* elem) : const_iterator(elem) {}
 
     template <typename T>
     vector<T>::iterator::iterator(const iterator& itr) : const_iterator(itr) {}
-
-    template <typename T>
-    vector<T>::iterator::iterator(iterator&& itr) noexcept
-        : const_iterator(std::forward<iterator>(itr)) {}
 } // namespace mtl
 #endif // VECTOR_H

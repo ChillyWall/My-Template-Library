@@ -16,7 +16,7 @@ namespace mtl {
 
         // the default capacity, basic_vector ensures that the capacity won't be
         // smaller than it
-        const static size_t DEFAULT_CAPACITY = 128;
+        const static size_t DEFAULT_CAPACITY = 64;
 
         /* allocate a new array with length size
            it don't delete the original array */
