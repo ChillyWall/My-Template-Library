@@ -2,6 +2,7 @@
 #define MTL_DEQUE_H
 
 #include "mtl/types.h"
+#include <cmath>
 #include <initializer_list>
 #include <mtl/list.h>
 
@@ -12,7 +13,6 @@ namespace mtl {
  * When push or pop a element from front or back end, it's only needed to add a
  * new node, which ensure that the push and pop operations will take only O(1)
  * time.
- * The BUF_LEN, which is 16 determines how many elements a node will contain.
  */
 template <typename T>
 class deque {
@@ -20,6 +20,7 @@ private:
     /* The default size of map array. In any situations, map_size_ won't be less
      * than it */
     const static size_t DEFAULT_MAP_SIZE = 8;
+    // The number of elements a node will contain.
     const static size_t BUF_LEN = 16;
 
     class const_iterator {
@@ -97,6 +98,36 @@ private:
                 (node_ - rhs.node_);
         }
 
+        bool operator==(const const_iterator& rhs) const {
+            return cur_ == rhs.cur_;
+        }
+
+        bool operator!=(const const_iterator& rhs) const {
+            return !(*this == rhs);
+        }
+
+        bool operator<(const const_iterator& rhs) const {
+            if (node_ < rhs.node_) {
+                return true;
+            } else if (node_ == rhs.node_) {
+                return cur_ < rhs.cur_;
+            } else {
+                return false;
+            }
+        }
+
+        bool operator<=(const const_iterator& rhs) const {
+            return *this < rhs || *this == rhs;
+        }
+
+        bool operator>(const const_iterator& rhs) const {
+            return !(*this <= rhs);
+        }
+
+        bool operator>=(const const_iterator& rhs) const {
+            return !(*this < rhs);
+        }
+
         friend class deque<T>;
     };
 
@@ -169,15 +200,21 @@ private:
     iterator front_;  // the front element
     iterator back_;   // the back element
 
-    T* allocate_node_() {
-        return new T[BUF_LEN];
-    }
+    static T** allocate_map_(size_t map_size);
+
+    static T* allocate_node_();
+
+    void init(size_t map_size);
+
     void expand();
+
     void check_empty() {
         if (empty()) {
             throw EmptyContainer();
         }
     }
+
+    static T* copy_node_(T* node);
 
 public:
     deque();
@@ -212,7 +249,6 @@ public:
     void push_back(V&& elem);
     template <typename V>
     void push_front(V&& elem);
-
     void pop_back();
     void pop_front();
 
@@ -228,36 +264,186 @@ public:
     T& back() {
         return *back_;
     }
+
+    const_iterator begin() const {
+        return front_;
+    }
+
+    const_iterator end() const {
+        return back_ + 1;
+    }
+
+    const_iterator cbegin() const {
+        return front_;
+    }
+
+    const_iterator cend() const {
+        return back_ + 1;
+    }
+
+    iterator begin() {
+        return front_;
+    }
+
+    iterator end() {
+        return back_ + 1;
+    }
 };
+
+template <typename T>
+deque<T>::deque()
+    : map_(nullptr),
+      size_(0),
+      map_size_(0),
+      first_node_(nullptr),
+      last_node_(nullptr) {}
+
+template <typename T>
+deque<T>::deque(size_t n) : size_(0) {
+    init(n / 16 + 1);
+}
+
+template <typename T>
+deque<T>::deque(const deque<T>& rhs)
+    : size_(rhs.size_), map_size_(rhs.map_size_) {
+    map_ = allocate_map_(map_size_);
+    first_node_ = map_ + (rhs.first_node_ - rhs.map_);
+    last_node_ = first_node_ + map_size_;
+    auto ptr1 = first_node_;
+    *ptr1 = allocate_node_();
+    auto ptr2 = rhs.first_node_;
+    size_t index = rhs.front_.cur_ - rhs.front_.first_;
+    for (size_t i = index; i < BUF_LEN; ++i) {
+        (*ptr1)[i] = (*ptr2)[i];
+    }
+    ++ptr1;
+    ++ptr2;
+    while (ptr1 != last_node_ - 1) {
+        *(ptr1++) = copy_node_(*(ptr2++));
+    }
+    index = rhs.back_.cur_ - rhs.back_.first_;
+    for (size_t i = 0; i <= index; ++i) {
+        (*ptr1)[i] = (*ptr2)[i];
+    }
+}
+
+template <typename T>
+deque<T>::deque(deque<T>&& rhs) noexcept
+    : map_(rhs.map_),
+      size_(rhs.size_),
+      map_size_(rhs.map_size_),
+      first_node_(rhs.first_node_),
+      last_node_(rhs.last_node_),
+      front_(rhs.front_),
+      back_(rhs.back_) {
+    rhs.size_ = 0;
+    rhs.map_size_ = 0;
+    rhs.map_ = rhs.first_node_ = rhs.last_node_ = nullptr;
+    rhs.front_ = rhs.back_ = iterator();
+}
+
+template <typename T>
+T* deque<T>::copy_node_(T* node) {
+    T* copy = allocate_node_();
+    for (int i = 0; i < BUF_LEN; ++i) {
+        copy[i] = node[i];
+    }
+}
+
+template <typename T>
+T** deque<T>::allocate_map_(size_t map_size) {
+    T** map = new T*[map_size];
+    for (size_t i = 0; i < map_size; ++i) {
+        map[i] = nullptr;
+    }
+    return map;
+}
+
+template <typename T>
+T* deque<T>::allocate_node_() {
+    return new T[BUF_LEN];
+}
+
+template <typename T>
+void deque<T>::init(size_t map_size) {
+    map_size_ = map_size;
+    map_ = allocate_map_(map_size_);
+    first_node_ = map_ + map_size_ / 2;
+    last_node_ = first_node_ + 1;
+    *first_node_ = allocate_node_();
+    front_ = back_ = iterator(*first_node_ + BUF_LEN / 2, first_node_);
+}
+
+template <typename T>
+void deque<T>::clear() {
+    for (auto ptr = first_node_; ptr != last_node_; ++ptr) {
+        delete ptr;
+    }
+    delete map_;
+    map_ = nullptr;
+    size_ = 0;
+    map_size_ = 0;
+    first_node_ = last_node_ = nullptr;
+    front_ = back_ = iterator();
+}
+
+template <typename T>
+void deque<T>::expand() {
+    size_t cur_map_size = last_node_ - first_node_;
+    map_size_ = cur_map_size * 2;
+    auto old = map_;
+    map_ = allocate_map_(map_size_);
+
+    auto ptr1 = map_ + cur_map_size / 2;
+    auto ptr2 = first_node_;
+    first_node_ = ptr1;
+    while (ptr2 != last_node_) {
+        *(ptr1++) = *(ptr2++);
+    }
+    last_node_ = ptr1;
+
+    front_.node_ = first_node_;
+    back_.node_ = last_node_ - 1;
+}
 
 template <typename T>
 template <typename V>
 void deque<T>::push_back(V&& elem) {
-    ++back_;
-    ++size_;
-    if (back_->node_ == last_node_) {
-        if (last_node_ == map_ + map_size_) {
-            expand();
+    if (empty()) {
+        init(1);
+        *back_ = std::forward<V>(elem);
+    } else {
+        if (back_.cur_ == back_.last_ - 1) {
+            if (last_node_ == map_ + map_size_) {
+                expand();
+            }
+            *last_node_ = allocate_node_();
+            ++last_node_;
         }
-        *last_node_ = allocate_node_();
-        ++last_node_;
+        ++back_;
+        *back_ = std::forward<V>(elem);
     }
-    *back_ = std::forward<V>(elem);
+    ++size_;
 }
 
 template <typename T>
 template <typename V>
 void deque<T>::push_front(V&& elem) {
-    --front_;
-    ++size_;
-    if (front_->node_ == first_node_ - 1) {
-        if (first_node_ == map_) {
-            expand();
+    if (empty()) {
+        init(1);
+        *back_ = std::forward<V>(elem);
+    } else {
+        if (front_.cur_ == front_.first_) {
+            if (first_node_ == map_) {
+                expand();
+            }
+            --first_node_;
+            *first_node_ = allocate_node_();
         }
-        --first_node_;
-        *first_node_ = allocate_node_();
+        --front_;
+        *front_ = std::forward<V>(elem);
     }
-    *front_ = std::forward<V>(elem);
+    ++size_;
 }
 
 template <typename T>
@@ -265,9 +451,10 @@ void deque<T>::pop_back() {
     check_empty();
     --back_;
     --size_;
-    if (back_->node_ != last_node_ - 1) {
+    if (back_.node_ != last_node_ - 1) {
         --last_node_;
         delete last_node_;
+        *last_node_ = nullptr;
     }
 }
 
@@ -276,8 +463,9 @@ void deque<T>::pop_front() {
     check_empty();
     ++front_;
     --size_;
-    if (front_->node_ != first_node_) {
+    if (front_.node_ != first_node_) {
         delete first_node_;
+        *first_node_ = nullptr;
         ++first_node_;
     }
 }

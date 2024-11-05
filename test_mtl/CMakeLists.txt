@@ -9,3 +9,7 @@ target_link_libraries(test_algorithms PRIVATE mtl)
 add_executable(test_list src/test_list.cpp)
 target_include_directories(test_list PRIVATE include)
 target_link_libraries(test_list PRIVATE mtl)
+
+add_executable(test_deque src/test_deque.cpp)
+target_include_directories(test_deque PRIVATE include)
+target_link_libraries(test_deque PRIVATE mtl)
