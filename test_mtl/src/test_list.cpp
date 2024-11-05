@@ -1,12 +1,12 @@
-#include <test_mtl/test_list.h>
+#include <fstream>
 #include <mtl/list.h>
 #include <test_mtl/myutils.h>
-#include <fstream>
+#include <test_mtl/test_list.h>
 
-using std::ostream;
-using std::ofstream;
 using mtl::list;
 using std::endl;
+using std::ofstream;
+using std::ostream;
 
 void test_constructor(ostream& os) {
     os << "1. The default constructor: " << endl;
@@ -15,7 +15,7 @@ void test_constructor(ostream& os) {
     os << endl;
 
     os << "2. list(initializer_list)";
-    list<int>ls2({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    list<int> ls2({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
     print(os, ls2);
     os << endl;
 
