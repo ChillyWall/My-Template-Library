@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <direct.h>
 #include <fstream>
 #include <mtl/algorithms.h>
 #include <mtl/vector.h>
@@ -26,7 +27,7 @@ void test_quicksort(ostream& os) {
     print(os, vec);
 
     auto start = system_clock::now();
-    mtl::inplace_mergesort(vec.begin(), vec.end());
+    mtl::inplace_quicksort(vec.begin(), vec.end());
     auto end = system_clock::now();
     auto duration = duration_cast<microseconds>(end - start);
     os << "Time costs: "
@@ -97,13 +98,13 @@ void test_stl_sort(ostream& os) {
     os << "after sorting: \n";
     print(os, vec);
 }
+
 int main() {
     using std::ofstream;
-    ofstream ofs1("test_quicksort.txt");
+    mkdir("algorithm");
+    ofstream ofs1("algorithm/test_quicksort.txt");
     test_quicksort(ofs1);
-    ofstream ofs2("test_mergesort.txt");
+    ofstream ofs2("algorithm/test_mergesort.txt");
     test_mergesort(ofs2);
-    ofstream ofs3("test_stl_sort.txt");
-    test_quicksort(ofs3);
     return 0;
 }

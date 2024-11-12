@@ -1,3 +1,4 @@
+#include <direct.h>
 #include <fstream>
 #include <mtl/list.h>
 #include <test_mtl/myutils.h>
@@ -63,7 +64,7 @@ void test_push_pop(ostream& os) {
 
     try {
         ls.pop_back();
-    } catch (const std::exception& exc) {
+    } catch (EmptyContainer& exc) {
         os << "when an empty list trying to pop out: " << exc.what() << endl;
     }
 }
@@ -119,19 +120,20 @@ void test_insert_remove(ostream& os) {
 }
 
 int main() {
-    ofstream ofs1("list_test_constructor.txt");
+    mkdir("list");
+    ofstream ofs1("list/test_constructor.txt");
     if (ofs1.is_open())
         test_constructor(ofs1);
 
-    ofstream ofs2("list_test_push_pop.txt");
+    ofstream ofs2("list/test_push_pop.txt");
     if (ofs2.is_open())
         test_push_pop(ofs2);
 
-    ofstream ofs3("list_test_iterator.txt");
+    ofstream ofs3("list/test_iterator.txt");
     if (ofs3.is_open())
         test_iterator(ofs3);
 
-    ofstream ofs4("list_test_insert_remove.txt");
+    ofstream ofs4("list/test_insert_remove.txt");
     if (ofs4.is_open())
         test_insert_remove(ofs4);
 }

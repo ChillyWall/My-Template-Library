@@ -2,7 +2,6 @@
 #define MTL_VECTOR_H
 
 #include <initializer_list>
-#include <mtl/algorithms.h>
 #include <mtl/basic_vector.h>
 #include <mtl/types.h>
 #include <stdexcept>
@@ -16,6 +15,7 @@ class vector : public basic_vector<T> {
 private:
     // the number of elements
     size_t size_;
+
     void check_capacity() {
         if (size_ >= basic_vector<T>::capacity()) {
             if (size_ == 0) {
@@ -26,57 +26,60 @@ private:
         }
     }
 
-    void check_empty() {
+    void check_empty() const {
         if (empty()) {
             throw EmptyContainer();
         }
     }
 
-    /* the iterator that cannot modify the element it refers but can change
-     * which object if refers */
-    class const_iterator {
+    template <typename Ref, typename Ptr>
+    class vector_iterator {
     private:
-        const T* elem_; // pointer to the element
+        Ptr elem_; // pointer to the element
+        using self_t = vector_iterator<Ref, Ptr>;
 
     public:
-        const_iterator();
-        virtual ~const_iterator() = default;
+        vector_iterator();
+
+        virtual ~vector_iterator() = default;
+
         // construct from pointer
-        explicit const_iterator(const T* elem);
-        const_iterator(const const_iterator& ci);
+        explicit vector_iterator(const T* elem);
+
+        vector_iterator(const vector_iterator& ci);
 
         // return a reference to the element
-        const T& operator*() const {
+        Ref operator*() const {
             return *elem_;
         }
 
         // compare the pointer
-        bool operator>(const const_iterator& ci) const {
+        bool operator>(const vector_iterator& ci) const {
             return elem_ > ci.elem_;
         }
 
         // compare the pointer
-        bool operator<(const const_iterator& ci) const {
+        bool operator<(const vector_iterator& ci) const {
             return elem_ < ci.elem_;
         }
 
         // compare the pointer
-        bool operator<=(const const_iterator& ci) const {
+        bool operator<=(const vector_iterator& ci) const {
             return elem_ <= ci.elem_;
         }
 
         // compare the pointer
-        bool operator>=(const const_iterator& ci) const {
+        bool operator>=(const vector_iterator& ci) const {
             return elem_ >= ci.elem_;
         }
 
         // compare the pointer
-        bool operator==(const const_iterator& ci) const {
+        bool operator==(const vector_iterator& ci) const {
             return elem_ == ci.elem_;
         }
 
         // compare the pointer
-        bool operator!=(const const_iterator& ci) const {
+        bool operator!=(const vector_iterator& ci) const {
             return elem_ != ci.elem_;
         }
 
@@ -84,111 +87,67 @@ private:
             return elem_;
         }
 
-        const_iterator& operator=(const const_iterator& ci) {
-            elem_ = ci.elem_;
-            return *this;
-        }
+        self_t& operator=(const vector_iterator& ci) = default;
 
         // move n items next, it don't check the boundary
-        const_iterator operator+(size_t n) {
+        self_t operator+(size_t n) const {
             auto new_itr = *this;
             new_itr += n;
             return new_itr;
         }
+
         // move n items next, it don't check the boundary
-        const_iterator& operator+=(size_t n) {
+        self_t& operator+=(size_t n) {
             elem_ += n;
             return *this;
         }
+
         // move n items previous, it don't check the boundary
-        const_iterator operator-(size_t n) {
+        self_t operator-(size_t n) const {
             auto new_itr = *this;
             new_itr -= n;
             return new_itr;
         }
-        size_t operator-(const const_iterator& rhs) const {
+
+        difference_t operator-(const vector_iterator& rhs) const {
             return elem_ - rhs.elem_;
         }
 
         // move n items previous, it don't check the boundary
-        const_iterator& operator-=(size_t n) {
+        self_t& operator-=(size_t n) {
             elem_ -= n;
             return *this;
         }
 
         // prefix increment
-        const_iterator& operator++() {
+        self_t& operator++() {
             ++elem_;
             return *this;
         }
+
         // postfix increment
-        const_iterator operator++(int) {
+        self_t operator++(int) {
             auto new_itr = *this;
             ++elem_;
             return new_itr;
         }
+
         // prefix decrement
-        const_iterator& operator--() {
+        self_t& operator--() {
             --elem_;
             return *this;
         }
+
         // postfix decrement
-        const_iterator operator--(int) {
+        self_t operator--(int) {
             auto new_itr = *this;
             --elem_;
             return new_itr;
         }
     };
 
-    /* The normal iterator which derived from the const_iterator
-     * Both the value of the element and which element it refers are
-     * modifiable */
-    class iterator : public const_iterator {
-    public:
-        template <typename... V>
-        iterator(V&&... args);
-        ~iterator() override = default;
-
-        T& operator*() {
-            return const_cast<T&>(const_iterator::operator*());
-        }
-
-        iterator& operator+=(size_t n) {
-            const_iterator::operator+=(n);
-            return *this;
-        }
-        iterator operator+(size_t n) {
-            auto new_itr = *this;
-            return new_itr.operator+=(n);
-        }
-        iterator& operator-=(size_t n) {
-            const_iterator::operator-=(n);
-            return *this;
-        }
-        iterator operator-(size_t n) {
-            auto new_itr = *this;
-            return new_itr.operator-=(n);
-        }
-
-        iterator& operator++() {
-            const_iterator::operator++();
-            return *this;
-        }
-        iterator operator++(int) {
-            auto new_itr = *this;
-            const_iterator::operator++();
-            return new_itr;
-        }
-        iterator& operator--() {
-            const_iterator::operator--();
-            return *this;
-        }
-        iterator operator--(int) {
-            auto new_itr = *this;
-            const_iterator::operator--();
-            return new_itr;
-        }
-    };
+    using const_iterator = vector_iterator<const T&, const T*>;
+    using iterator = vector_iterator<T&, T*>;
 
 public:
     // the default constructor
@@ -199,16 +158,16 @@ public:
 
     /* construct from initializer list, the size will be the same with the
      * il. */
-    vector(std::initializer_list<T>&& elems) noexcept;
+    vector(std::initializer_list<T>&& il) noexcept;
 
     // copy constructor
-    vector(const vector<T>& vec);
+    vector(const vector<T>& rhs);
 
     // moving copy constructor
-    vector(vector<T>&& vec) noexcept;
+    vector(vector<T>&& rhs) noexcept;
 
     // the destructor
-    virtual ~vector() = default;
+    ~vector() override = default;
 
     // return whether the vector is empty
     [[nodiscard]] bool empty() const {
@@ -220,34 +179,29 @@ public:
         return size_;
     }
 
-    // return the capacity
-    [[nodiscard]] size_t capacity() const {
-        return basic_vector<T>::capacity();
-    }
-
-    virtual void shrink() {
+    void shrink() {
         basic_vector<T>::shrink(size_);
     }
 
     // delete the array and assign nullptr to data_
-    virtual void clear() {
+    void clear() override {
         basic_vector<T>::clear();
         size_ = 0;
     }
 
     /* return the reference to the element at position index
      * it don't check the boundary */
-    virtual const T& operator[](size_t index) const {
+    const T& operator[](size_t index) const {
         return basic_vector<T>::data()[index];
     }
 
     // the const version
-    virtual T& operator[](size_t index) {
+    T& operator[](size_t index) {
         return basic_vector<T>::data()[index];
     }
 
     /* the same with operator[] but check the boundary
-     * it throw an out_of_range exception */
+     * it throws an out_of_range exception */
     const T& at(size_t index) const;
 
     // the normal version
@@ -318,17 +272,22 @@ public:
     }
 
     // the copy assignment operator
-    vector<T>& operator=(const vector<T>& vec);
+    vector<T>& operator=(const vector<T>& rhs) = default;
 
     // the moving assignment operator
-    vector<T>& operator=(vector<T>&& vec) noexcept;
+    vector<T>& operator=(vector<T>&& rhs) noexcept {
+        size_ = rhs.size_;
+        basic_vector<T>::operator=(std::move(rhs));
+        rhs.size_ = 0;
+        return *this;
+    }
 
-    // return a const_iterator pointing to the position 0
+    // return a vector_iterator pointing to the position 0
     const_iterator cbegin() const {
         return const_iterator(basic_vector<T>::data());
     }
 
-    /* return a const_iterator pointing to the position after the last
+    /* return a vector_iterator pointing to the position after the last
      * element */
     const_iterator cend() const {
         return const_iterator(basic_vector<T>::data() + size_);
@@ -344,12 +303,12 @@ public:
         return iterator(basic_vector<T>::data() + size_);
     }
 
-    // return a const_iterator pointing to the position 0
+    // return a vector_iterator pointing to the position 0
     const_iterator begin() const {
         return cbegin();
     }
 
-    /* return a const_iterator pointing to the position after the last
+    /* return a vector_iterator pointing to the position after the last
      * element */
     const_iterator end() const {
         return cend();
@@ -360,11 +319,11 @@ template <typename T>
 vector<T>::vector() : size_(0) {}
 
 template <typename T>
-vector<T>::vector(size_t capa) : size_(0), basic_vector<T>(capa) {}
+vector<T>::vector(size_t capa) : basic_vector<T>(capa), size_(0) {}
 
 template <typename T>
 vector<T>::vector(std::initializer_list<T>&& il) noexcept
-    : size_(il.size()), basic_vector<T>(il.size()) {
+    : basic_vector<T>(il.size()), size_(il.size()) {
     auto itr = il.begin();
     auto data_ = basic_vector<T>::data();
     for (int i = 0; i < size_; ++i) {
@@ -374,12 +333,12 @@ vector<T>::vector(std::initializer_list<T>&& il) noexcept
 
 template <typename T>
 vector<T>::vector(const vector<T>& rhs)
-    : size_(rhs.size_), basic_vector<T>(rhs) {}
+    : basic_vector<T>(rhs), size_(rhs.size_){}
 
 template <typename T>
-vector<T>::vector(vector<T>&& rhs) noexcept
-    : size_(rhs.size_), basic_vector<T>(std::move(rhs)) {
-    rhs.size_ = 0;
+vector<T>::vector(vector<T>&& rhs) noexcept {
+    size_ = rhs.size_;
+    basic_vector<T>::operator=(std::move(rhs));
 }
 
 template <typename T>
@@ -420,8 +379,8 @@ void vector<T>::pop_back() {
 
 template <typename T>
 template <typename V>
-typename vector<T>::iterator vector<T>::insert(iterator index,
-                                               V&& elem) noexcept {
+typename vector<T>::iterator vector<T>::insert(
+        iterator index, V&& elem) noexcept {
     if (index > this->end()) {
         return iterator();
     }
@@ -440,8 +399,8 @@ typename vector<T>::iterator vector<T>::insert(iterator index,
 
 template <typename T>
 template <typename InputIterator>
-typename vector<T>::iterator
-vector<T>::insert(iterator index, InputIterator begin, InputIterator end) {
+typename vector<T>::iterator vector<T>::insert(
+        iterator index, InputIterator begin, InputIterator end) {
     // check the validity of index
     if (index > this->end()) {
         return iterator();
@@ -452,14 +411,14 @@ vector<T>::insert(iterator index, InputIterator begin, InputIterator end) {
     // check whether the capacity is big enough
     size_ += len;
     if (size_ > basic_vector<T>::capacity()) {
-        size_t len2 = index - begin();
+        size_t len2 = index - begin;
         basic_vector<T>::expand(size_ * 2);
         index = this->begin() + len2;
     }
 
     // move elements backward
     for (iterator i = this->end() - 1, j = i - len; i >= index + len;
-         --i, --j) {
+            --i, --j) {
         *i = *j;
     }
 
@@ -488,21 +447,19 @@ typename vector<T>::iterator vector<T>::remove(iterator index) noexcept {
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::remove(iterator begin,
-                                               iterator stop) noexcept {
+typename vector<T>::iterator vector<T>::remove(
+        iterator begin, iterator stop) noexcept {
     // check whether the range is valid
     if (begin >= stop || begin >= this->end()) {
         return iterator();
     }
 
     // move the elements
-    size_t wid = count_length(begin, stop);
+    difference_t wid = stop - begin;
     auto itr1 = begin;
     auto itr2 = stop;
     while (itr2 != this->end()) {
-        *itr1 = std::move(*itr2);
-        ++itr1;
-        ++itr2;
+        *(itr1++) = std::move(*(itr2++));
     }
 
     size_ -= wid;
@@ -510,18 +467,17 @@ typename vector<T>::iterator vector<T>::remove(iterator begin,
 }
 
 template <typename T>
-vector<T>::const_iterator::const_iterator() : elem_(nullptr) {}
+template <typename Ref, typename Ptr>
+vector<T>::vector_iterator<Ref, Ptr>::vector_iterator() : elem_(nullptr) {}
 
 template <typename T>
-vector<T>::const_iterator::const_iterator(const T* elem) : elem_(elem) {}
+template <typename Ref, typename Ptr>
+vector<T>::vector_iterator<Ref, Ptr>::vector_iterator(const T* elem)
+    : elem_(const_cast<Ptr>(elem)) {}
 
 template <typename T>
-vector<T>::const_iterator::const_iterator(const const_iterator& ci)
-    : elem_(ci.elem_) {}
-
-template <typename T>
-template <typename... V>
-vector<T>::iterator::iterator(V&&... args)
-    : const_iterator(std::forward<V>(args)...) {}
+template <typename Ref, typename Ptr>
+vector<T>::vector_iterator<Ref, Ptr>::vector_iterator(const vector_iterator& ci)
+    : elem_(const_cast<Ptr>(ci.elem_)) {}
 } // namespace mtl
-#endif // VECTOR_H
+#endif // MTL_VECTOR_H

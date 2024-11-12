@@ -1,6 +1,7 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
 
+#include <deque>
 #include <initializer_list>
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
@@ -13,8 +14,8 @@ private:
     class Node {
     private:
         T elem_;
-        Node* next_;
         Node* prev_;
+        Node* next_;
 
     public:
         Node();
@@ -32,87 +33,89 @@ private:
             return const_cast<T&>(static_cast<const Node*>(this)->elem());
         }
 
-        bool is_tail() const {
+        [[nodiscard]] bool is_tail() const {
             return !next_;
         }
 
-        bool is_head() const {
+        [[nodiscard]] bool is_head() const {
             return !prev_;
         }
 
         friend class list<T>;
     };
 
-    class const_iterator {
+    template <typename Ref, typename Ptr>
+    class list_iterator {
     protected:
-        Node* node_;
+        Ptr node_;
+        using self_t = list_iterator<Ref, Ptr>;
 
     public:
-        const_iterator();
-        explicit const_iterator(Node* node);
-        const_iterator(const const_iterator& ci);
-        virtual ~const_iterator() noexcept = default;
+        list_iterator();
+        explicit list_iterator(const Node* node);
+        list_iterator(const list_iterator& ci);
+        virtual ~list_iterator() noexcept = default;
 
-        const_iterator& operator=(const const_iterator& ci) {
-            node_ = ci.node_;
+        self_t& operator=(const list_iterator& ci) {
+            node_ = const_cast<Ptr>(ci.node_);
             return *this;
         }
 
-        const T& operator*() const {
+        Ref operator*() const {
             if (node_->is_head() || node_->is_tail()) {
                 throw NullIterator();
             }
             return node_->elem();
         }
 
-        bool operator==(const const_iterator& ci) const {
+        bool operator==(const list_iterator& ci) const {
             return node_ == ci.node_;
         }
 
-        bool operator!=(const const_iterator& ci) const {
+        bool operator!=(const list_iterator& ci) const {
             return node_ != ci.node_;
         }
 
-        const_iterator& operator++() {
+        self_t& operator++() {
             if (node_->is_tail()) {
-                throw std::out_of_range("This iterator has gone out of range.");
+                throw std::out_of_range("This iterator has gone out of range. No previous element.");
             }
             node_ = node_->next_;
             return *this;
         }
-        const_iterator operator++(int) {
+        self_t operator++(int) {
             auto old = *this;
             this->operator++();
             return old;
         }
-        const_iterator& operator--() {
+        self_t& operator--() {
             if (node_->is_head()) {
-                throw std::out_of_range("This iterator has gone out of range.");
+                throw std::out_of_range("This iterator has gone out of range. No next element.");
             }
             node_ = node_->prev_;
             return *this;
         }
-        const_iterator operator--(int) {
+        self_t operator--(int) {
             auto old = *this;
             this->operator--();
             return old;
         }
 
-        const_iterator& operator+=(size_t n);
-        const_iterator& operator-=(size_t n);
+        self_t& operator+=(size_t n);
+        self_t& operator-=(size_t n);
 
-        const_iterator operator+(size_t n) const {
+        self_t operator+(size_t n) const {
             auto res_itr = *this;
             res_itr += n;
             return res_itr;
         }
-        const_iterator operator-(size_t n) const {
+        self_t operator-(size_t n) const {
             auto res_itr = *this;
             res_itr -= n;
             return res_itr;
         }
 
-        size_t operator-(const const_iterator& rhs) const;
+        difference_t operator-(list_iterator rhs) const;
 
         explicit operator bool() const {
             return node_;
@@ -121,71 +124,15 @@ private:
         friend class list<T>;
     };
 
-    class iterator : public const_iterator {
-    public:
-        // use perfect forwarding, calling const_iterator's constructors
-        template <typename... V>
-        iterator(V&&... args);
-        virtual ~iterator() noexcept = default;
-
-        iterator& operator=(const iterator& itr) {
-            const_iterator::operator=(itr);
-            return *this;
-        }
-
-        T& operator*() {
-            return const_cast<T&>(const_iterator::operator*());
-        }
-
-        iterator& operator++() {
-            const_iterator::operator++();
-            return *this;
-        }
-
-        iterator operator++(int) {
-            auto old = *this;
-            const_iterator::operator++();
-            return old;
-        }
-
-        iterator& operator--() {
-            const_iterator::operator--();
-            return *this;
-        }
-
-        iterator operator--(int) {
-            auto old = *this;
-            const_iterator::operator--();
-            return old;
-        }
-
-        iterator& operator+=(size_t n) {
-            const_iterator::operator+=(n);
-            return *this;
-        }
-        iterator& operator-=(size_t n) {
-            const_iterator::operator-=(n);
-            return *this;
-        }
-
-        iterator operator+(size_t n) {
-            auto res_itr = *this;
-            res_itr += n;
-            return res_itr;
-        }
-        iterator operator-(size_t n) {
-            auto res_itr = *this;
-            res_itr -= n;
-            return res_itr;
-        }
-    };
+    using const_iterator = list_iterator<const T&, const Node*>;
+    using iterator = list_iterator<T&, Node*>;
 
     Node* head_;
     Node* tail_;
     size_t size_;
 
     void init();
-    void check_empty() {
+    void check_empty() const {
         if (empty()) {
             throw EmptyContainer("There's no element to be popped out.");
         }
@@ -195,7 +142,7 @@ public:
     list();
     list(const list<T>& l);
     list(list<T>&& l) noexcept;
-    list(std::initializer_list<T>&& init) noexcept;
+    list(std::initializer_list<T>&& il) noexcept;
     ~list() noexcept;
 
     list<T>& operator=(const list<T>& l);
@@ -203,11 +150,11 @@ public:
 
     void clear();
 
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return size_ == 0;
     }
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return size_;
     }
 
@@ -219,7 +166,8 @@ public:
     void pop_front();
     void pop_back();
 
-    iterator insert(iterator itr, T&& elem);
+    template <typename V>
+    iterator insert(iterator itr, V&& elem);
     iterator remove(iterator itr);
     iterator remove(iterator start, iterator stop);
 
@@ -243,6 +191,10 @@ public:
     }
 
     const_iterator head() const {
+        return const_iterator(head_);
+    }
+
+    iterator head() {
         return iterator(head_);
     }
 
@@ -269,43 +221,48 @@ list<T>::Node::~Node() noexcept {
 }
 
 template <typename T>
-list<T>::const_iterator::const_iterator(Node* node) : node_(node) {}
+template <typename Ref, typename Ptr>
+list<T>::list_iterator<Ref, Ptr>::list_iterator() : node_(nullptr) {}
 
 template <typename T>
-list<T>::const_iterator::const_iterator(const const_iterator& ci)
-    : node_(ci.node_) {}
+template <typename Ref, typename Ptr>
+list<T>::list_iterator<Ref, Ptr>::list_iterator(const Node* node)
+    : node_(const_cast<Ptr>(node)) {}
 
 template <typename T>
-typename list<T>::const_iterator&
-list<T>::const_iterator::operator+=(size_t n) {
+template <typename Ref, typename Ptr>
+list<T>::list_iterator<Ref, Ptr>::list_iterator(const list_iterator& ci)
+    : node_(const_cast<Ptr>(ci.node_)) {}
+
+template <typename T>
+template <typename Ref, typename Ptr>
+typename list<T>::template list_iterator<Ref, Ptr>&
+list<T>::list_iterator<Ref, Ptr>::operator+=(size_t n) {
     for (size_t i = 0; i < n; ++i)
         this->operator++();
     return *this;
 }
 
 template <typename T>
-typename list<T>::const_iterator&
-list<T>::const_iterator::operator-=(size_t n) {
+template <typename Ref, typename Ptr>
+typename list<T>::template list_iterator<Ref, Ptr>&
+list<T>::list_iterator<Ref, Ptr>::operator-=(size_t n) {
     for (size_t i = 0; i < n; ++i)
         this->operator--();
     return *this;
 }
 
 template <typename T>
-size_t list<T>::const_iterator::operator-(const const_iterator& rhs) const {
-    auto itr = *this;
-    size_t res = 0;
-    while (itr != rhs) {
-        --itr;
+template <typename Ref, typename Ptr>
+difference_t list<T>::list_iterator<Ref, Ptr>::operator-(
+        list_iterator rhs) const {
+    difference_t res = 0;
+    while (*this != rhs) {
+        ++rhs;
         ++res;
     }
     return res;
 }
-
-template <typename T>
-template <typename... V>
-list<T>::iterator::iterator(V&&... args)
-    : const_iterator(std::forward<V>(args)...) {}
 
 template <typename T>
 void list<T>::init() {
@@ -356,6 +313,9 @@ void list<T>::clear() {
 
 template <typename T>
 list<T>& list<T>::operator=(const list<T>& l) {
+    if (this == &l) {
+        return *this;
+    }
     clear();
     init();
     for (auto itr = l.begin(); itr != l.end(); ++itr) {
@@ -372,6 +332,7 @@ list<T>& list<T>::operator=(list<T>&& l) noexcept {
     tail_ = l.tail_;
     size_ = l.size_;
     l.init();
+    return *this;
 }
 
 template <typename T>
@@ -417,9 +378,10 @@ void list<T>::pop_front() {
 }
 
 template <typename T>
-typename list<T>::iterator list<T>::insert(iterator itr, T&& elem) {
+template <typename V>
+typename list<T>::iterator list<T>::insert(iterator itr, V&& elem) {
     Node* new_node =
-        new Node(std::forward<T>(elem), itr.node_->prev_, itr.node_);
+            new Node(std::forward<V>(elem), itr.node_->prev_, itr.node_);
     itr.node_->prev_->next_ = new_node;
     itr.node_->prev_ = new_node;
     ++size_;
@@ -428,9 +390,9 @@ typename list<T>::iterator list<T>::insert(iterator itr, T&& elem) {
 
 template <typename T>
 typename list<T>::iterator list<T>::remove(iterator itr) {
-    if (itr.node_->is_head() || itr.node_->is_tail() || bool(itr)) {
+    if (itr.node_->is_head() || itr.node_->is_tail() || !bool(itr)) {
         throw std::out_of_range(
-            "This iterator had tried to remove a nonexisting element.");
+                "This iterator had tried to remove a non-existing element.");
     }
     Node* node = itr.node_;
     itr.node_ = node->next_;
@@ -448,7 +410,7 @@ typename list<T>::iterator list<T>::remove(iterator start, iterator stop) {
     if (start == stop) {
         return stop;
     }
-    size_ -= count_length(start, stop);
+    size_ -= stop - start;
     start.node_->prev_->next_ = stop.node_;
     stop.node_->prev_->next_ = nullptr;
     stop.node_->prev_ = start.node_->prev_;
@@ -459,8 +421,8 @@ typename list<T>::iterator list<T>::remove(iterator start, iterator stop) {
 
 template <typename T>
 template <typename InputIterator>
-typename list<T>::iterator list<T>::insert(iterator itr, InputIterator start,
-                                           InputIterator stop) {
+typename list<T>::iterator list<T>::insert(
+        iterator itr, InputIterator start, InputIterator stop) {
     for (auto in_itr = start; in_itr != stop; ++in_itr) {
         itr = insert(itr, *in_itr);
     }

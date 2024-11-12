@@ -67,20 +67,20 @@ basic_vector<T>::basic_vector(size_t s) : capacity_(s) {
 }
 
 template <typename T>
-basic_vector<T>::basic_vector(const basic_vector<T>& vec)
-    : capacity_(vec.capacity_) {
+basic_vector<T>::basic_vector(const basic_vector<T>& rhs)
+    : capacity_(rhs.capacity_) {
     allocate(capacity_);
-    auto vec_data = vec.data_;
+    auto vec_data = rhs.data_;
     for (size_t i = 0; i < capacity_; ++i) {
         data_[i] = vec_data[i];
     }
 }
 
 template <typename T>
-basic_vector<T>::basic_vector(basic_vector<T>&& vec) noexcept
-    : data_(vec.data_), capacity_(vec.capacity_) {
-    vec.data_ = nullptr;
-    vec.clear();
+basic_vector<T>::basic_vector(basic_vector<T>&& rhs) noexcept
+    : data_(rhs.data_), capacity_(rhs.capacity_) {
+    rhs.data_ = nullptr;
+    rhs.clear();
 }
 
 template <typename T>

@@ -2,12 +2,10 @@
 #define MTL_DEQUE_H
 
 #include "mtl/types.h"
-#include <cmath>
+#include <deque>
 #include <initializer_list>
-#include <mtl/list.h>
 
 namespace mtl {
-
 /* The deque (double-end queue) ADT.
  * It uses a dynamical array to store pointers to some arrays with fixed length.
  * When push or pop a element from front or back end, it's only needed to add a
@@ -38,11 +36,14 @@ private:
 
     public:
         const_iterator();
+
         const_iterator(T* cur, T** node);
-        const_iterator(const const_iterator& rhs) = default;
+
+        const_iterator(const const_iterator& rhs);
+
         virtual ~const_iterator() = default;
 
-        const_iterator& operator=(const const_iterator& rhs) = default;
+        const_iterator& operator=(const const_iterator& rhs);
 
         const T& operator*() const {
             return *cur_;
@@ -51,8 +52,7 @@ private:
         const_iterator& operator++() {
             ++cur_;
             if (cur_ == last_) {
-                ++node_;
-                set_node_(node_);
+                set_node_(node_ + 1);
                 cur_ = first_;
             }
             return *this;
@@ -60,8 +60,7 @@ private:
 
         const_iterator& operator--() {
             if (cur_ == first_) {
-                --node_;
-                set_node_(node_);
+                set_node_(node_ - 1);
                 cur_ = last_;
             }
             --cur_;
@@ -73,59 +72,77 @@ private:
             this->operator++();
             return old;
         }
+
         const_iterator operator--(int) {
             auto old = *this;
             this->operator--();
             return old;
         }
 
-        const_iterator& operator+=(size_t n);
-        const_iterator& operator-=(size_t n);
+        const_iterator& operator+=(difference_t n) {
+            const difference_t offset = n + (cur_ - first_);
+            if (offset >= 0 && offset < BUF_LEN) {
+                cur_ += n;
+            } else {
+                difference_t node_offset = offset > 0
+                    ? offset / BUF_LEN
+                    : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
+                set_node_(node_ + node_offset);
+                cur_ = first_ +
+                    (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
+            }
+            return *this;
+        }
 
-        const_iterator operator+(size_t n) const {
+        const_iterator& operator-=(difference_t n) {
+            return *this += -n;
+        }
+
+        const_iterator operator+(difference_t n) const {
             auto new_itr = *this;
             new_itr += n;
             return new_itr;
         }
-        const_iterator operator-(size_t n) const {
+
+        const_iterator operator-(difference_t n) const {
             auto new_itr = *this;
             new_itr -= n;
             return new_itr;
         }
 
-        size_t operator-(const const_iterator& rhs) const {
+        difference_t operator-(const const_iterator& rhs) const {
             return (cur_ - first_) + (rhs.last_ - rhs.cur_) +
-                (node_ - rhs.node_);
+                (node_ - rhs.node_ - static_cast<bool>(node_)) * BUF_LEN;
         }
 
-        bool operator==(const const_iterator& rhs) const {
-            return cur_ == rhs.cur_;
+        friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
+            return lhs.cur_ == rhs.cur_;
         }
 
-        bool operator!=(const const_iterator& rhs) const {
-            return !(*this == rhs);
+        friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
+            return !(lhs == rhs);
         }
 
-        bool operator<(const const_iterator& rhs) const {
-            if (node_ < rhs.node_) {
+        friend bool operator<(const const_iterator& lhs, const const_iterator& rhs) {
+            if (lhs.node_ < rhs.node_) {
                 return true;
-            } else if (node_ == rhs.node_) {
-                return cur_ < rhs.cur_;
+            } else if (lhs.node_ == rhs.node_) {
+                return lhs.cur_ < rhs.cur_;
             } else {
                 return false;
             }
         }
 
-        bool operator<=(const const_iterator& rhs) const {
-            return *this < rhs || *this == rhs;
+        friend bool operator<=(const const_iterator& lhs, const const_iterator& rhs) {
+            return lhs < rhs || lhs == rhs;
         }
 
-        bool operator>(const const_iterator& rhs) const {
-            return !(*this <= rhs);
+        friend bool operator>(const const_iterator& lhs, const const_iterator& rhs) {
+            return !(lhs <= rhs);
         }
 
-        bool operator>=(const const_iterator& rhs) const {
-            return !(*this < rhs);
+        friend bool operator>=(const const_iterator& lhs, const const_iterator& rhs) {
+            return !(lhs < rhs);
         }
 
         friend class deque<T>;
@@ -133,13 +150,13 @@ private:
 
     class iterator : public const_iterator {
     public:
-        template <typename... Args>
-        iterator(Args&&... args);
-        virtual ~iterator() = default;
+        iterator();
 
-        const T& operator*() const {
-            return const_iterator::operator*();
-        }
+        iterator(T* cur, T** node);
+
+        iterator(const iterator& rhs) = default;
+
+        ~iterator() override = default;
 
         T& operator*() {
             return const_cast<T&>(const_iterator::operator*());
@@ -154,36 +171,41 @@ private:
             const_iterator::operator++();
             return *this;
         }
+
         iterator& operator--() {
             const_iterator::operator--();
             return *this;
         }
+
         iterator operator++(int) {
             auto old = *this;
             const_iterator::operator++();
             return *this;
         }
+
         iterator operator--(int) {
             auto old = *this;
             const_iterator::operator--();
             return *this;
         }
 
-        iterator& operator+=(size_t n) {
+        iterator& operator+=(difference_t n) {
             const_iterator::operator+=(n);
             return *this;
         }
-        iterator& operator-=(size_t n) {
+
+        iterator& operator-=(difference_t n) {
             const_iterator::operator-=(n);
             return *this;
         }
 
-        iterator operator+(size_t n) const {
+        iterator operator+(difference_t n) const {
             auto new_itr = *this;
             new_itr += n;
             return new_itr;
         }
-        iterator operator-(size_t n) const {
+
+        iterator operator-(difference_t n) const {
             auto new_itr = *this;
             new_itr -= n;
             return new_itr;
@@ -218,9 +240,13 @@ private:
 
 public:
     deque();
+
     deque(size_t n);
+
     deque(std::initializer_list<T>&& il);
+
     deque(const deque<T>& rhs);
+
     deque(deque<T>&& rhs) noexcept;
 
     size_t size() const {
@@ -243,24 +269,31 @@ public:
     }
 
     deque<T>& operator=(const deque<T>& rhs);
+
     deque<T>& operator=(deque<T>&& rhs) noexcept;
 
     template <typename V>
     void push_back(V&& elem);
+
     template <typename V>
     void push_front(V&& elem);
+
     void pop_back();
+
     void pop_front();
 
     const T& front() const {
         return *front_;
     }
+
     const T& back() const {
         return *back_;
     }
+
     T& front() {
         return *front_;
     }
+
     T& back() {
         return *back_;
     }
@@ -348,6 +381,7 @@ T* deque<T>::copy_node_(T* node) {
     for (int i = 0; i < BUF_LEN; ++i) {
         copy[i] = node[i];
     }
+    return copy;
 }
 
 template <typename T>
@@ -481,28 +515,30 @@ deque<T>::const_iterator::const_iterator(T* cur, T** node)
 }
 
 template <typename T>
+deque<T>::const_iterator::const_iterator(const const_iterator& rhs)
+    : first_(rhs.first_), last_(rhs.last_), node_(rhs.node_), cur_(rhs.cur_) {}
+
+template <typename T>
 typename deque<T>::const_iterator&
-deque<T>::const_iterator::operator+=(size_t n) {
-    n -= (last_ - cur_);
-    node_ += n / BUF_LEN + 1;
-    set_node_(node_);
-    cur_ = first_ + n % BUF_LEN;
+deque<T>::const_iterator::operator+=(difference_t n) {
+    const difference_t offset = n + (cur_ - first_);
+    if (offset >= 0 && offset < BUF_LEN) {
+        cur_ += n;
+    } else {
+        difference_t node_offset = offset > 0
+            ? offset / BUF_LEN
+            : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
+        set_node_(node_ + node_offset);
+        cur_ = first_ +
+            (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
+    }
     return *this;
 }
 
 template <typename T>
-typename deque<T>::const_iterator&
-deque<T>::const_iterator::operator-=(size_t n) {
-    n -= (cur_ - first_);
-    node_ -= n / BUF_LEN + 1;
-    set_node_(node_);
-    cur_ = last_ - n % BUF_LEN;
-    return *this;
-}
+deque<T>::iterator::iterator() : const_iterator() {}
 
 template <typename T>
-template <typename... Args>
-deque<T>::iterator::iterator(Args&&... args)
-    : const_iterator(std::forward<Args>(args)...) {}
+deque<T>::iterator::iterator(T* cur, T** node) : const_iterator(cur, node) {}
 } // namespace mtl
 #endif

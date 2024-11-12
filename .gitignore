@@ -7,3 +7,4 @@ CMakePresets.json
 .clangd/
 compile_commands.json
 Testing/
+.idea/

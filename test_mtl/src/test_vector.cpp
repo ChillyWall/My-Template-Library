@@ -1,3 +1,4 @@
+#include <direct.h>
 #include <fstream>
 #include <iostream>
 #include <test_mtl/myutils.h>
@@ -131,16 +132,17 @@ void test_insert_remove(ostream& os) {
 }
 
 int main() {
-    ofstream ofs1("test_constructor.txt");
+    mkdir("vector");
+    ofstream ofs1("vector/test_constructor.txt");
     test_constructor(ofs1);
 
-    ofstream ofs2("test_push_pop_shrink.txt");
+    ofstream ofs2("vector/test_push_pop_shrink.txt");
     test_push_pop_shrink(ofs2);
 
-    ofstream ofs3("test_iterator.txt");
+    ofstream ofs3("vector/test_iterator.txt");
     test_iterator(ofs3);
 
-    ofstream ofs4("test_insert_remove.txt");
+    ofstream ofs4("vector/test_insert_remove.txt");
     test_insert_remove(ofs4);
 
     return 0;

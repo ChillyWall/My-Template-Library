@@ -53,7 +53,7 @@ void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,
  * you should ensure the length of the two ranges are the same and it won't be
  * checked */
 template <typename Iterator1, typename Iterator2>
-void copy(Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2);
+void copy(Iterator1 begin, Iterator1 end, Iterator2 output);
 
 template <typename Iterator>
 void inplace_quicksort(Iterator begin, Iterator end) {
@@ -99,9 +99,9 @@ void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,
 }
 
 template <typename Iterator1, typename Iterator2>
-void copy(Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) {
-    while (begin1 != end1 && begin2 != end2) {
-        *(begin1++) = *(begin2++);
+void copy(Iterator1 begin, Iterator1 end, Iterator2 output) {
+    while (begin != end) {
+        *(output++) = *(begin++);
     }
 }
 
@@ -117,10 +117,10 @@ void inplace_mergesort(Iterator begin, Iterator end) {
 
 template <typename Iterator>
 void inplace_merge(Iterator begin, Iterator mid, Iterator end) noexcept {
-    using T = typename std::remove_reference<decltype(*begin)>::type;
+    using T = typename std::remove_reference_t<decltype(*begin)>;
 
-    size_t len1 = count_length(begin, mid);
-    size_t len2 = count_length(mid, end);
+    difference_t len1 = mid - begin;
+    difference_t len2 = end - mid;
 
     auto buf = new T[len1 + len2];
 

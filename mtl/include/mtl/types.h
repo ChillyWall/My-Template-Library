@@ -5,29 +5,26 @@
 
 namespace mtl {
 using size_t = unsigned long long;
+using difference_t = long long;
 
-class NullIterator : public std::exception {
-private:
+struct NullIterator : public std::exception {
     const char* msg_;
 
-public:
     NullIterator() : msg_("This iterator is null.") {}
-    NullIterator(const char* msg) : msg_(msg) {}
-    virtual ~NullIterator() noexcept = default;
+    explicit NullIterator(const char* msg) : msg_(msg) {}
+    ~NullIterator() noexcept override = default;
     const char* what() {
         return msg_;
     }
 };
 
-class EmptyContainer : public std::exception {
-private:
+struct EmptyContainer : public std::exception {
     const char* msg_;
 
-public:
     EmptyContainer() : msg_("This container is already empty.") {}
-    EmptyContainer(const char* msg) : msg_(msg) {}
-    virtual ~EmptyContainer() noexcept = default;
-    const char* what() {
+    explicit EmptyContainer(const char* msg) : msg_(msg) {}
+    ~EmptyContainer() noexcept override = default;
+    [[nodiscard]] const char* what() {
         return msg_;
     }
 };
