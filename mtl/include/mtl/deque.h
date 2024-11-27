@@ -1,17 +1,17 @@
 #ifndef MTL_DEQUE_H
 #define MTL_DEQUE_H
 
+#include "mtl/algorithms.h"
 #include "mtl/types.h"
-#include <deque>
 #include <initializer_list>
+#include <stdexcept>
 
 namespace mtl {
 /* The deque (double-end queue) ADT.
  * It uses a dynamical array to store pointers to some arrays with fixed length.
- * When push or pop a element from front or back end, it's only needed to add a
+ * When push or pop an element from front or back end, it's only needed to add a
  * new node, which ensure that the push and pop operations will take only O(1)
- * time.
- */
+ * time. */
 template <typename T>
 class deque {
 private:
@@ -20,36 +20,52 @@ private:
     const static size_t DEFAULT_MAP_SIZE = 8;
     // The number of elements a node will contain.
     const static size_t BUF_LEN = 16;
+    using MapPtr = T**;
+    using EltPtr = T*;
 
-    class const_iterator {
+    template <typename Ref, typename Ptr>
+    class deque_iterator;
+
+public:
+    using iterator = deque_iterator<T&, T*>;
+    using const_iterator = deque_iterator<const T&, const T*>;
+
+private:
+    template <typename Ref, typename Ptr>
+    class deque_iterator {
     private:
-        T* first_; // the first element of current node
-        T* last_;  // the element past the last element of current node
-        T** node_; // the current node
-        T* cur_;   // the current element
+        using self_t = deque_iterator<Ref, Ptr>;
+        EltPtr first_; // the first element of current node
+        EltPtr last_;  // the element past the last element of current node
+        MapPtr node_;  // the current node
+        EltPtr cur_;   // the current element
 
-        void set_node_(T** new_node) {
+        void set_node_(MapPtr new_node) {
             node_ = new_node;
             first_ = *node_;
             last_ = first_ + BUF_LEN;
         }
 
     public:
-        const_iterator();
+        deque_iterator();
+        deque_iterator(EltPtr cur, MapPtr node);
+        deque_iterator(const iterator& rhs);
+        deque_iterator(const const_iterator& rhs);
+        ~deque_iterator() noexcept = default;
 
-        const_iterator(T* cur, T** node);
+        self_t& operator=(const deque_iterator& rhs) {
+            first_ = rhs.first_;
+            last_ = rhs.last_;
+            node_ = rhs.node_;
+            cur_ = const_cast<Ptr>(rhs.cur_);
+            return *this;
+        }
 
-        const_iterator(const const_iterator& rhs);
-
-        virtual ~const_iterator() = default;
-
-        const_iterator& operator=(const const_iterator& rhs);
-
-        const T& operator*() const {
+        Ref operator*() const {
             return *cur_;
         }
 
-        const_iterator& operator++() {
+        self_t& operator++() {
             ++cur_;
             if (cur_ == last_) {
                 set_node_(node_ + 1);
@@ -58,7 +74,7 @@ private:
             return *this;
         }
 
-        const_iterator& operator--() {
+        self_t& operator--() {
             if (cur_ == first_) {
                 set_node_(node_ - 1);
                 cur_ = last_;
@@ -67,63 +83,63 @@ private:
             return *this;
         }
 
-        const_iterator operator++(int) {
+        self_t operator++(int) {
             auto old = *this;
             this->operator++();
             return old;
         }
 
-        const_iterator operator--(int) {
+        self_t operator--(int) {
             auto old = *this;
             this->operator--();
             return old;
         }
 
-        const_iterator& operator+=(difference_t n) {
+        self_t& operator+=(difference_t n) {
             const difference_t offset = n + (cur_ - first_);
             if (offset >= 0 && offset < BUF_LEN) {
                 cur_ += n;
             } else {
                 difference_t node_offset = offset > 0
-                    ? offset / BUF_LEN
-                    : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
+                  ? offset / BUF_LEN
+                  : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
                 set_node_(node_ + node_offset);
                 cur_ = first_ +
-                    (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
+                  (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
             }
             return *this;
         }
 
-        const_iterator& operator-=(difference_t n) {
+        self_t& operator-=(difference_t n) {
             return *this += -n;
         }
 
-        const_iterator operator+(difference_t n) const {
+        self_t operator+(difference_t n) const {
             auto new_itr = *this;
             new_itr += n;
             return new_itr;
         }
 
-        const_iterator operator-(difference_t n) const {
+        self_t operator-(difference_t n) const {
             auto new_itr = *this;
             new_itr -= n;
             return new_itr;
         }
 
-        difference_t operator-(const const_iterator& rhs) const {
-            return (cur_ - first_) + (rhs.last_ - rhs.cur_) +
-                (node_ - rhs.node_ - static_cast<bool>(node_)) * BUF_LEN;
+        friend difference_t operator-(const self_t& lhs, const self_t& rhs) {
+            return (lhs.cur_ - lhs.first_) + (rhs.last_ - rhs.cur_) +
+              (lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) * BUF_LEN;
         }
 
-        friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
+        friend bool operator==(const self_t& lhs, const self_t& rhs) {
             return lhs.cur_ == rhs.cur_;
         }
 
-        friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
-            return !(lhs == rhs);
+        friend bool operator!=(const self_t& lhs, const self_t& rhs) {
+            return lhs.cur_ != rhs.cur_;
         }
 
-        friend bool operator<(const const_iterator& lhs, const const_iterator& rhs) {
+        friend bool operator<(const self_t& lhs, const self_t& rhs) {
             if (lhs.node_ < rhs.node_) {
                 return true;
             } else if (lhs.node_ == rhs.node_) {
@@ -133,127 +149,56 @@ private:
             }
         }
 
-        friend bool operator<=(const const_iterator& lhs, const const_iterator& rhs) {
+        friend bool operator<=(const self_t& lhs, const self_t& rhs) {
             return lhs < rhs || lhs == rhs;
         }
 
-        friend bool operator>(const const_iterator& lhs, const const_iterator& rhs) {
+        friend bool operator>(const self_t& lhs, const self_t& rhs) {
             return !(lhs <= rhs);
         }
 
-        friend bool operator>=(const const_iterator& lhs, const const_iterator& rhs) {
+        friend bool operator>=(const self_t& lhs, const self_t& rhs) {
             return !(lhs < rhs);
         }
 
         friend class deque<T>;
     };
 
-    class iterator : public const_iterator {
-    public:
-        iterator();
-
-        iterator(T* cur, T** node);
-
-        iterator(const iterator& rhs) = default;
-
-        ~iterator() override = default;
-
-        T& operator*() {
-            return const_cast<T&>(const_iterator::operator*());
-        }
-
-        iterator& operator=(const iterator& rhs) {
-            const_iterator::operator=(rhs);
-            return *this;
-        }
-
-        iterator& operator++() {
-            const_iterator::operator++();
-            return *this;
-        }
-
-        iterator& operator--() {
-            const_iterator::operator--();
-            return *this;
-        }
-
-        iterator operator++(int) {
-            auto old = *this;
-            const_iterator::operator++();
-            return *this;
-        }
-
-        iterator operator--(int) {
-            auto old = *this;
-            const_iterator::operator--();
-            return *this;
-        }
-
-        iterator& operator+=(difference_t n) {
-            const_iterator::operator+=(n);
-            return *this;
-        }
-
-        iterator& operator-=(difference_t n) {
-            const_iterator::operator-=(n);
-            return *this;
-        }
-
-        iterator operator+(difference_t n) const {
-            auto new_itr = *this;
-            new_itr += n;
-            return new_itr;
-        }
-
-        iterator operator-(difference_t n) const {
-            auto new_itr = *this;
-            new_itr -= n;
-            return new_itr;
-        }
-
-        friend class deque<T>;
-    };
-
-    T** map_;         // the map of nodes
-    size_t size_;     // the number of elements
+    MapPtr map_;      // the map of nodes
     size_t map_size_; // the size of the map array
-    T** first_node_;  // the first node
-    T** last_node_;   // the node past the last node
+    size_t size_;     // the number of elements
     iterator front_;  // the front element
     iterator back_;   // the back element
 
-    static T** allocate_map_(size_t map_size);
+    static MapPtr allocate_map_(size_t map_size);
 
-    static T* allocate_node_();
+    static EltPtr allocate_node_();
 
     void init(size_t map_size);
 
-    void expand();
+    void expand(bool backward) noexcept;
 
-    void check_empty() {
+    void check_empty() const {
         if (empty()) {
             throw EmptyContainer();
         }
     }
 
-    static T* copy_node_(T* node);
+    static EltPtr copy_node_(EltPtr node);
 
 public:
     deque();
-
-    deque(size_t n);
-
+    explicit deque(size_t n);
     deque(std::initializer_list<T>&& il);
-
     deque(const deque<T>& rhs);
-
     deque(deque<T>&& rhs) noexcept;
+    ~deque() noexcept;
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return size_;
     }
 
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return size_ == 0;
     }
 
@@ -265,37 +210,104 @@ public:
 
     T& operator[](size_t index) {
         return const_cast<T&>(
-            static_cast<const deque<T>*>(this)->operator[](index));
+          static_cast<const deque<T>*>(this)->operator[](index));
     }
 
-    deque<T>& operator=(const deque<T>& rhs);
+    const T& at(size_t index) const {
+        if (index >= size_) {
+            return std::out_of_range("deque::at: index out of range");
+        }
+        return operator[](index);
+    }
 
-    deque<T>& operator=(deque<T>&& rhs) noexcept;
+    T& at(size_t index) {
+        return const_cast<T&>(static_cast<const deque<T>*>(this)->at(index));
+    }
+
+    deque<T>& operator=(const deque<T>& rhs) {
+        deque<T> tmp(rhs);
+        operator=(std::move(tmp));
+        return *this;
+    }
+
+    deque<T>& operator=(deque<T>&& rhs) noexcept {
+        map_ = rhs.map_;
+        map_size_ = rhs.map_size_;
+        size_ = rhs.size_;
+        front_ = rhs.front_;
+        back_ = rhs.back_;
+        rhs.clear();
+        return *this;
+    }
 
     template <typename V>
-    void push_back(V&& elem);
+    void push_back(V&& elem) {
+        if (empty()) {
+            init(DEFAULT_MAP_SIZE);
+        }
+        *back_ = std::forward<V>(elem);
+        ++back_;
+        ++size_;
+        if (back_.node_ + 1 >= map_ + map_size_) {
+            expand(true);
+        }
+        if (back_.node_ + 1 == nullptr) {
+            *(back_.node_ + 1) = allocate_node_();
+        }
+    }
 
     template <typename V>
-    void push_front(V&& elem);
+    void push_front(V&& elem) {
+        if (empty()) {
+            init(DEFAULT_MAP_SIZE);
+        }
+        --front_;
+        *front_ = std::forward<V>(elem);
+        ++size_;
+        if (front_.node_ <= map_) {
+            expand(false);
+        }
+        if (front_.node_ - 1 == nullptr) {
+            *(front_.node_ - 1) = allocate_node_();
+        }
+    }
 
-    void pop_back();
+    void pop_back() {
+        check_empty();
+        if (back_.cur_ == back_.first_) {
+            delete *(back_.node_ + 1);
+            *(back_.node_ + 1) = nullptr;
+        }
+        --back_;
+        --size_;
+    }
 
-    void pop_front();
+    void pop_front() {
+        check_empty();
+        if (front_.cur_ == front_.last_ - 1) {
+            delete *(front_.node_ - 1);
+            *(front_.node_ - 1) = nullptr;
+        }
+        ++front_;
+        --size_;
+    }
 
     const T& front() const {
+        check_empty();
         return *front_;
     }
 
     const T& back() const {
-        return *back_;
+        check_empty();
+        return *(back_ - 1);
     }
 
     T& front() {
-        return *front_;
+        return const_cast<T&>(static_cast<const deque<T>*>(this)->front());
     }
 
     T& back() {
-        return *back_;
+        return const_cast<T&>(static_cast<const deque<T>*>(this)->back());
     }
 
     const_iterator begin() const {
@@ -303,7 +315,7 @@ public:
     }
 
     const_iterator end() const {
-        return back_ + 1;
+        return back_;
     }
 
     const_iterator cbegin() const {
@@ -311,7 +323,7 @@ public:
     }
 
     const_iterator cend() const {
-        return back_ + 1;
+        return back_;
     }
 
     iterator begin() {
@@ -319,65 +331,62 @@ public:
     }
 
     iterator end() {
-        return back_ + 1;
+        return back_;
     }
 };
 
 template <typename T>
-deque<T>::deque()
-    : map_(nullptr),
-      size_(0),
-      map_size_(0),
-      first_node_(nullptr),
-      last_node_(nullptr) {}
+deque<T>::deque() : map_(nullptr), map_size_(0), size_(0) {}
 
 template <typename T>
 deque<T>::deque(size_t n) : size_(0) {
-    init(n / 16 + 1);
+    init(n / BUF_LEN + 2);
 }
 
 template <typename T>
 deque<T>::deque(const deque<T>& rhs)
-    : size_(rhs.size_), map_size_(rhs.map_size_) {
+    : map_size_(rhs.map_size_), size_(rhs.size_) {
     map_ = allocate_map_(map_size_);
-    first_node_ = map_ + (rhs.first_node_ - rhs.map_);
-    last_node_ = first_node_ + map_size_;
-    auto ptr1 = first_node_;
-    *ptr1 = allocate_node_();
-    auto ptr2 = rhs.first_node_;
-    size_t index = rhs.front_.cur_ - rhs.front_.first_;
-    for (size_t i = index; i < BUF_LEN; ++i) {
-        (*ptr1)[i] = (*ptr2)[i];
+    auto first_node = map_ + (rhs.front_.node_ - rhs.map_);
+    auto last_node = map_ + (rhs.back_.node_ - rhs.map_);
+    *(first_node - 1) = allocate_node_();
+    *(last_node + 1) = allocate_node_();
+
+    // copy nodes
+    auto dst = first_node;
+    auto src = rhs.front_.node_;
+    while (dst <= last_node) {
+        *(dst++) = copy_node_(*(src++));
     }
-    ++ptr1;
-    ++ptr2;
-    while (ptr1 != last_node_ - 1) {
-        *(ptr1++) = copy_node_(*(ptr2++));
-    }
-    index = rhs.back_.cur_ - rhs.back_.first_;
-    for (size_t i = 0; i <= index; ++i) {
-        (*ptr1)[i] = (*ptr2)[i];
-    }
+
+    // construct front_ and back_ iterators
+    auto front_cur = *first_node + (rhs.front_.cur_ - rhs.front_.first_);
+    front_ = iterator(front_cur, first_node);
+    auto last_cur = *last_node + (rhs.back_.cur_ - rhs.back_.first_);
+    back_ = iterator(last_cur, last_node);
 }
 
 template <typename T>
 deque<T>::deque(deque<T>&& rhs) noexcept
     : map_(rhs.map_),
-      size_(rhs.size_),
       map_size_(rhs.map_size_),
-      first_node_(rhs.first_node_),
-      last_node_(rhs.last_node_),
+      size_(rhs.size_),
       front_(rhs.front_),
       back_(rhs.back_) {
     rhs.size_ = 0;
     rhs.map_size_ = 0;
-    rhs.map_ = rhs.first_node_ = rhs.last_node_ = nullptr;
+    rhs.map_ = nullptr;
     rhs.front_ = rhs.back_ = iterator();
 }
 
 template <typename T>
-T* deque<T>::copy_node_(T* node) {
-    T* copy = allocate_node_();
+deque<T>::~deque() noexcept {
+    clear();
+}
+
+template <typename T>
+typename deque<T>::EltPtr deque<T>::copy_node_(EltPtr node) {
+    EltPtr copy = allocate_node_();
     for (int i = 0; i < BUF_LEN; ++i) {
         copy[i] = node[i];
     }
@@ -385,8 +394,8 @@ T* deque<T>::copy_node_(T* node) {
 }
 
 template <typename T>
-T** deque<T>::allocate_map_(size_t map_size) {
-    T** map = new T*[map_size];
+typename deque<T>::MapPtr deque<T>::allocate_map_(size_t map_size) {
+    auto map = new T*[map_size];
     for (size_t i = 0; i < map_size; ++i) {
         map[i] = nullptr;
     }
@@ -394,7 +403,7 @@ T** deque<T>::allocate_map_(size_t map_size) {
 }
 
 template <typename T>
-T* deque<T>::allocate_node_() {
+typename deque<T>::EltPtr deque<T>::allocate_node_() {
     return new T[BUF_LEN];
 }
 
@@ -402,143 +411,83 @@ template <typename T>
 void deque<T>::init(size_t map_size) {
     map_size_ = map_size;
     map_ = allocate_map_(map_size_);
-    first_node_ = map_ + map_size_ / 2;
-    last_node_ = first_node_ + 1;
+    MapPtr first_node_ = map_ + map_size_ / 2;
     *first_node_ = allocate_node_();
-    front_ = back_ = iterator(*first_node_ + BUF_LEN / 2, first_node_);
+    *(first_node_ + 1) = allocate_node_();
+    *(first_node_ - 1) = allocate_node_();
+    back_ = iterator(*first_node_ + BUF_LEN / 2, first_node_);
+    front_ = back_;
+}
+
+template <typename T>
+void deque<T>::expand(bool backward) noexcept {
+    auto old_map = map_;
+    auto old_map_size = map_size_;
+    difference_t scope_size = back_.node_ - front_.node_;
+    map_size_ = scope_size * 2 + 2;
+    map_ = allocate_map_(map_size_);
+    if (backward) {
+        MapPtr start_node = map_ + (front_.node_ - old_map);
+
+        MapPtr ptr1 = start_node - 1;
+        MapPtr ptr2 = front_.node_ - 1;
+        while (ptr2 != back_.node_ + 2) {
+            swap(*(ptr1++), *(ptr2++));
+        }
+
+        MapPtr end_node = ptr1 - 2;
+        front_.node_ = start_node;
+        back_.node_ = end_node;
+    } else {
+        MapPtr start_node =
+          map_ + map_size_ - ((old_map + old_map_size) - back_.node_);
+
+        MapPtr ptr1 = start_node + 1;
+        MapPtr ptr2 = back_.node_ + 1;
+        while (ptr2 != front_.node_ - 2) {
+            swap(*(ptr1--), *(ptr2--));
+        }
+
+        MapPtr end_node = ptr2 + 2;
+        front_.node_ = start_node;
+        back_.node_ = end_node;
+    }
 }
 
 template <typename T>
 void deque<T>::clear() {
-    for (auto ptr = first_node_; ptr != last_node_; ++ptr) {
-        delete ptr;
+    for (auto ptr = front_.node_ - 1; ptr < back_.node_ + 2; ++ptr) {
+        delete *ptr;
+        *ptr = nullptr;
     }
     delete map_;
     map_ = nullptr;
     size_ = 0;
     map_size_ = 0;
-    first_node_ = last_node_ = nullptr;
     front_ = back_ = iterator();
 }
 
 template <typename T>
-void deque<T>::expand() {
-    size_t cur_map_size = last_node_ - first_node_;
-    map_size_ = cur_map_size * 2;
-    auto old = map_;
-    map_ = allocate_map_(map_size_);
-
-    auto ptr1 = map_ + cur_map_size / 2;
-    auto ptr2 = first_node_;
-    first_node_ = ptr1;
-    while (ptr2 != last_node_) {
-        *(ptr1++) = *(ptr2++);
-    }
-    last_node_ = ptr1;
-
-    front_.node_ = first_node_;
-    back_.node_ = last_node_ - 1;
-}
-
-template <typename T>
-template <typename V>
-void deque<T>::push_back(V&& elem) {
-    if (empty()) {
-        init(1);
-        *back_ = std::forward<V>(elem);
-    } else {
-        if (back_.cur_ == back_.last_ - 1) {
-            if (last_node_ == map_ + map_size_) {
-                expand();
-            }
-            *last_node_ = allocate_node_();
-            ++last_node_;
-        }
-        ++back_;
-        *back_ = std::forward<V>(elem);
-    }
-    ++size_;
-}
-
-template <typename T>
-template <typename V>
-void deque<T>::push_front(V&& elem) {
-    if (empty()) {
-        init(1);
-        *back_ = std::forward<V>(elem);
-    } else {
-        if (front_.cur_ == front_.first_) {
-            if (first_node_ == map_) {
-                expand();
-            }
-            --first_node_;
-            *first_node_ = allocate_node_();
-        }
-        --front_;
-        *front_ = std::forward<V>(elem);
-    }
-    ++size_;
-}
-
-template <typename T>
-void deque<T>::pop_back() {
-    check_empty();
-    --back_;
-    --size_;
-    if (back_.node_ != last_node_ - 1) {
-        --last_node_;
-        delete last_node_;
-        *last_node_ = nullptr;
-    }
-}
-
-template <typename T>
-void deque<T>::pop_front() {
-    check_empty();
-    ++front_;
-    --size_;
-    if (front_.node_ != first_node_) {
-        delete first_node_;
-        *first_node_ = nullptr;
-        ++first_node_;
-    }
-}
-
-template <typename T>
-deque<T>::const_iterator::const_iterator()
+template <typename Ref, typename Ptr>
+deque<T>::deque_iterator<Ref, Ptr>::deque_iterator()
     : first_(nullptr), last_(nullptr), node_(nullptr), cur_(nullptr) {}
 
 template <typename T>
-deque<T>::const_iterator::const_iterator(T* cur, T** node)
+template <typename Ref, typename Ptr>
+deque<T>::deque_iterator<Ref, Ptr>::deque_iterator(EltPtr cur, MapPtr node)
     : node_(node), cur_(cur) {
     set_node_(node);
 }
 
 template <typename T>
-deque<T>::const_iterator::const_iterator(const const_iterator& rhs)
+template <typename Ref, typename Ptr>
+deque<T>::deque_iterator<Ref, Ptr>::deque_iterator(const iterator& rhs)
     : first_(rhs.first_), last_(rhs.last_), node_(rhs.node_), cur_(rhs.cur_) {}
 
 template <typename T>
-typename deque<T>::const_iterator&
-deque<T>::const_iterator::operator+=(difference_t n) {
-    const difference_t offset = n + (cur_ - first_);
-    if (offset >= 0 && offset < BUF_LEN) {
-        cur_ += n;
-    } else {
-        difference_t node_offset = offset > 0
-            ? offset / BUF_LEN
-            : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
-        set_node_(node_ + node_offset);
-        cur_ = first_ +
-            (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
-    }
-    return *this;
-}
+template <typename Ref, typename Ptr>
+deque<T>::deque_iterator<Ref, Ptr>::deque_iterator(const const_iterator& rhs)
+    : first_(rhs.first_), last_(rhs.last_), node_(rhs.node_), cur_(rhs.cur_) {}
 
-template <typename T>
-deque<T>::iterator::iterator() : const_iterator() {}
-
-template <typename T>
-deque<T>::iterator::iterator(T* cur, T** node) : const_iterator(cur, node) {}
 } // namespace mtl
 #endif

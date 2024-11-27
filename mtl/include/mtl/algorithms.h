@@ -14,8 +14,8 @@ template <typename Iterator>
 void inplace_quicksort(Iterator begin, Iterator end);
 
 /* perform partition for the sequence in range [begin, end)
- * all the elements smaller than the pivot are in the left side and thus the
- * ones greater in the right side. return the iterator to the first element of
+ * all the elements smaller than the pivot are on the left side and thus the
+ * ones greater on the right side. return the iterator to the first element of
  * the second group (the pivot) */
 template <typename Iterator>
 Iterator partition(Iterator begin, Iterator end) noexcept;
@@ -43,15 +43,15 @@ inline void swap(T& a, T& b) noexcept {
 }
 
 /* replace the sequence [begin1, end1) with [begin2, end2), note that it uses
- * std::move you should ensure the length of the ranges are the same and it
- * won't be checked */
+ * std::move, so you should ensure the length of the two ranges are the same,
+ * and it won't be checked */
 template <typename Iterator1, typename Iterator2>
-void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,
-             Iterator2 end2) noexcept;
+void replace(
+  Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) noexcept;
 
-/* copy the sequence [begin2, end2) into the sequence [begin1, end1)
- * you should ensure the length of the two ranges are the same and it won't be
- * checked */
+/* copy the sequence [begin, end) into the sequence beginning with output,
+ * You should ensure there is enough space in the output sequence , and it won't
+ * be checked */
 template <typename Iterator1, typename Iterator2>
 void copy(Iterator1 begin, Iterator1 end, Iterator2 output);
 
@@ -91,8 +91,8 @@ Iterator partition(Iterator begin, Iterator end) noexcept {
 }
 
 template <typename Iterator1, typename Iterator2>
-void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,
-             Iterator2 end2) noexcept {
+void replace(
+  Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) noexcept {
     while (begin1 != end1 && begin2 != end2) {
         *(begin1++) = std::move(*(begin2++));
     }

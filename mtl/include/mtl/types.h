@@ -1,11 +1,12 @@
 #ifndef MTL_TYPES_H
 #define MTL_TYPES_H
 
+#include <cstddef>
 #include <exception>
 
 namespace mtl {
-using size_t = unsigned long long;
-using difference_t = long long;
+using std::size_t;
+using difference_t = std::ptrdiff_t;
 
 struct NullIterator : public std::exception {
     const char* msg_;

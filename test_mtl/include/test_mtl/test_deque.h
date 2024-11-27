@@ -1,5 +1,6 @@
 #include <iostream>
 #include <mtl/deque.h>
+#include <cstdio>
 
 using std::ostream;
 
