@@ -251,7 +251,7 @@ public:
         if (back_.node_ + 1 >= map_ + map_size_) {
             expand(true);
         }
-        if (back_.node_ + 1 == nullptr) {
+        if (*(back_.node_ + 1) == nullptr) {
             *(back_.node_ + 1) = allocate_node_();
         }
     }
@@ -267,7 +267,7 @@ public:
         if (front_.node_ <= map_) {
             expand(false);
         }
-        if (front_.node_ - 1 == nullptr) {
+        if (*(front_.node_ - 1) == nullptr) {
             *(front_.node_ - 1) = allocate_node_();
         }
     }
