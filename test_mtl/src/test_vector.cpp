@@ -1,4 +1,4 @@
-#include <direct.h>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <test_mtl/myutils.h>
@@ -132,7 +132,7 @@ void test_insert_remove(ostream& os) {
 }
 
 int main() {
-    mkdir("vector");
+    std::filesystem::create_directories("vector");
     ofstream ofs1("vector/test_constructor.txt");
     test_constructor(ofs1);
 

@@ -1,4 +1,4 @@
-#include <direct.h>
+#include <filesystem>
 #include <fstream>
 #include <mtl/list.h>
 #include <test_mtl/myutils.h>
@@ -120,7 +120,7 @@ void test_insert_remove(ostream& os) {
 }
 
 int main() {
-    mkdir("list");
+    std::filesystem::create_directories("list");
     ofstream ofs1("list/test_constructor.txt");
     if (ofs1.is_open())
         test_constructor(ofs1);

@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <chrono>
-#include <direct.h>
+#include <filesystem>
 #include <fstream>
 #include <mtl/algorithms.h>
 #include <mtl/vector.h>
@@ -101,7 +101,7 @@ void test_stl_sort(ostream& os) {
 
 int main() {
     using std::ofstream;
-    mkdir("algorithm");
+    std::filesystem::create_directories("algorithm");
     ofstream ofs1("algorithm/test_quicksort.txt");
     test_quicksort(ofs1);
     ofstream ofs2("algorithm/test_mergesort.txt");

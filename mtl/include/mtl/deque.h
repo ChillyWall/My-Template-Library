@@ -101,11 +101,11 @@ private:
                 cur_ += n;
             } else {
                 difference_t node_offset = offset > 0
-                  ? offset / BUF_LEN
-                  : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
+                    ? offset / BUF_LEN
+                    : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
                 set_node_(node_ + node_offset);
                 cur_ = first_ +
-                  (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
+                    (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
             }
             return *this;
         }
@@ -128,7 +128,8 @@ private:
 
         friend difference_t operator-(const self_t& lhs, const self_t& rhs) {
             return (lhs.cur_ - lhs.first_) + (rhs.last_ - rhs.cur_) +
-              (lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) * BUF_LEN;
+                (lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) *
+                BUF_LEN;
         }
 
         friend bool operator==(const self_t& lhs, const self_t& rhs) {
@@ -192,7 +193,7 @@ public:
     deque(std::initializer_list<T>&& il);
     deque(const deque<T>& rhs);
     deque(deque<T>&& rhs) noexcept;
-    ~deque() noexcept;
+    ~deque();
 
     [[nodiscard]] size_t size() const {
         return size_;
@@ -210,7 +211,7 @@ public:
 
     T& operator[](size_t index) {
         return const_cast<T&>(
-          static_cast<const deque<T>*>(this)->operator[](index));
+            static_cast<const deque<T>*>(this)->operator[](index));
     }
 
     const T& at(size_t index) const {
@@ -275,7 +276,7 @@ public:
     void pop_back() {
         check_empty();
         if (back_.cur_ == back_.first_) {
-            delete *(back_.node_ + 1);
+            delete[] *(back_.node_ + 1);
             *(back_.node_ + 1) = nullptr;
         }
         --back_;
@@ -285,7 +286,7 @@ public:
     void pop_front() {
         check_empty();
         if (front_.cur_ == front_.last_ - 1) {
-            delete *(front_.node_ - 1);
+            delete[] *(front_.node_ - 1);
             *(front_.node_ - 1) = nullptr;
         }
         ++front_;
@@ -380,7 +381,7 @@ deque<T>::deque(deque<T>&& rhs) noexcept
 }
 
 template <typename T>
-deque<T>::~deque() noexcept {
+deque<T>::~deque() {
     clear();
 }
 
@@ -424,43 +425,48 @@ void deque<T>::expand(bool backward) noexcept {
     auto old_map = map_;
     auto old_map_size = map_size_;
     difference_t scope_size = back_.node_ - front_.node_;
-    map_size_ = scope_size * 2 + 2;
+    map_size_ = old_map_size + scope_size;
     map_ = allocate_map_(map_size_);
     if (backward) {
         MapPtr start_node = map_ + (front_.node_ - old_map);
 
         MapPtr ptr1 = start_node - 1;
         MapPtr ptr2 = front_.node_ - 1;
-        while (ptr2 != back_.node_ + 2) {
+        MapPtr end_node = back_.node_ + 2;
+        while (ptr2 < end_node) {
             swap(*(ptr1++), *(ptr2++));
         }
 
-        MapPtr end_node = ptr1 - 2;
+        end_node = ptr1 - 2;
         front_.node_ = start_node;
         back_.node_ = end_node;
     } else {
         MapPtr start_node =
-          map_ + map_size_ - ((old_map + old_map_size) - back_.node_);
+            map_ + map_size_ - ((old_map + old_map_size) - back_.node_);
 
         MapPtr ptr1 = start_node + 1;
         MapPtr ptr2 = back_.node_ + 1;
-        while (ptr2 != front_.node_ - 2) {
+        MapPtr end_node = front_.node_ - 2;
+        while (ptr2 != end_node) {
             swap(*(ptr1--), *(ptr2--));
         }
 
-        MapPtr end_node = ptr2 + 2;
-        front_.node_ = start_node;
-        back_.node_ = end_node;
+        end_node = ptr1 + 2;
+        back_.node_ = start_node;
+        front_.node_ = end_node;
     }
+    delete[] old_map;
 }
 
 template <typename T>
 void deque<T>::clear() {
-    for (auto ptr = front_.node_ - 1; ptr < back_.node_ + 2; ++ptr) {
-        delete *ptr;
+    MapPtr start = front_.node_ - 1;
+    MapPtr stop = back_.node_ + 2;
+    for (MapPtr ptr = start; ptr < stop; ++ptr) {
+        delete[] *ptr;
         *ptr = nullptr;
     }
-    delete map_;
+    delete[] map_;
     map_ = nullptr;
     size_ = 0;
     map_size_ = 0;

@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <fstream>
 #include <test_mtl/myutils.h>
 #include <test_mtl/test_deque.h>
@@ -13,7 +14,8 @@ void test_push_pop(ostream& os) {
 }
 
 int main() {
-    std::ofstream ofs("test_deque.txt");
+    std::filesystem::create_directories("deque");
+    std::ofstream ofs("deque/test_deque.txt");
     test_push_pop(ofs);
     return 0;
 }
