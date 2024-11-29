@@ -2,11 +2,11 @@
 #define MTL_STACK_H
 
 #include <mtl/types.h>
-#include <mtl/vector.h>
+#include <mtl/deque.h>
 #include <utility>
 
 namespace mtl {
-template <typename T, typename allocator = vector<T>>
+template <typename T, typename allocator = deque<T>>
 class stack {
 private:
     allocator* data_;

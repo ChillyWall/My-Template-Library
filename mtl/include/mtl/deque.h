@@ -40,6 +40,7 @@ private:
         MapPtr node_;  // the current node
         EltPtr cur_;   // the current element
 
+        // set the iterator's node as new_node
         void set_node_(MapPtr new_node) {
             node_ = new_node;
             first_ = *node_;
@@ -95,6 +96,8 @@ private:
             return old;
         }
 
+        /* to implement the support of random access
+         * n could be positive or negative */
         self_t& operator+=(difference_t n) {
             const difference_t offset = n + (cur_ - first_);
             if (offset >= 0 && offset < BUF_LEN) {
@@ -171,9 +174,9 @@ private:
     iterator front_;  // the front element
     iterator back_;   // the back element
 
-    static MapPtr allocate_map_(size_t map_size);
+    MapPtr allocate_map_(size_t map_size);
 
-    static EltPtr allocate_node_();
+    EltPtr allocate_node_();
 
     void init(size_t map_size);
 
@@ -185,12 +188,12 @@ private:
         }
     }
 
-    static EltPtr copy_node_(EltPtr node);
+    EltPtr copy_node_(EltPtr node);
 
 public:
     deque();
     explicit deque(size_t n);
-    deque(std::initializer_list<T>&& il);
+    deque(std::initializer_list<T>&& il) noexcept;
     deque(const deque<T>& rhs);
     deque(deque<T>&& rhs) noexcept;
     ~deque();
@@ -243,7 +246,7 @@ public:
 
     template <typename V>
     void push_back(V&& elem) {
-        if (empty()) {
+        if (map_ == nullptr) {
             init(DEFAULT_MAP_SIZE);
         }
         *back_ = std::forward<V>(elem);
@@ -259,7 +262,7 @@ public:
 
     template <typename V>
     void push_front(V&& elem) {
-        if (empty()) {
+        if (map_ == nullptr) {
             init(DEFAULT_MAP_SIZE);
         }
         --front_;
@@ -341,7 +344,19 @@ deque<T>::deque() : map_(nullptr), map_size_(0), size_(0) {}
 
 template <typename T>
 deque<T>::deque(size_t n) : size_(0) {
-    init(n / BUF_LEN + 2);
+    init(n / BUF_LEN + 3);
+}
+
+template <typename T>
+deque<T>::deque(std::initializer_list<T>&& il) noexcept {
+    init(il.size() / BUF_LEN + 3);
+    auto mid = find_mid(il.begin(), il.end());
+    for (auto itr = mid; itr != il.end(); ++itr) {
+        push_back(std::move(*itr));
+    }
+    for (auto itr = mid - 1; itr >= il.begin(); --itr) {
+        push_front(std::move(*itr));
+    }
 }
 
 template <typename T>
@@ -432,12 +447,11 @@ void deque<T>::expand(bool backward) noexcept {
 
         MapPtr ptr1 = start_node - 1;
         MapPtr ptr2 = front_.node_ - 1;
-        MapPtr end_node = back_.node_ + 2;
+        MapPtr end_node = back_.node_ + 1;
         while (ptr2 < end_node) {
             swap(*(ptr1++), *(ptr2++));
         }
-
-        end_node = ptr1 - 2;
+        end_node = ptr1 - 1;
         front_.node_ = start_node;
         back_.node_ = end_node;
     } else {
@@ -446,12 +460,12 @@ void deque<T>::expand(bool backward) noexcept {
 
         MapPtr ptr1 = start_node + 1;
         MapPtr ptr2 = back_.node_ + 1;
-        MapPtr end_node = front_.node_ - 2;
-        while (ptr2 != end_node) {
+        MapPtr end_node = front_.node_ - 1;
+        while (ptr2 > end_node) {
             swap(*(ptr1--), *(ptr2--));
         }
 
-        end_node = ptr1 + 2;
+        end_node = ptr1 + 1;
         back_.node_ = start_node;
         front_.node_ = end_node;
     }

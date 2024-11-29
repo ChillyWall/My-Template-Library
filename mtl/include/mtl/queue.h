@@ -1,12 +1,11 @@
 #ifndef MTL_QUEUE_H
 #define MTL_QUEUE_H
 
-#include <alloca.h>
-#include <mtl/list.h>
+#include <mtl/deque.h>
 #include <mtl/types.h>
 
 namespace mtl {
-template <typename T, typename allocator = list<T>>
+template <typename T, typename allocator = deque<T>>
 class queue {
 private:
     allocator* data_;
