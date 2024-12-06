@@ -1,7 +1,7 @@
 #include <filesystem>
 #include <fstream>
+#include <mtl/deque.h>
 #include <test_mtl/myutils.h>
-#include <test_mtl/test_deque.h>
 
 using namespace mtl;
 
@@ -20,13 +20,21 @@ void test_push_pop(ostream& os) {
     print(os, deq);
 }
 
-void test_iterator(ostream& os) {
-
+void test_random_access(ostream& os) {
+    os << "test random access\n";
+    deque<int> deq;
+    for (int i = 0; i < 100; ++i) {
+        deq.push_back(i);
+    }
+    print(os, deq);
+    for (int i = 0; i < 100; ++i) {
+        os << deq[i] << ", ";
+    }
 }
 
 int main() {
     std::filesystem::create_directories("deque");
     std::ofstream ofs("deque/test_deque.txt");
-    test_push_pop(ofs);
+    test_random_access(ofs);
     return 0;
 }

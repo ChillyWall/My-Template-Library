@@ -6,7 +6,6 @@
 #include <mtl/vector.h>
 #include <random>
 #include <test_mtl/myutils.h>
-#include <test_mtl/test_algorithms.h>
 #include <vector>
 
 void test_quicksort(ostream& os) {
@@ -41,7 +40,7 @@ void test_quicksort(ostream& os) {
 
 void test_mergesort(ostream& os) {
     mtl::size_t size;
-    std::cout << "testing mergesort, type sie: ";
+    std::cout << "testing mergesort, type size: ";
     std::cin >> size;
     mtl::vector<int> vec(size);
     using namespace std::chrono;

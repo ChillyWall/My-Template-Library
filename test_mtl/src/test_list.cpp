@@ -2,7 +2,6 @@
 #include <fstream>
 #include <mtl/list.h>
 #include <test_mtl/myutils.h>
-#include <test_mtl/test_list.h>
 
 using mtl::list;
 using std::endl;
