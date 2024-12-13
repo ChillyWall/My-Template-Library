@@ -1,15 +1,15 @@
 #ifndef MTL_STACK_H
 #define MTL_STACK_H
 
-#include <mtl/types.h>
 #include <mtl/deque.h>
+#include <mtl/types.h>
 #include <utility>
 
 namespace mtl {
-template <typename T, typename allocator = deque<T>>
+template <typename T, template <typename> typename allocator = deque>
 class stack {
 private:
-    allocator* data_;
+    allocator<T>* data_;
 
 public:
     stack();
@@ -44,17 +44,17 @@ public:
     }
 };
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 stack<T, allocator>::stack() : data_(new allocator()) {}
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 stack<T, allocator>::stack(size_t s) : data_(new allocator(s)) {}
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 stack<T, allocator>::stack(const stack<T, allocator>& rhs)
     : data_(new allocator(*rhs.data_)) {}
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 stack<T, allocator>::stack(stack<T, allocator>&& rhs) noexcept
     : data_(rhs.data_) {
     rhs.data_ = nullptr;

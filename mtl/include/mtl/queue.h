@@ -5,10 +5,10 @@
 #include <mtl/types.h>
 
 namespace mtl {
-template <typename T, typename allocator = deque<T>>
+template <typename T, template <typename> typename allocator>
 class queue {
 private:
-    allocator* data_;
+    allocator<T>* data_;
 
 public:
     queue();
@@ -55,22 +55,22 @@ public:
     }
 };
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 queue<T, allocator>::queue() : data_(new allocator()) {}
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 queue<T, allocator>::queue(size_t s) : data_(new allocator(s)) {}
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 queue<T, allocator>::queue(const queue<T, allocator>& rhs)
     : data_(new allocator(*rhs.data_)) {}
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 queue<T, allocator>::queue(queue<T, allocator>&& rhs) : data_(rhs.data_) {
-    rhs.data_ = new list<T>();
+    rhs.data_ = new allocator;
 }
 
-template <typename T, typename allocator>
+template <typename T, template <typename> typename allocator>
 queue<T, allocator>::~queue() noexcept {
     delete data_;
 }
