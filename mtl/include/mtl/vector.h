@@ -90,20 +90,20 @@ private:
         self_t& operator=(const vector_iterator& ci) = default;
 
         // move n items next, it don't check the boundary
-        self_t operator+(size_t n) const {
+        self_t operator+(difference_t n) const {
             auto new_itr = *this;
             new_itr += n;
             return new_itr;
         }
 
         // move n items next, it don't check the boundary
-        self_t& operator+=(size_t n) {
+        self_t& operator+=(difference_t n) {
             elem_ += n;
             return *this;
         }
 
         // move n items previous, it don't check the boundary
-        self_t operator-(size_t n) const {
+        self_t operator-(difference_t n) const {
             auto new_itr = *this;
             new_itr -= n;
             return new_itr;
@@ -114,7 +114,7 @@ private:
         }
 
         // move n items previous, it don't check the boundary
-        self_t& operator-=(size_t n) {
+        self_t& operator-=(difference_t n) {
             elem_ -= n;
             return *this;
         }
@@ -333,7 +333,7 @@ vector<T>::vector(std::initializer_list<T>&& il) noexcept
 
 template <typename T>
 vector<T>::vector(const vector<T>& rhs)
-    : basic_vector<T>(rhs), size_(rhs.size_){}
+    : basic_vector<T>(rhs), size_(rhs.size_) {}
 
 template <typename T>
 vector<T>::vector(vector<T>&& rhs) noexcept {
@@ -379,8 +379,8 @@ void vector<T>::pop_back() {
 
 template <typename T>
 template <typename V>
-typename vector<T>::iterator vector<T>::insert(
-        iterator index, V&& elem) noexcept {
+typename vector<T>::iterator vector<T>::insert(iterator index,
+                                               V&& elem) noexcept {
     if (index > this->end()) {
         return iterator();
     }
@@ -399,8 +399,8 @@ typename vector<T>::iterator vector<T>::insert(
 
 template <typename T>
 template <typename InputIterator>
-typename vector<T>::iterator vector<T>::insert(
-        iterator index, InputIterator begin, InputIterator end) {
+typename vector<T>::iterator
+vector<T>::insert(iterator index, InputIterator begin, InputIterator end) {
     // check the validity of index
     if (index > this->end()) {
         return iterator();
@@ -418,7 +418,7 @@ typename vector<T>::iterator vector<T>::insert(
 
     // move elements backward
     for (iterator i = this->end() - 1, j = i - len; i >= index + len;
-            --i, --j) {
+         --i, --j) {
         *i = *j;
     }
 
@@ -447,8 +447,8 @@ typename vector<T>::iterator vector<T>::remove(iterator index) noexcept {
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::remove(
-        iterator begin, iterator stop) noexcept {
+typename vector<T>::iterator vector<T>::remove(iterator begin,
+                                               iterator stop) noexcept {
     // check whether the range is valid
     if (begin >= stop || begin >= this->end()) {
         return iterator();
