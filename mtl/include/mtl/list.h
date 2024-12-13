@@ -1,7 +1,6 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
 
-#include <deque>
 #include <initializer_list>
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
@@ -78,7 +77,9 @@ private:
 
         self_t& operator++() {
             if (node_->is_tail()) {
-                throw std::out_of_range("This iterator has gone out of range. No previous element.");
+                throw std::out_of_range(
+                    "This iterator has gone out of range. No previous "
+                    "element.");
             }
             node_ = node_->next_;
             return *this;
@@ -90,7 +91,8 @@ private:
         }
         self_t& operator--() {
             if (node_->is_head()) {
-                throw std::out_of_range("This iterator has gone out of range. No next element.");
+                throw std::out_of_range(
+                    "This iterator has gone out of range. No next element.");
             }
             node_ = node_->prev_;
             return *this;
@@ -254,8 +256,8 @@ list<T>::list_iterator<Ref, Ptr>::operator-=(size_t n) {
 
 template <typename T>
 template <typename Ref, typename Ptr>
-difference_t list<T>::list_iterator<Ref, Ptr>::operator-(
-        list_iterator rhs) const {
+difference_t
+list<T>::list_iterator<Ref, Ptr>::operator-(list_iterator rhs) const {
     difference_t res = 0;
     while (*this != rhs) {
         ++rhs;
@@ -381,7 +383,7 @@ template <typename T>
 template <typename V>
 typename list<T>::iterator list<T>::insert(iterator itr, V&& elem) {
     Node* new_node =
-            new Node(std::forward<V>(elem), itr.node_->prev_, itr.node_);
+        new Node(std::forward<V>(elem), itr.node_->prev_, itr.node_);
     itr.node_->prev_->next_ = new_node;
     itr.node_->prev_ = new_node;
     ++size_;
@@ -392,7 +394,7 @@ template <typename T>
 typename list<T>::iterator list<T>::remove(iterator itr) {
     if (itr.node_->is_head() || itr.node_->is_tail() || !bool(itr)) {
         throw std::out_of_range(
-                "This iterator had tried to remove a non-existing element.");
+            "This iterator had tried to remove a non-existing element.");
     }
     Node* node = itr.node_;
     itr.node_ = node->next_;
@@ -421,8 +423,8 @@ typename list<T>::iterator list<T>::remove(iterator start, iterator stop) {
 
 template <typename T>
 template <typename InputIterator>
-typename list<T>::iterator list<T>::insert(
-        iterator itr, InputIterator start, InputIterator stop) {
+typename list<T>::iterator list<T>::insert(iterator itr, InputIterator start,
+                                           InputIterator stop) {
     for (auto in_itr = start; in_itr != stop; ++in_itr) {
         itr = insert(itr, *in_itr);
     }
