@@ -2,7 +2,6 @@
 #define MTL_AVL_TREE_H
 
 #include <mtl/types.h>
-#include <utility>
 
 namespace mtl {
 template <typename T>
@@ -75,18 +74,27 @@ private:
         friend class const_iterator;
     };
 
-    class const_iterator {
+    template <typename Ref, typename Ptr>
+    class avl_iterator;
+
+public:
+    using const_iterator = avl_iterator<const T&, const T*>;
+    using iterator = avl_iterator<T&, T*>;
+
+private:
+    template <typename Ref, typename Ptr>
+    class avl_iterator {
     private:
         // the pointer to the node
         Node* node_;
         // to record whether the left side is visited
         bool visited_;
+        using self_t = avl_iterator<Ref, Ptr>;
 
     public:
-        const_iterator();
-        explicit const_iterator(Node* node);
-        const_iterator(const const_iterator& rhs);
-        const_iterator(const_iterator&& rhs) noexcept;
+        avl_iterator();
+        explicit avl_iterator(Node* node);
+        avl_iterator(const avl_iterator& rhs);
 
         /* it don't check whether the iterator is valid
          * so a segmentation fault is possible to be thrown out */
@@ -99,106 +107,37 @@ private:
             return bool(node_);
         }
 
-        const_iterator& operator++();
-        const_iterator& operator--();
+        self_t& operator++();
+        self_t& operator--();
 
-        const_iterator operator++(int) {
-            const_iterator old(*this);
+        self_t operator++(int) {
+            self_t old(*this);
             this->operator++();
             return old;
         }
 
-        const_iterator operator--(int) {
-            const_iterator old(*this);
+        self_t operator--(int) {
+            self_t old(*this);
             this->operator--();
             return old;
         }
 
-        const_iterator& operator=(const const_iterator& rhs) {
+        self_t& operator=(const avl_iterator& rhs) {
             node_ = rhs.node_;
             return *this;
         }
 
-        const_iterator& operator=(const_iterator&& rhs) noexcept {
-            node_ = rhs.node_;
-            rhs.node_ = nullptr;
-            return *this;
-        }
+        self_t& operator+=(size_t n);
+        self_t& operator-=(size_t n);
 
-        const_iterator& operator+=(size_t n);
-        const_iterator& operator-=(size_t n);
-
-        const_iterator operator+(size_t n) {
-            const_iterator res(*this);
+        self_t operator+(size_t n) {
+            self_t res(*this);
             res += n;
             return res;
         }
 
-        const_iterator operator-(size_t n) {
-            const_iterator res(*this);
-            res -= n;
-            return res;
-        }
-    };
-
-    class iterator : public const_iterator {
-    public:
-        iterator();
-        explicit iterator(Node* node);
-        iterator(const iterator& rhs);
-        iterator(iterator&& rhs) noexcept;
-
-        // it will call const_iterator::operator*()
-        T& operator*() {
-            return const_cast<T&>(const_iterator::operator*());
-        }
-
-        iterator& operator++() {
-            const_iterator::operator++();
-            return *this;
-        }
-        iterator& operator--() {
-            const_iterator::operator--();
-            return *this;
-        }
-
-        iterator operator++(int) {
-            iterator old(*this);
-            const_iterator::operator++();
-            return old;
-        }
-        iterator operator--(int) {
-            iterator old(*this);
-            const_iterator::operator--();
-            return old;
-        }
-
-        iterator& operator=(const iterator& rhs) {
-            iterator::operator=(rhs);
-            return *this;
-        }
-        iterator& operator=(iterator&& rhs) noexcept {
-            iterator::operator=(std::move(rhs));
-            return *this;
-        }
-
-        iterator& operator+=(size_t n) {
-            const_iterator::operator+=(n);
-            return *this;
-        }
-        iterator& operator-=(size_t n) {
-            const_iterator::operator-=(n);
-            return *this;
-        }
-
-        iterator operator+(size_t n) {
-            iterator res(*this);
-            res += n;
-            return res;
-        }
-
-        iterator operator-(size_t n) {
-            iterator res(*this);
+        self_t operator-(size_t n) {
+            self_t res(*this);
             res -= n;
             return res;
         }
@@ -378,6 +317,11 @@ typename avl_tree<T>::Node* avl_tree<T>::find_min(Node* node) {
     }
     return node;
 }
+
+template <typename T>
+template <typename Ref, typename Ptr>
+avl_tree<T>::avl_iterator<Ref, Ptr>::self_t
+avl_tree<T>::avl_iterator<Ref, Ptr>::operator++() {}
 } // namespace mtl
 
 #endif
