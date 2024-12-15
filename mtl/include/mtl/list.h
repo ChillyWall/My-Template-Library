@@ -192,14 +192,6 @@ public:
         return iterator(tail_);
     }
 
-    const_iterator head() const {
-        return const_iterator(head_);
-    }
-
-    iterator head() {
-        return iterator(head_);
-    }
-
     const_iterator begin() const {
         return const_iterator(head_->next_);
     }
