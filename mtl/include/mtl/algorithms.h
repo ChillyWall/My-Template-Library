@@ -42,12 +42,41 @@ inline void swap(T& a, T& b) noexcept {
     b = std::move(c);
 }
 
+template <typename T>
+inline T max(T& x) {
+    return x;
+}
+
+/* implement min by variadic template */
+template <typename T, typename... V>
+inline T max(T& x, V&... rest) {
+    T max_rest = max(rest...);
+    return x < max_rest ? max_rest : x;
+}
+
+template <typename T>
+inline T min(T& x) {
+    return x;
+}
+
+/* implement min by variadic template */
+template <typename T, typename... V>
+inline T min(T& x, V&... rest) {
+    T min_rest = min(rest...);
+    return x > min_rest ? min_rest : x;
+}
+
+template <typename T>
+inline T abs(const T& x) {
+    return x < 0 ? -x : x;
+}
+
 /* replace the sequence [begin1, end1) with [begin2, end2), note that it uses
  * std::move, so you should ensure the length of the two ranges are the same,
  * and it won't be checked */
 template <typename Iterator1, typename Iterator2>
-void replace(
-  Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) noexcept;
+void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,
+             Iterator2 end2) noexcept;
 
 /* copy the sequence [begin, end) into the sequence beginning with output,
  * You should ensure there is enough space in the output sequence , and it won't
@@ -91,8 +120,8 @@ Iterator partition(Iterator begin, Iterator end) noexcept {
 }
 
 template <typename Iterator1, typename Iterator2>
-void replace(
-  Iterator1 begin1, Iterator1 end1, Iterator2 begin2, Iterator2 end2) noexcept {
+void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,
+             Iterator2 end2) noexcept {
     while (begin1 != end1 && begin2 != end2) {
         *(begin1++) = std::move(*(begin2++));
     }
