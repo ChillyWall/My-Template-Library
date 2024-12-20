@@ -1,15 +1,8 @@
-add_executable(test_vector src/test_vector.cpp)
-target_include_directories(test_vector PRIVATE include)
-target_link_libraries(test_vector PRIVATE mtl)
+include_directories(include)
+link_libraries(mtl)
 
 add_executable(test_algorithms src/test_algorithms.cpp)
-target_include_directories(test_algorithms PRIVATE include)
-target_link_libraries(test_algorithms PRIVATE mtl)
-
+add_executable(test_vector src/test_vector.cpp)
 add_executable(test_list src/test_list.cpp)
-target_include_directories(test_list PRIVATE include)
-target_link_libraries(test_list PRIVATE mtl)
-
 add_executable(test_deque src/test_deque.cpp)
-target_include_directories(test_deque PRIVATE include)
-target_link_libraries(test_deque PRIVATE mtl)
+add_executable(test_avl src/test_avl.cpp)
