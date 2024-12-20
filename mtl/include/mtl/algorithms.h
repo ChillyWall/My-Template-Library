@@ -1,6 +1,7 @@
 #ifndef ALGORITHMS_H
 #define ALGORITHMS_H
 
+#include <algorithm>
 #include <mtl/types.h>
 #include <utility>
 
@@ -42,28 +43,16 @@ inline void swap(T& a, T& b) noexcept {
     b = std::move(c);
 }
 
+// return the greater one
 template <typename T>
-inline T max(T& x) {
-    return x;
+const T& max(const T& x, const T& y) {
+    return x < y ? y : x;
 }
 
-/* implement min by variadic template */
-template <typename T, typename... V>
-inline T max(T& x, V&... rest) {
-    T max_rest = max(rest...);
-    return x < max_rest ? max_rest : x;
-}
-
+// return the smaller one
 template <typename T>
-inline T min(T& x) {
-    return x;
-}
-
-/* implement min by variadic template */
-template <typename T, typename... V>
-inline T min(T& x, V&... rest) {
-    T min_rest = min(rest...);
-    return x > min_rest ? min_rest : x;
+const T& min(const T& x, const T& y) {
+    return x > y ? y : x;
 }
 
 template <typename T>
