@@ -24,7 +24,7 @@ private:
     using NdPtr = Node*;
 
     // The root node of the tree
-    Node* root_;
+    NdPtr root_;
     // The number of nodes in this tree
     size_t size_;
     // The maximum difference between the heights of left and right children
