@@ -284,7 +284,7 @@ protected:
 
 public:
     list_iterator() : node_(nullptr) {}
-    explicit list_iterator(const NdPtr node) : node_(node) {}
+    explicit list_iterator(NdPtr node) : node_(node) {}
     template <typename Iter,
               typename = std::_Require<std::is_same<self_t, const_iterator>,
                                        std::is_same<Iter, iterator>>>
@@ -379,7 +379,7 @@ public:
         return res_itr;
     }
 
-    difference_t operator-(const list_iterator rhs) const {
+    difference_t operator-(list_iterator rhs) const {
         difference_t res = 0;
         while (*this != rhs) {
             ++rhs;

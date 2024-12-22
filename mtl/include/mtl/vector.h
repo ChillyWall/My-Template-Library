@@ -193,13 +193,13 @@ public:
 
     // return a vector_iterator pointing to the position 0
     const_iterator cbegin() const {
-        return const_iterator(basic_vector<T>::data());
+        return const_iterator(const_cast<T*>(basic_vector<T>::data()));
     }
 
     /* return a vector_iterator pointing to the position after the last
      * element */
     const_iterator cend() const {
-        return const_iterator(basic_vector<T>::data() + size_);
+        return const_iterator(const_cast<T*>(basic_vector<T>::data()) + size_);
     }
 
     // return an iterator pointing to the first element
@@ -347,7 +347,7 @@ public:
     virtual ~vector_iterator() = default;
 
     // construct from pointer
-    explicit vector_iterator(const T* elem) : elem_(elem) {}
+    explicit vector_iterator(T* elem) : elem_(elem) {}
 
     template <typename Iter,
               typename = std::_Require<std::is_same<Iter, iterator>,

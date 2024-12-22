@@ -3,6 +3,7 @@
 
 #include "mtl/algorithms.h"
 #include "mtl/types.h"
+#include <deque>
 #include <initializer_list>
 #include <stdexcept>
 #include <type_traits>

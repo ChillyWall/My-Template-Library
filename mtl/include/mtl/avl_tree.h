@@ -579,9 +579,9 @@ private:
     friend class avl_iterator;
 
 public:
-    avl_iterator();
-    explicit avl_iterator(NdPtr node);
-    avl_iterator(const self_t& rhs);
+    avl_iterator() : node_(nullptr) {}
+    explicit avl_iterator(const NdPtr node) : node_(const_cast<NdPtr>(node)) {}
+    avl_iterator(const avl_iterator& rhs) : node_(rhs.node_) {}
 
     template <typename Iter,
               typename = std::_Require<std::is_same<self_t, const_iterator>,
@@ -599,7 +599,7 @@ public:
     }
 
     // checkk whether the iterator refers to a valid node
-    explicit operator bool() {
+    explicit operator bool() const {
         return bool(node_);
     }
 
@@ -649,7 +649,13 @@ public:
     }
 
     friend bool operator==(const avl_iterator& lhs, const avl_iterator& rhs) {
-        return *lhs == *rhs;
+        if (lhs && rhs) {
+            return *lhs == *rhs;
+        } else if (lhs || rhs) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     friend bool operator!=(const avl_iterator& lhs, const avl_iterator& rhs) {
@@ -680,15 +686,6 @@ public:
         return !(lhs > rhs);
     }
 };
-
-template <typename T>
-template <typename Ref, typename Ptr>
-avl_tree<T>::avl_iterator<Ref, Ptr>::avl_iterator(NdPtr node) : node_(node) {}
-
-template <typename T>
-template <typename Ref, typename Ptr>
-avl_tree<T>::avl_iterator<Ref, Ptr>::avl_iterator(const avl_iterator& rhs)
-    : node_(rhs.node_) {}
 
 template <typename T>
 template <typename Ref, typename Ptr>

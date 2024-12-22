@@ -81,7 +81,7 @@ void test_iterator(ostream& os) {
     }
 
     os << "\nprint the list in reversed order: \n";
-    for (auto itr = ls.end() - 1ULL; itr != ls.head(); --itr) {
+    for (auto itr = ls.end() - 1ULL; itr != ls.begin() - 1; --itr) {
         os << *itr << ", ";
     }
 }
