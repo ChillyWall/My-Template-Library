@@ -5,6 +5,7 @@
 #include "mtl/types.h"
 #include <initializer_list>
 #include <stdexcept>
+#include <type_traits>
 
 namespace mtl {
 /* The deque (double-end queue) ADT.
@@ -31,143 +32,6 @@ public:
     using const_iterator = deque_iterator<const T&, const T*>;
 
 private:
-    template <typename Ref, typename Ptr>
-    class deque_iterator {
-    private:
-        using self_t = deque_iterator<Ref, Ptr>;
-        EltPtr first_; // the first element of current node
-        EltPtr last_;  // the element past the last element of current node
-        MapPtr node_;  // the current node
-        EltPtr cur_;   // the current element
-
-        // set the iterator's node as new_node
-        void set_node_(MapPtr new_node) {
-            node_ = new_node;
-            first_ = *node_;
-            last_ = first_ + BUF_LEN;
-        }
-
-    public:
-        deque_iterator();
-        deque_iterator(EltPtr cur, MapPtr node);
-        deque_iterator(const iterator& rhs);
-        deque_iterator(const const_iterator& rhs);
-        ~deque_iterator() noexcept = default;
-
-        self_t& operator=(const deque_iterator& rhs) {
-            first_ = rhs.first_;
-            last_ = rhs.last_;
-            node_ = rhs.node_;
-            cur_ = const_cast<Ptr>(rhs.cur_);
-            return *this;
-        }
-
-        Ref operator*() const {
-            return *cur_;
-        }
-
-        self_t& operator++() {
-            ++cur_;
-            if (cur_ == last_) {
-                set_node_(node_ + 1);
-                cur_ = first_;
-            }
-            return *this;
-        }
-
-        self_t& operator--() {
-            if (cur_ == first_) {
-                set_node_(node_ - 1);
-                cur_ = last_;
-            }
-            --cur_;
-            return *this;
-        }
-
-        self_t operator++(int) {
-            auto old = *this;
-            this->operator++();
-            return old;
-        }
-
-        self_t operator--(int) {
-            auto old = *this;
-            this->operator--();
-            return old;
-        }
-
-        /* to implement the support of random access
-         * n could be positive or negative */
-        self_t& operator+=(difference_t n) {
-            const difference_t offset = n + (cur_ - first_);
-            if (offset >= 0 && offset < BUF_LEN) {
-                cur_ += n;
-            } else {
-                difference_t node_offset = offset > 0
-                    ? offset / BUF_LEN
-                    : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
-                set_node_(node_ + node_offset);
-                cur_ = first_ +
-                    (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
-            }
-            return *this;
-        }
-
-        self_t& operator-=(difference_t n) {
-            return *this += -n;
-        }
-
-        self_t operator+(difference_t n) const {
-            auto new_itr = *this;
-            new_itr += n;
-            return new_itr;
-        }
-
-        self_t operator-(difference_t n) const {
-            auto new_itr = *this;
-            new_itr -= n;
-            return new_itr;
-        }
-
-        friend difference_t operator-(const self_t& lhs, const self_t& rhs) {
-            return (lhs.cur_ - lhs.first_) + (rhs.last_ - rhs.cur_) +
-                (lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) *
-                BUF_LEN;
-        }
-
-        friend bool operator==(const self_t& lhs, const self_t& rhs) {
-            return lhs.cur_ == rhs.cur_;
-        }
-
-        friend bool operator!=(const self_t& lhs, const self_t& rhs) {
-            return lhs.cur_ != rhs.cur_;
-        }
-
-        friend bool operator<(const self_t& lhs, const self_t& rhs) {
-            if (lhs.node_ < rhs.node_) {
-                return true;
-            } else if (lhs.node_ == rhs.node_) {
-                return lhs.cur_ < rhs.cur_;
-            } else {
-                return false;
-            }
-        }
-
-        friend bool operator<=(const self_t& lhs, const self_t& rhs) {
-            return lhs < rhs || lhs == rhs;
-        }
-
-        friend bool operator>(const self_t& lhs, const self_t& rhs) {
-            return !(lhs <= rhs);
-        }
-
-        friend bool operator>=(const self_t& lhs, const self_t& rhs) {
-            return !(lhs < rhs);
-        }
-
-        friend class deque<T>;
-    };
-
     MapPtr map_;      // the map of nodes
     size_t map_size_; // the size of the map array
     size_t size_;     // the number of elements
@@ -176,7 +40,9 @@ private:
 
     MapPtr allocate_map_(size_t map_size);
 
-    EltPtr allocate_node_();
+    EltPtr allocate_node_() {
+        return new T[BUF_LEN];
+    }
 
     void init(size_t map_size);
 
@@ -191,12 +57,29 @@ private:
     EltPtr copy_node_(EltPtr node);
 
 public:
-    deque();
-    explicit deque(size_t n);
+    deque() : map_(nullptr), map_size_(0), size_(0) {}
+
+    explicit deque(size_t n) : size_(0) {
+        init(n / BUF_LEN + 3);
+    }
+
     deque(std::initializer_list<T>&& il) noexcept;
     deque(const deque<T>& rhs);
-    deque(deque<T>&& rhs) noexcept;
-    ~deque();
+    deque(deque<T>&& rhs) noexcept
+        : map_(rhs.map_),
+          map_size_(rhs.map_size_),
+          size_(rhs.size_),
+          front_(rhs.front_),
+          back_(rhs.back_) {
+        rhs.size_ = 0;
+        rhs.map_size_ = 0;
+        rhs.map_ = nullptr;
+        rhs.front_ = rhs.back_ = iterator();
+    }
+
+    ~deque() {
+        clear();
+    }
 
     [[nodiscard]] size_t size() const {
         return size_;
@@ -340,14 +223,6 @@ public:
 };
 
 template <typename T>
-deque<T>::deque() : map_(nullptr), map_size_(0), size_(0) {}
-
-template <typename T>
-deque<T>::deque(size_t n) : size_(0) {
-    init(n / BUF_LEN + 3);
-}
-
-template <typename T>
 deque<T>::deque(std::initializer_list<T>&& il) noexcept {
     init(il.size() / BUF_LEN + 3);
     auto mid = find_mid(il.begin(), il.end());
@@ -383,24 +258,6 @@ deque<T>::deque(const deque<T>& rhs)
 }
 
 template <typename T>
-deque<T>::deque(deque<T>&& rhs) noexcept
-    : map_(rhs.map_),
-      map_size_(rhs.map_size_),
-      size_(rhs.size_),
-      front_(rhs.front_),
-      back_(rhs.back_) {
-    rhs.size_ = 0;
-    rhs.map_size_ = 0;
-    rhs.map_ = nullptr;
-    rhs.front_ = rhs.back_ = iterator();
-}
-
-template <typename T>
-deque<T>::~deque() {
-    clear();
-}
-
-template <typename T>
 typename deque<T>::EltPtr deque<T>::copy_node_(EltPtr node) {
     EltPtr copy = allocate_node_();
     for (int i = 0; i < BUF_LEN; ++i) {
@@ -416,11 +273,6 @@ typename deque<T>::MapPtr deque<T>::allocate_map_(size_t map_size) {
         map[i] = nullptr;
     }
     return map;
-}
-
-template <typename T>
-typename deque<T>::EltPtr deque<T>::allocate_node_() {
-    return new T[BUF_LEN];
 }
 
 template <typename T>
@@ -489,25 +341,172 @@ void deque<T>::clear() {
 
 template <typename T>
 template <typename Ref, typename Ptr>
-deque<T>::deque_iterator<Ref, Ptr>::deque_iterator()
-    : first_(nullptr), last_(nullptr), node_(nullptr), cur_(nullptr) {}
+class deque<T>::deque_iterator {
+private:
+    using self_t = deque_iterator<Ref, Ptr>;
+    EltPtr first_; // the first element of current node
+    EltPtr last_;  // the element past the last element of current node
+    MapPtr node_;  // the current node
+    EltPtr cur_;   // the current element
 
-template <typename T>
-template <typename Ref, typename Ptr>
-deque<T>::deque_iterator<Ref, Ptr>::deque_iterator(EltPtr cur, MapPtr node)
-    : node_(node), cur_(cur) {
-    set_node_(node);
-}
+    // set the iterator's node as new_node
+    void set_node_(MapPtr new_node) {
+        node_ = new_node;
+        first_ = *node_;
+        last_ = first_ + BUF_LEN;
+    }
 
-template <typename T>
-template <typename Ref, typename Ptr>
-deque<T>::deque_iterator<Ref, Ptr>::deque_iterator(const iterator& rhs)
-    : first_(rhs.first_), last_(rhs.last_), node_(rhs.node_), cur_(rhs.cur_) {}
+public:
+    deque_iterator()
+        : first_(nullptr), last_(nullptr), node_(nullptr), cur_(nullptr) {}
 
-template <typename T>
-template <typename Ref, typename Ptr>
-deque<T>::deque_iterator<Ref, Ptr>::deque_iterator(const const_iterator& rhs)
-    : first_(rhs.first_), last_(rhs.last_), node_(rhs.node_), cur_(rhs.cur_) {}
+    deque_iterator(EltPtr cur, MapPtr node) : node_(node), cur_(cur) {
+        set_node_(node);
+    }
 
+    deque_iterator(const iterator& rhs)
+        : first_(rhs.first_),
+          last_(rhs.last_),
+          node_(rhs.node_),
+          cur_(rhs.cur_) {}
+
+    template <typename Iter,
+              typename = std::_Require<std::is_same<self_t, const_iterator>,
+                                       std::is_same<Iter, iterator>>>
+    deque_iterator(const Iter& rhs)
+        : first_(rhs.first_),
+          last_(rhs.last_),
+          node_(rhs.node_),
+          cur_(rhs.cur_) {}
+
+    ~deque_iterator() noexcept = default;
+
+    self_t& operator=(const deque_iterator& rhs) {
+        first_ = rhs.first_;
+        last_ = rhs.last_;
+        node_ = rhs.node_;
+        cur_ = rhs.cur_;
+        return *this;
+    }
+
+    template <typename Iter,
+              typename = std::_Require<std::is_same<self_t, const_iterator>,
+                                       std::is_same<Iter, iterator>>>
+    self_t& operator=(const Iter& rhs) {
+        first_ = rhs.first_;
+        last_ = rhs.last_;
+        node_ = rhs.node_;
+        cur_ = rhs.cur_;
+        return *this;
+    }
+
+    Ref operator*() const {
+        return *cur_;
+    }
+
+    Ptr operator->() const {
+        return cur_;
+    }
+
+    self_t& operator++() {
+        ++cur_;
+        if (cur_ == last_) {
+            set_node_(node_ + 1);
+            cur_ = first_;
+        }
+        return *this;
+    }
+
+    self_t& operator--() {
+        if (cur_ == first_) {
+            set_node_(node_ - 1);
+            cur_ = last_;
+        }
+        --cur_;
+        return *this;
+    }
+
+    self_t operator++(int) {
+        auto old = *this;
+        this->operator++();
+        return old;
+    }
+
+    self_t operator--(int) {
+        auto old = *this;
+        this->operator--();
+        return old;
+    }
+
+    /* to implement the support of random access
+     * n could be positive or negative */
+    self_t& operator+=(difference_t n) {
+        const difference_t offset = n + (cur_ - first_);
+        if (offset >= 0 && offset < BUF_LEN) {
+            cur_ += n;
+        } else {
+            difference_t node_offset = offset > 0
+                ? offset / BUF_LEN
+                : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
+            set_node_(node_ + node_offset);
+            cur_ = first_ +
+                (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
+        }
+        return *this;
+    }
+
+    self_t& operator-=(difference_t n) {
+        return *this += -n;
+    }
+
+    self_t operator+(difference_t n) const {
+        auto new_itr = *this;
+        new_itr += n;
+        return new_itr;
+    }
+
+    self_t operator-(difference_t n) const {
+        auto new_itr = *this;
+        new_itr -= n;
+        return new_itr;
+    }
+
+    friend difference_t operator-(const self_t& lhs, const self_t& rhs) {
+        return (lhs.cur_ - lhs.first_) + (rhs.last_ - rhs.cur_) +
+            (lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) * BUF_LEN;
+    }
+
+    friend bool operator==(const self_t& lhs, const self_t& rhs) {
+        return lhs.cur_ == rhs.cur_;
+    }
+
+    friend bool operator!=(const self_t& lhs, const self_t& rhs) {
+        return lhs.cur_ != rhs.cur_;
+    }
+
+    friend bool operator<(const self_t& lhs, const self_t& rhs) {
+        if (lhs.node_ < rhs.node_) {
+            return true;
+        } else if (lhs.node_ == rhs.node_) {
+            return lhs.cur_ < rhs.cur_;
+        } else {
+            return false;
+        }
+    }
+
+    friend bool operator<=(const self_t& lhs, const self_t& rhs) {
+        return lhs < rhs || lhs == rhs;
+    }
+
+    friend bool operator>(const self_t& lhs, const self_t& rhs) {
+        return !(lhs <= rhs);
+    }
+
+    friend bool operator>=(const self_t& lhs, const self_t& rhs) {
+        return !(lhs < rhs);
+    }
+
+    friend class deque<T>;
+};
 } // namespace mtl
 #endif

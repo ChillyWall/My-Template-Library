@@ -1,10 +1,12 @@
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 
+#include <deque>
 #include <initializer_list>
 #include <mtl/basic_vector.h>
 #include <mtl/types.h>
 #include <stdexcept>
+#include <type_traits>
 
 // The namespace where the ADTs are.
 namespace mtl {
@@ -33,138 +35,30 @@ private:
     }
 
     template <typename Ref, typename Ptr>
-    class vector_iterator {
-    private:
-        Ptr elem_; // pointer to the element
-        using self_t = vector_iterator<Ref, Ptr>;
-
-    public:
-        vector_iterator();
-
-        virtual ~vector_iterator() = default;
-
-        // construct from pointer
-        explicit vector_iterator(const T* elem);
-
-        vector_iterator(const vector_iterator& ci);
-
-        // return a reference to the element
-        Ref operator*() const {
-            return *elem_;
-        }
-
-        // compare the pointer
-        bool operator>(const vector_iterator& ci) const {
-            return elem_ > ci.elem_;
-        }
-
-        // compare the pointer
-        bool operator<(const vector_iterator& ci) const {
-            return elem_ < ci.elem_;
-        }
-
-        // compare the pointer
-        bool operator<=(const vector_iterator& ci) const {
-            return elem_ <= ci.elem_;
-        }
-
-        // compare the pointer
-        bool operator>=(const vector_iterator& ci) const {
-            return elem_ >= ci.elem_;
-        }
-
-        // compare the pointer
-        bool operator==(const vector_iterator& ci) const {
-            return elem_ == ci.elem_;
-        }
-
-        // compare the pointer
-        bool operator!=(const vector_iterator& ci) const {
-            return elem_ != ci.elem_;
-        }
-
-        explicit operator bool() const {
-            return elem_;
-        }
-
-        self_t& operator=(const vector_iterator& ci) = default;
-
-        // move n items next, it don't check the boundary
-        self_t operator+(difference_t n) const {
-            auto new_itr = *this;
-            new_itr += n;
-            return new_itr;
-        }
-
-        // move n items next, it don't check the boundary
-        self_t& operator+=(difference_t n) {
-            elem_ += n;
-            return *this;
-        }
-
-        // move n items previous, it don't check the boundary
-        self_t operator-(difference_t n) const {
-            auto new_itr = *this;
-            new_itr -= n;
-            return new_itr;
-        }
-
-        difference_t operator-(const vector_iterator& rhs) const {
-            return elem_ - rhs.elem_;
-        }
-
-        // move n items previous, it don't check the boundary
-        self_t& operator-=(difference_t n) {
-            elem_ -= n;
-            return *this;
-        }
-
-        // prefix increment
-        self_t& operator++() {
-            ++elem_;
-            return *this;
-        }
-
-        // postfix increment
-        self_t operator++(int) {
-            auto new_itr = *this;
-            ++elem_;
-            return new_itr;
-        }
-
-        // prefix decrement
-        self_t& operator--() {
-            --elem_;
-            return *this;
-        }
-
-        // postfix decrement
-        self_t operator--(int) {
-            auto new_itr = *this;
-            --elem_;
-            return new_itr;
-        }
-    };
+    class vector_iterator;
 
     using const_iterator = vector_iterator<const T&, const T*>;
     using iterator = vector_iterator<T&, T*>;
 
 public:
     // the default constructor
-    vector();
+    vector() : size_(0) {}
 
     // construct the vector with particular size
-    explicit vector(size_t capa);
+    explicit vector(size_t capa) : basic_vector<T>(capa), size_(0) {}
 
     /* construct from initializer list, the size will be the same with the
      * il. */
     vector(std::initializer_list<T>&& il) noexcept;
 
     // copy constructor
-    vector(const vector<T>& rhs);
+    vector(const vector<T>& rhs) : basic_vector<T>(rhs), size_(rhs.size_) {}
 
     // moving copy constructor
-    vector(vector<T>&& rhs) noexcept;
+    vector(vector<T>&& rhs) noexcept {
+        size_ = rhs.size_;
+        basic_vector<T>::operator=(std::move(rhs));
+    }
 
     // the destructor
     ~vector() override = default;
@@ -202,7 +96,13 @@ public:
 
     /* the same with operator[] but check the boundary
      * it throws an out_of_range exception */
-    const T& at(size_t index) const;
+    const T& at(size_t index) const {
+        if (index < size_) {
+            return basic_vector<T>::data[index];
+        } else {
+            throw std::out_of_range("The index is out of range.");
+        }
+    }
 
     // the normal version
     T& at(size_t index) {
@@ -232,10 +132,19 @@ public:
 
     // push a new element to back, with perfect forwarding
     template <typename V>
-    void push_back(V&& elem);
+    void push_back(V&& elem) {
+        check_capacity();
+        basic_vector<T>::data()[size_] = std::forward<V>(elem);
+        ++size_;
+    }
 
     // remove the last element (simply decrease the size_)
-    void pop_back();
+    void pop_back() {
+        if (size_ == 0) {
+            throw std::out_of_range("There's no element to be popped out.");
+        }
+        --size_;
+    }
 
     // push a new element to front, with perfect forwarding
     template <typename V>
@@ -316,37 +225,12 @@ public:
 };
 
 template <typename T>
-vector<T>::vector() : size_(0) {}
-
-template <typename T>
-vector<T>::vector(size_t capa) : basic_vector<T>(capa), size_(0) {}
-
-template <typename T>
 vector<T>::vector(std::initializer_list<T>&& il) noexcept
     : basic_vector<T>(il.size()), size_(il.size()) {
     auto itr = il.begin();
     auto data_ = basic_vector<T>::data();
     for (int i = 0; i < size_; ++i) {
         data_[i] = std::move(*(itr++));
-    }
-}
-
-template <typename T>
-vector<T>::vector(const vector<T>& rhs)
-    : basic_vector<T>(rhs), size_(rhs.size_) {}
-
-template <typename T>
-vector<T>::vector(vector<T>&& rhs) noexcept {
-    size_ = rhs.size_;
-    basic_vector<T>::operator=(std::move(rhs));
-}
-
-template <typename T>
-const T& vector<T>::at(size_t index) const {
-    if (index < size_) {
-        return basic_vector<T>::data[index];
-    } else {
-        throw std::out_of_range("The index is out of range.");
     }
 }
 
@@ -359,22 +243,6 @@ vector<T> vector<T>::splice(size_t begin, size_t stop) {
     }
 
     return vec;
-}
-
-template <typename T>
-template <typename V>
-void vector<T>::push_back(V&& elem) {
-    check_capacity();
-    basic_vector<T>::data()[size_] = std::forward<V>(elem);
-    ++size_;
-}
-
-template <typename T>
-void vector<T>::pop_back() {
-    if (size_ == 0) {
-        throw std::out_of_range("There's no element to be popped out.");
-    }
-    --size_;
 }
 
 template <typename T>
@@ -468,16 +336,139 @@ typename vector<T>::iterator vector<T>::remove(iterator begin,
 
 template <typename T>
 template <typename Ref, typename Ptr>
-vector<T>::vector_iterator<Ref, Ptr>::vector_iterator() : elem_(nullptr) {}
+class vector<T>::vector_iterator {
+private:
+    T* elem_; // pointer to the element
+    using self_t = vector_iterator<Ref, Ptr>;
 
-template <typename T>
-template <typename Ref, typename Ptr>
-vector<T>::vector_iterator<Ref, Ptr>::vector_iterator(const T* elem)
-    : elem_(const_cast<Ptr>(elem)) {}
+public:
+    vector_iterator() : elem_(nullptr) {}
 
-template <typename T>
-template <typename Ref, typename Ptr>
-vector<T>::vector_iterator<Ref, Ptr>::vector_iterator(const vector_iterator& ci)
-    : elem_(const_cast<Ptr>(ci.elem_)) {}
+    virtual ~vector_iterator() = default;
+
+    // construct from pointer
+    explicit vector_iterator(const T* elem) : elem_(elem) {}
+
+    template <typename Iter,
+              typename = std::_Require<std::is_same<Iter, iterator>,
+                                       std::is_same<self_t, const_iterator>>>
+    vector_iterator(const Iter& rhs) : elem_(rhs.elem_) {}
+
+    vector_iterator(const vector_iterator& rhs) : elem_(rhs.elem_) {}
+
+    // return a reference to the element
+    Ref operator*() const {
+        return *elem_;
+    }
+
+    Ptr operator->() const {
+        return elem_;
+    }
+
+    // compare the pointer
+    friend bool operator>(const vector_iterator& lhs,
+                          const vector_iterator& rhs) {
+        return lhs.elem_ > rhs.elem_;
+    }
+
+    // compare the pointer
+    friend bool operator<(const vector_iterator& lhs,
+                          const vector_iterator& rhs) {
+        return lhs.elem_ < rhs.elem_;
+    }
+
+    // compare the pointer
+    friend bool operator<=(const vector_iterator& lhs,
+                           const vector_iterator& rhs) {
+        return lhs.elem_ <= rhs.elem_;
+    }
+
+    // compare the pointer
+    friend bool operator>=(const vector_iterator& lhs,
+                           const vector_iterator& rhs) {
+        return lhs.elem_ >= rhs.elem_;
+    }
+
+    // compare the pointer
+    friend bool operator==(const vector_iterator& lhs,
+                           const vector_iterator& rhs) {
+        return lhs.elem_ == rhs.elem_;
+    }
+
+    // compare the pointer
+    friend bool operator!=(const vector_iterator& lhs,
+                           const vector_iterator& rhs) {
+        return lhs.elem_ != rhs.elem_;
+    }
+
+    explicit operator bool() const {
+        return elem_;
+    }
+
+    self_t& operator=(const vector_iterator& rhs) = default;
+
+    template <typename Iter,
+              typename = std::_Require<std::is_same<Iter, iterator>,
+                                       std::is_same<self_t, const_iterator>>>
+    self_t& operator=(const Iter& rhs) {
+        elem_ = rhs.elem_;
+    }
+
+    // move n items next, it don't check the boundary
+    self_t operator+(difference_t n) const {
+        auto new_itr = *this;
+        new_itr += n;
+        return new_itr;
+    }
+
+    // move n items next, it don't check the boundary
+    self_t& operator+=(difference_t n) {
+        elem_ += n;
+        return *this;
+    }
+
+    // move n items previous, it don't check the boundary
+    self_t operator-(difference_t n) const {
+        auto new_itr = *this;
+        new_itr -= n;
+        return new_itr;
+    }
+
+    difference_t operator-(const vector_iterator& rhs) const {
+        return elem_ - rhs.elem_;
+    }
+
+    // move n items previous, it don't check the boundary
+    self_t& operator-=(difference_t n) {
+        elem_ -= n;
+        return *this;
+    }
+
+    // prefix increment
+    self_t& operator++() {
+        ++elem_;
+        return *this;
+    }
+
+    // postfix increment
+    self_t operator++(int) {
+        auto new_itr = *this;
+        ++elem_;
+        return new_itr;
+    }
+
+    // prefix decrement
+    self_t& operator--() {
+        --elem_;
+        return *this;
+    }
+
+    // postfix decrement
+    self_t operator--(int) {
+        auto new_itr = *this;
+        --elem_;
+        return new_itr;
+    }
+};
 } // namespace mtl
 #endif // MTL_VECTOR_H

@@ -1,136 +1,26 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
-
 #include <initializer_list>
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
 #include <stdexcept>
+#include <type_traits>
 
 namespace mtl {
 template <typename T>
 class list {
 private:
-    class Node {
-    private:
-        T elem_;
-        Node* prev_;
-        Node* next_;
-
-    public:
-        Node();
-        template <typename V>
-        Node(V&& elem, Node* prev, Node* next) noexcept;
-        Node(const Node& node) = delete;
-
-        ~Node() noexcept;
-
-        const T& elem() const {
-            return elem_;
-        }
-
-        T& elem() {
-            return const_cast<T&>(static_cast<const Node*>(this)->elem());
-        }
-
-        [[nodiscard]] bool is_tail() const {
-            return !next_;
-        }
-
-        [[nodiscard]] bool is_head() const {
-            return !prev_;
-        }
-
-        friend class list<T>;
-    };
+    class Node;
+    using NdPtr = Node*;
 
     template <typename Ref, typename Ptr>
-    class list_iterator {
-    protected:
-        Ptr node_;
-        using self_t = list_iterator<Ref, Ptr>;
-
-    public:
-        list_iterator();
-        explicit list_iterator(const Node* node);
-        list_iterator(const list_iterator& ci);
-        virtual ~list_iterator() noexcept = default;
-
-        self_t& operator=(const list_iterator& ci) {
-            node_ = const_cast<Ptr>(ci.node_);
-            return *this;
-        }
-
-        Ref operator*() const {
-            if (node_->is_head() || node_->is_tail()) {
-                throw NullIterator();
-            }
-            return node_->elem();
-        }
-
-        bool operator==(const list_iterator& ci) const {
-            return node_ == ci.node_;
-        }
-
-        bool operator!=(const list_iterator& ci) const {
-            return node_ != ci.node_;
-        }
-
-        self_t& operator++() {
-            if (node_->is_tail()) {
-                throw std::out_of_range(
-                    "This iterator has gone out of range. No previous "
-                    "element.");
-            }
-            node_ = node_->next_;
-            return *this;
-        }
-        self_t operator++(int) {
-            auto old = *this;
-            this->operator++();
-            return old;
-        }
-        self_t& operator--() {
-            if (node_->is_head()) {
-                throw std::out_of_range(
-                    "This iterator has gone out of range. No next element.");
-            }
-            node_ = node_->prev_;
-            return *this;
-        }
-        self_t operator--(int) {
-            auto old = *this;
-            this->operator--();
-            return old;
-        }
-
-        self_t& operator+=(size_t n);
-        self_t& operator-=(size_t n);
-
-        self_t operator+(size_t n) const {
-            auto res_itr = *this;
-            res_itr += n;
-            return res_itr;
-        }
-        self_t operator-(size_t n) const {
-            auto res_itr = *this;
-            res_itr -= n;
-            return res_itr;
-        }
-
-        difference_t operator-(list_iterator rhs) const;
-
-        explicit operator bool() const {
-            return node_;
-        }
-
-        friend class list<T>;
-    };
+    class list_iterator;
 
     using const_iterator = list_iterator<const T&, const Node*>;
     using iterator = list_iterator<T&, Node*>;
 
-    Node* head_;
-    Node* tail_;
+    NdPtr head_;
+    NdPtr tail_;
     size_t size_;
 
     void init();
@@ -141,16 +31,40 @@ private:
     }
 
 public:
-    list();
-    list(const list<T>& l);
-    list(list<T>&& l) noexcept;
-    list(std::initializer_list<T>&& il) noexcept;
-    ~list() noexcept;
+    list() {
+        init();
+    }
+
+    list(const list<T>& l) {
+        init();
+        for (auto itr = l.begin(); itr != l.end(); ++itr) {
+            push_back(*itr);
+        }
+    }
+
+    list(list<T>&& l) noexcept
+        : head_(l.head_), tail_(l.tail_), size_(l.size_) {
+        l.init();
+    }
+
+    list(std::initializer_list<T>&& il) noexcept {
+        init();
+        for (auto itr = il.begin(); itr != il.end(); ++itr) {
+            push_back(std::move(*itr));
+        }
+    }
+
+    ~list() noexcept {
+        delete head_;
+    }
 
     list<T>& operator=(const list<T>& l);
     list<T>& operator=(list<T>&& l) noexcept;
 
-    void clear();
+    void clear() {
+        delete head_;
+        init();
+    }
 
     [[nodiscard]] bool empty() const {
         return size_ == 0;
@@ -174,7 +88,12 @@ public:
     iterator remove(iterator start, iterator stop);
 
     template <typename InputIterator>
-    iterator insert(iterator itr, InputIterator start, InputIterator stop);
+    iterator insert(iterator itr, InputIterator start, InputIterator stop) {
+        for (auto in_itr = start; in_itr != stop; ++in_itr) {
+            itr = insert(itr, *in_itr);
+        }
+        return itr;
+    }
 
     const_iterator cbegin() const {
         return const_iterator(head_->next_);
@@ -202,107 +121,12 @@ public:
 };
 
 template <typename T>
-list<T>::Node::Node() : elem_(), prev_(nullptr), next_(nullptr) {}
-
-template <typename T>
-template <typename V>
-list<T>::Node::Node(V&& elem, Node* prev, Node* next) noexcept
-    : elem_(std::forward<V>(elem)), prev_(prev), next_(next) {}
-
-template <typename T>
-list<T>::Node::~Node() noexcept {
-    delete next_;
-}
-
-template <typename T>
-template <typename Ref, typename Ptr>
-list<T>::list_iterator<Ref, Ptr>::list_iterator() : node_(nullptr) {}
-
-template <typename T>
-template <typename Ref, typename Ptr>
-list<T>::list_iterator<Ref, Ptr>::list_iterator(const Node* node)
-    : node_(const_cast<Ptr>(node)) {}
-
-template <typename T>
-template <typename Ref, typename Ptr>
-list<T>::list_iterator<Ref, Ptr>::list_iterator(const list_iterator& ci)
-    : node_(const_cast<Ptr>(ci.node_)) {}
-
-template <typename T>
-template <typename Ref, typename Ptr>
-typename list<T>::template list_iterator<Ref, Ptr>&
-list<T>::list_iterator<Ref, Ptr>::operator+=(size_t n) {
-    for (size_t i = 0; i < n; ++i)
-        this->operator++();
-    return *this;
-}
-
-template <typename T>
-template <typename Ref, typename Ptr>
-typename list<T>::template list_iterator<Ref, Ptr>&
-list<T>::list_iterator<Ref, Ptr>::operator-=(size_t n) {
-    for (size_t i = 0; i < n; ++i)
-        this->operator--();
-    return *this;
-}
-
-template <typename T>
-template <typename Ref, typename Ptr>
-difference_t
-list<T>::list_iterator<Ref, Ptr>::operator-(list_iterator rhs) const {
-    difference_t res = 0;
-    while (*this != rhs) {
-        ++rhs;
-        ++res;
-    }
-    return res;
-}
-
-template <typename T>
 void list<T>::init() {
     head_ = new Node();
     tail_ = new Node();
     head_->next_ = tail_;
     tail_->prev_ = head_;
     size_ = 0;
-}
-
-template <typename T>
-list<T>::list() {
-    init();
-}
-
-template <typename T>
-list<T>::list(const list<T>& l) {
-    init();
-    for (auto itr = l.begin(); itr != l.end(); ++itr) {
-        push_back(*itr);
-    }
-}
-
-template <typename T>
-list<T>::list(list<T>&& l) noexcept
-    : head_(l.head_), tail_(l.tail_), size_(l.size_) {
-    l.init();
-}
-
-template <typename T>
-list<T>::list(std::initializer_list<T>&& il) noexcept {
-    init();
-    for (auto itr = il.begin(); itr != il.end(); ++itr) {
-        push_back(std::move(*itr));
-    }
-}
-
-template <typename T>
-list<T>::~list() noexcept {
-    delete head_;
-}
-
-template <typename T>
-void list<T>::clear() {
-    delete head_;
-    init();
 }
 
 template <typename T>
@@ -414,14 +238,162 @@ typename list<T>::iterator list<T>::remove(iterator start, iterator stop) {
 }
 
 template <typename T>
-template <typename InputIterator>
-typename list<T>::iterator list<T>::insert(iterator itr, InputIterator start,
-                                           InputIterator stop) {
-    for (auto in_itr = start; in_itr != stop; ++in_itr) {
-        itr = insert(itr, *in_itr);
+class list<T>::Node {
+private:
+    T elem_;
+    NdPtr prev_;
+    NdPtr next_;
+
+public:
+    Node() : elem_(), prev_(nullptr), next_(nullptr) {}
+    template <typename V>
+    Node(V&& elem, Node* prev, Node* next) noexcept
+        : elem_(std::forward<V>(elem)), prev_(prev), next_(next) {}
+
+    Node(const Node& node) = delete;
+
+    ~Node() noexcept {
+        delete next_;
     }
-    return itr;
-}
+
+    const T& elem() const {
+        return elem_;
+    }
+
+    T& elem() {
+        return const_cast<T&>(static_cast<const Node*>(this)->elem());
+    }
+
+    [[nodiscard]] bool is_tail() const {
+        return !next_;
+    }
+
+    [[nodiscard]] bool is_head() const {
+        return !prev_;
+    }
+
+    friend class list<T>;
+};
+
+template <typename T>
+template <typename Ref, typename Ptr>
+class list<T>::list_iterator {
+protected:
+    NdPtr node_;
+    using self_t = list_iterator<Ref, Ptr>;
+
+public:
+    list_iterator() : node_(nullptr) {}
+    explicit list_iterator(const NdPtr node) : node_(node) {}
+    template <typename Iter,
+              typename = std::_Require<std::is_same<self_t, const_iterator>,
+                                       std::is_same<Iter, iterator>>>
+    list_iterator(const Iter& rhs) : node_(rhs.node_) {}
+    list_iterator(const list_iterator& rhs) : node_(rhs.node_) {}
+    ~list_iterator() noexcept = default;
+
+    self_t& operator=(const list_iterator& rhs) {
+        node_ = rhs.node_;
+        return *this;
+    }
+
+    template <typename Iter,
+              typename = std::_Require<std::is_same<self_t, const_iterator>,
+                                       std::is_same<Iter, iterator>>>
+    self_t& operator=(const Iter& rhs) {
+        node_ = const_cast<Ptr>(rhs.node_);
+        return *this;
+    }
+
+    Ref operator*() const {
+        if (node_->is_head() || node_->is_tail()) {
+            throw NullIterator();
+        }
+        return node_->elem();
+    }
+
+    Ptr operator->() const {
+        return &node_->elememnt();
+    }
+
+    friend bool operator==(const list_iterator& lhs, const list_iterator& rhs) {
+        return lhs.node_ == rhs.node_;
+    }
+
+    friend bool operator!=(const list_iterator& lhs, const list_iterator& rhs) {
+        return lhs.node_ != rhs.node_;
+    }
+
+    self_t& operator++() {
+        if (node_->is_tail()) {
+            throw std::out_of_range(
+                "This iterator has gone out of range. No previous "
+                "element.");
+        }
+        node_ = node_->next_;
+        return *this;
+    }
+
+    self_t operator++(int) {
+        auto old = *this;
+        this->operator++();
+        return old;
+    }
+
+    self_t& operator--() {
+        if (node_->is_head()) {
+            throw std::out_of_range(
+                "This iterator has gone out of range. No next element.");
+        }
+        node_ = node_->prev_;
+        return *this;
+    }
+
+    self_t operator--(int) {
+        auto old = *this;
+        this->operator--();
+        return old;
+    }
+
+    self_t& operator+=(size_t n) {
+        for (size_t i = 0; i < n; ++i)
+            this->operator++();
+        return *this;
+    }
+
+    self_t& operator-=(size_t n) {
+        for (size_t i = 0; i < n; ++i)
+            this->operator--();
+        return *this;
+    }
+
+    self_t operator+(size_t n) const {
+        auto res_itr = *this;
+        res_itr += n;
+        return res_itr;
+    }
+
+    self_t operator-(size_t n) const {
+        auto res_itr = *this;
+        res_itr -= n;
+        return res_itr;
+    }
+
+    difference_t operator-(const list_iterator rhs) const {
+        difference_t res = 0;
+        while (*this != rhs) {
+            ++rhs;
+            ++res;
+        }
+        return res;
+    }
+
+    explicit operator bool() const {
+        return node_;
+    }
+
+    friend class list<T>;
+};
 } // namespace mtl
 #endif // LIST_H
 //

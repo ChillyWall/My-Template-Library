@@ -590,8 +590,12 @@ public:
 
     /* it don't check whether the iterator is valid
      * so a segmentation fault is possible to be thrown out */
-    const T& operator*() const {
+    Ref operator*() const {
         return node_->element();
+    }
+
+    Ptr operator->() const {
+        return &node_->element();
     }
 
     // checkk whether the iterator refers to a valid node
@@ -619,6 +623,14 @@ public:
         return *this;
     }
 
+    template <typename Iter,
+              typename = std::_Require<std::is_same<self_t, const_iterator>,
+                                       std::is_same<Iter, iterator>>>
+    self_t& operator=(const Iter& rhs) {
+        node_ = rhs.node_;
+        return *this;
+    }
+
     self_t& operator+=(difference_t n);
     self_t& operator-=(difference_t n) {
         return this->operator+=(-n);
@@ -637,7 +649,7 @@ public:
     }
 
     friend bool operator==(const avl_iterator& lhs, const avl_iterator& rhs) {
-        return lhs.node_ == rhs.node_;
+        return *lhs == *rhs;
     }
 
     friend bool operator!=(const avl_iterator& lhs, const avl_iterator& rhs) {
@@ -734,7 +746,6 @@ avl_tree<T>::avl_iterator<Ref, Ptr>::operator+=(difference_t n) {
     }
     return *this;
 }
-
 } // namespace mtl
 
 #endif
