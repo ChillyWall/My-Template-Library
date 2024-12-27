@@ -3,7 +3,6 @@
 
 #include "mtl/algorithms.h"
 #include "mtl/types.h"
-#include <deque>
 #include <initializer_list>
 #include <stdexcept>
 #include <type_traits>
@@ -391,8 +390,9 @@ public:
     }
 
     template <typename Iter,
-              typename = std::_Require<std::is_same<self_t, const_iterator>,
-                                       std::is_same<Iter, iterator>>>
+              typename = std::enable_if_t<
+                  std::is_same<self_t, const_iterator>::value &&
+                  std::is_same<Iter, iterator>::value>>
     self_t& operator=(const Iter& rhs) {
         first_ = rhs.first_;
         last_ = rhs.last_;

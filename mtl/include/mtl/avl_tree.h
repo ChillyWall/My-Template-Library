@@ -584,8 +584,9 @@ public:
     avl_iterator(const avl_iterator& rhs) : node_(rhs.node_) {}
 
     template <typename Iter,
-              typename = std::_Require<std::is_same<self_t, const_iterator>,
-                                       std::is_same<Iter, iterator>>>
+              typename = std::enable_if_t<
+                  std::is_same<self_t, const_iterator>::value &&
+                  std::is_same<Iter, iterator>::value>>
     avl_iterator(const Iter& rhs) : node_(rhs.node_) {}
 
     /* it don't check whether the iterator is valid

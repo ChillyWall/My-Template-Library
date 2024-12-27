@@ -286,8 +286,9 @@ public:
     list_iterator() : node_(nullptr) {}
     explicit list_iterator(NdPtr node) : node_(node) {}
     template <typename Iter,
-              typename = std::_Require<std::is_same<self_t, const_iterator>,
-                                       std::is_same<Iter, iterator>>>
+              typename = std::enable_if_t<
+                  std::is_same<self_t, const_iterator>::value &&
+                  std::is_same<Iter, iterator>::value>>
     list_iterator(const Iter& rhs) : node_(rhs.node_) {}
     list_iterator(const list_iterator& rhs) : node_(rhs.node_) {}
     ~list_iterator() noexcept = default;

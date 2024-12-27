@@ -408,8 +408,9 @@ public:
     self_t& operator=(const vector_iterator& rhs) = default;
 
     template <typename Iter,
-              typename = std::_Require<std::is_same<Iter, iterator>,
-                                       std::is_same<self_t, const_iterator>>>
+              typename =
+                  std::enable_if_t<std::is_same<Iter, iterator>::value &&
+                                   std::is_same<self_t, const_iterator>::value>>
     self_t& operator=(const Iter& rhs) {
         elem_ = rhs.elem_;
     }
