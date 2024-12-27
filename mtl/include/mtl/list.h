@@ -1,5 +1,6 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
+
 #include <initializer_list>
 #include <mtl/algorithms.h>
 #include <mtl/types.h>

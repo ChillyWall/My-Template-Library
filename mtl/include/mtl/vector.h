@@ -1,7 +1,6 @@
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 
-#include <deque>
 #include <initializer_list>
 #include <mtl/basic_vector.h>
 #include <mtl/types.h>
