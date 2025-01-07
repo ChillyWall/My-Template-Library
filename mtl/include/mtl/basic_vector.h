@@ -29,7 +29,7 @@ public:
 
     // To expand the array to the new capacity
     void expand(size_t new_capacity) noexcept;
-    // To shrink the array to the new capacaty
+    // To shrink the array to the new capacity
     void shrink(size_t new_capacity) noexcept;
 
     /* delete the old array and allocate a new one with
