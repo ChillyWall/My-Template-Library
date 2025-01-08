@@ -97,7 +97,7 @@ public:
      * it throws an out_of_range exception */
     const T& at(size_t index) const {
         if (index < size_) {
-            return basic_vector<T>::data[index];
+            return basic_vector<T>::data()[index];
         } else {
             throw std::out_of_range("The index is out of range.");
         }
@@ -118,7 +118,7 @@ public:
 
     const T& back() const {
         check_empty();
-        return basic_vector<T>::data[size_ - 1];
+        return basic_vector<T>::data()[size_ - 1];
     }
 
     T& front() {
@@ -153,7 +153,9 @@ public:
 
     // remove the first element.
     void pop_front() {
-        remove(begin());
+        if (!remove(begin())) {
+            throw std::out_of_range("There's no element to be popped out.");
+        }
     }
 
     /* insert an element at position index,
@@ -237,8 +239,9 @@ template <typename T>
 vector<T> vector<T>::splice(size_t begin, size_t stop) {
     size_t size = stop - begin;
     vector<T> vec(size);
+    vec.size_ = size;
     for (size_t i = 0; i < size; ++i) {
-        vec[i] = basic_vector<T>::data[begin + i];
+        vec[i] = basic_vector<T>::data()[begin + i];
     }
 
     return vec;
@@ -276,23 +279,25 @@ vector<T>::insert(iterator index, InputIterator begin, InputIterator end) {
     size_t len = end - begin;
 
     // check whether the capacity is big enough
-    size_ += len;
-    if (size_ > basic_vector<T>::capacity()) {
-        size_t len2 = index - begin;
+    if (size_ + len > basic_vector<T>::capacity()) {
+        size_t len2 = index - this->begin();
         basic_vector<T>::expand(size_ * 2);
         index = this->begin() + len2;
     }
 
     // move elements backward
-    for (iterator i = this->end() - 1, j = i - len; i >= index + len;
-         --i, --j) {
-        *i = *j;
+    for (auto i = this->begin() + size_, j = i - len;
+         i < this->begin() + size_ + len; ++i, ++j) {
+        *i = std::move(*j);
     }
 
     // place elements in the gap
-    for (auto itr = begin; itr != end; ++index, ++itr) {
+    for (auto itr = begin; itr != end; ++itr) {
         *index = *itr;
+        ++index;
     }
+
+    size_ += len;
 
     return index;
 }
@@ -434,8 +439,9 @@ public:
         return new_itr;
     }
 
-    difference_t operator-(const vector_iterator& rhs) const {
-        return elem_ - rhs.elem_;
+    friend difference_t operator-(const vector_iterator& lhs,
+                                  const vector_iterator& rhs) {
+        return lhs.elem_ - rhs.elem_;
     }
 
     // move n items previous, it don't check the boundary

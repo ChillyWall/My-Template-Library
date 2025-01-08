@@ -1,149 +1,277 @@
-#include <filesystem>
-#include <fstream>
-#include <iostream>
+#include "mtl/types.h"
+#define GLOG_USE_GLOG_EXPORT
+
+#include <glog/logging.h>
+#include <gtest/gtest.h>
 #include <mtl/vector.h>
-#include <test_mtl/myutils.h>
 
 using mtl::vector;
-using std::endl;
-using std::ofstream;
-using std::ostream;
 
-void test_constructor(ostream& os) {
-    os << "1. The default constructor: " << endl;
-    vector<int> vec1;
-    print_vector(os, vec1);
-
-    os << "\n2. vector(size) (size = 10 < DEFAULT_CAPACITY)\n";
-    vector<int> vec2(10);
-    print_vector(os, vec2);
-
-    os << "\n3. vector(size) (size = 200 > DEFAULT_CAPACITY)\n";
-    vector<int> vec3(200);
-    print_vector(os, vec3);
-
-    os << "\n4. vector(initializer_list)\n";
-    vector<int> vec4({1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-    print_vector(os, vec4);
-
-    os << "\n5. copy (the 4)\n";
-    vector<int> vec5(vec4);
-    print_vector(os, vec5);
-
-    os << "\n6. moving (the 4)\n";
-    vector<int> vec6(std::move(vec4));
-    os << "The 6:\n";
-    print_vector(os, vec6);
-    os << "The 4 after moving\n";
-    print_vector(os, vec4);
+TEST(TestConstructor, TestDefaultConstructor) {
+    vector<int> v;
+    EXPECT_EQ(v.size(), 0);
+    EXPECT_EQ(v.capacity(), 0);
+    EXPECT_EQ(v.data(), nullptr);
 }
 
-void test_push_pop_shrink(ostream& os) {
-    vector<int> vec;
-    os << "The original: " << endl;
-    print_vector(os, vec);
-
-    os << "push back a right-value and a normal variable" << endl;
-    vec.push_back(0);
-    int num = 1;
-    vec.push_back(num);
-    print_vector(os, vec);
-
-    for (int i = 2; i < 201; ++i) {
-        vec.push_back(i);
-    }
-    os << " after pushing back 201 numbers" << endl;
-    print_vector(os, vec);
-
-    for (int i = 0; i < 50; ++i) {
-        vec.pop_back();
-    }
-    os << "after popping back 50 numbers" << endl;
-    print_vector(os, vec);
-
-    vec.shrink();
-    os << "after shrinking" << endl;
-    print_vector(os, vec);
-
-    while (!vec.empty()) {
-        vec.pop_back();
-    }
-
-    try {
-        vec.pop_back();
-    } catch (const std::exception& exc) {
-        os << "when an empty vector trying to pop out: " << exc.what() << endl;
+TEST(TestConstructor, TestInitListConstructor) {
+    vector<int> v({0, 1, 2, 3, 4});
+    EXPECT_EQ(v.size(), 5);
+    EXPECT_EQ(v.capacity(), 5);
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v.data()[i], i);
     }
 }
 
-void test_iterator(ostream& os) {
-    vector<int> vec;
-    for (int i = 0; i < 100; ++i) {
-        vec.push_back(i);
-    }
-
-    print_vector(os, vec);
-    os << "print the vector with iterator: \n";
-    for (auto itr = vec.begin(); itr != vec.end(); ++itr) {
-        os << *itr << ", ";
-    }
-
-    os << "\nprint the elements with even indices: \n";
-    for (auto itr = vec.begin(); itr < vec.end(); itr += 2) {
-        os << *itr << ", ";
-    }
-
-    os << "\nprint the vector in reversed order: \n";
-    for (auto itr = vec.end() - 1ULL; itr >= vec.begin(); --itr) {
-        os << *itr << ", ";
+TEST(TestConstructor, TestCopyConstructor) {
+    vector<int> v1({0, 1, 2, 3, 4});
+    vector<int> v2(v1);
+    EXPECT_EQ(v2.size(), v1.size());
+    EXPECT_EQ(v2.capacity(), v1.capacity());
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v1.data()[i], v2.data()[i]);
     }
 }
 
-void test_insert_remove(ostream& os) {
-    vector<int> vec;
-    for (int i = 0; i < 10; ++i) {
-        vec.push_back(i);
+TEST(TestConstructor, TestMoveConstrucor) {
+    vector<int> v1({0, 1, 2, 3, 4});
+    vector<int> v2(std::move(v1));
+    EXPECT_EQ(v2.size(), 5);
+    EXPECT_EQ(v2.capacity(), 5);
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v2.data()[i], i);
+    }
+    EXPECT_EQ(v1.size(), 0);
+    EXPECT_EQ(v1.capacity(), 0);
+    EXPECT_EQ(v1.data(), nullptr);
+}
+
+class TestVector : public testing::Test {
+public:
+    TestVector() : v({0, 1, 2, 3, 4}), vc({0, 1, 2, 3, 4}) {}
+    vector<int> v;
+    const vector<int> vc;
+};
+
+TEST_F(TestVector, TestClear) {
+    v.clear();
+    EXPECT_EQ(v.size(), 0);
+    EXPECT_EQ(v.capacity(), 0);
+    EXPECT_EQ(v.data(), nullptr);
+
+    EXPECT_TRUE(v.empty());
+}
+
+TEST_F(TestVector, TestVectorIndex) {
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v[i], i);
+        v[i] = i + 1;
     }
 
-    os << "The original vector: " << endl;
-    print_vector(os, vec);
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v[i], i + 1);
+    }
+}
 
-    auto itr = vec.insert(vec.begin() + 5, 10);
-    os << "after inserting 10 at position 5: " << endl;
-    print_vector(os, vec);
-    os << "the returned iterator points to: " << *itr << endl;
+TEST_F(TestVector, TestVectorIndexConst) {
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(vc[i], i);
+    }
+}
 
-    vector<int> vec1({11, 12, 13, 14});
+TEST_F(TestVector, TestVectorAt) {
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v.at(i), i);
+        v.at(i) = i + 1;
+    }
 
-    itr = vec.insert(vec.begin() + 2, vec1.begin(), vec1.end());
-    os << "after inserting {11, 12, 13, 14} at position 2" << endl;
-    print_vector(os, vec);
-    os << "the returned iterator points to: " << *itr << endl;
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v.at(i), i + 1);
+    }
+}
 
-    itr = vec.remove(vec.begin() + 4);
-    os << "after removing at position 4" << endl;
-    print_vector(os, vec);
-    os << "the returned iterator points to: " << *itr << endl;
+TEST_F(TestVector, TestVectorAtConst) {
+    const vector<int> v({0, 1, 2, 3, 4});
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(vc.at(i), i);
+    }
+}
 
-    itr = vec.remove(vec.begin() + 2, vec.begin() + 7);
-    os << "after removing range [2, 7)" << endl;
-    print_vector(os, vec);
-    os << "the returned iterator points to: " << *itr << endl;
+TEST_F(TestVector, TestVectorFront) {
+    EXPECT_EQ(v.front(), 0);
+    v.front() = 1;
+    EXPECT_EQ(v.front(), 1);
+}
+
+TEST_F(TestVector, TestVectorFrontConst) {
+    EXPECT_EQ(vc.front(), 0);
+}
+
+TEST_F(TestVector, TestVectorBackConst) {
+    EXPECT_EQ(vc.back(), 4);
+}
+
+TEST_F(TestVector, TestVectorBack) {
+    EXPECT_EQ(v.back(), 4);
+    v.back() = 5;
+    EXPECT_EQ(v.back(), 5);
+}
+
+TEST_F(TestVector, TestCopyAssignment) {
+    vector<int> v1 = v;
+    EXPECT_EQ(v.size(), v1.size());
+    EXPECT_EQ(v.capacity(), v1.capacity());
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v1.data()[i], v.data()[i]);
+    }
+}
+
+TEST_F(TestVector, TestMoveAssignment) {
+    vector<int> v1 = std::move(v);
+    EXPECT_EQ(v1.size(), 5);
+    EXPECT_EQ(v1.capacity(), 5);
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(v1.data()[i], i);
+    }
+    EXPECT_EQ(v.size(), 0);
+    EXPECT_EQ(v.capacity(), 0);
+    EXPECT_EQ(v.data(), nullptr);
+}
+
+TEST_F(TestVector, TestPushBack) {
+    v.push_back(5);
+    EXPECT_EQ(v.size(), 6);
+    EXPECT_EQ(v.capacity(), 10);
+    EXPECT_EQ(v.back(), 5);
+}
+
+TEST_F(TestVector, TestPopBack) {
+    v.pop_back();
+    EXPECT_EQ(v.size(), 4);
+    EXPECT_EQ(v.capacity(), 5);
+    EXPECT_EQ(v.back(), 3);
+    for (int i = 0; i < 4; ++i) {
+        v.pop_back();
+    }
+    EXPECT_THROW(v.pop_back(), std::out_of_range);
+}
+
+TEST_F(TestVector, TestPushFront) {
+    v.push_front(-1);
+    EXPECT_EQ(v.size(), 6);
+    EXPECT_EQ(v.capacity(), 10);
+    EXPECT_EQ(v.front(), -1);
+}
+
+TEST_F(TestVector, TestPopFront) {
+    v.pop_front();
+    EXPECT_EQ(v.size(), 4);
+    EXPECT_EQ(v.capacity(), 5);
+    EXPECT_EQ(v.front(), 1);
+
+    for (int i = 0; i < 4; ++i) {
+        v.pop_back();
+    }
+    EXPECT_THROW(v.pop_front(), std::out_of_range);
+}
+
+TEST_F(TestVector, TestIteratorRandomAccess) {
+    auto itr = v.begin();
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(*itr, i);
+        ++itr;
+    }
+}
+
+TEST_F(TestVector, TestIteratorRandomAccessConst) {
+    auto itr = v.begin();
+    for (int i = 0; i < 5; ++i) {
+        EXPECT_EQ(*itr, i);
+        ++itr;
+    }
+}
+
+TEST_F(TestVector, TestIteratorSubtraction) {
+    auto itr1 = vc.begin();
+    auto itr2 = vc.cend();
+    EXPECT_EQ(itr2 - itr1, 5);
+}
+
+TEST_F(TestVector, TestIteratorPrefixIncrement) {
+    auto itr1 = v.begin();
+    auto itr2 = ++itr1;
+    EXPECT_EQ(itr2, v.begin() + 1);
+    EXPECT_EQ(itr1, v.begin() + 1);
+}
+
+TEST_F(TestVector, TestIteratorPostfixIncrement) {
+    auto itr1 = v.begin();
+    auto itr2 = itr1++;
+    EXPECT_EQ(itr2, v.begin());
+    EXPECT_EQ(itr1, v.begin() + 1);
+}
+
+TEST_F(TestVector, TestInsert) {
+    v.insert(v.begin() + 2, 5);
+    EXPECT_EQ(v.size(), 6);
+    EXPECT_EQ(v.capacity(), 10);
+    EXPECT_EQ(v[2], 5);
+    for (int i = 3; i < 6; ++i) {
+        EXPECT_EQ(v[i], i - 1);
+    }
+}
+
+TEST_F(TestVector, TestInsertRange) {
+    vector<int> v1({5, 6, 7});
+    v.insert(v.begin() + 2, v1.begin(), v1.end());
+    EXPECT_EQ(v.size(), 8);
+    EXPECT_EQ(v.capacity(), 10);
+    for (int i = 0; i < 2; ++i) {
+        EXPECT_EQ(v[i], i);
+    }
+    for (int i = 2; i < 5; ++i) {
+        EXPECT_EQ(v[i], i + 3);
+    }
+    for (int i = 5; i < 8; ++i) {
+        EXPECT_EQ(v[i], i - 3);
+    }
+}
+
+TEST_F(TestVector, TestRemove) {
+    v.remove(v.begin() + 2);
+    EXPECT_EQ(v.size(), 4);
+    EXPECT_EQ(v.capacity(), 5);
+    for (int i = 0; i < 2; ++i) {
+        EXPECT_EQ(v[i], i);
+    }
+    for (int i = 2; i < 4; ++i) {
+        EXPECT_EQ(v[i], i + 1);
+    }
+}
+
+TEST_F(TestVector, TestRemoveRange) {
+    v.remove(v.begin() + 2, v.begin() + 4);
+    EXPECT_EQ(v.size(), 3);
+    EXPECT_EQ(v.capacity(), 5);
+    for (int i = 0; i < 2; ++i) {
+        EXPECT_EQ(v[i], i);
+    }
+    for (int i = 2; i < 3; ++i) {
+        EXPECT_EQ(v[i], i + 2);
+    }
+}
+
+TEST_F(TestVector, TestSplice) {
+    auto v1 = v.splice(1, 4);
+
+    EXPECT_EQ(v1.size(), 3);
+    EXPECT_EQ(v1.capacity(), 3);
+    for (int i = 0; i < 3; ++i) {
+        EXPECT_EQ(v1[i], i + 1);
+    }
 }
 
 int main() {
-    std::filesystem::create_directories("vector");
-    ofstream ofs1("vector/test_constructor.txt");
-    test_constructor(ofs1);
-
-    ofstream ofs2("vector/test_push_pop_shrink.txt");
-    test_push_pop_shrink(ofs2);
-
-    ofstream ofs3("vector/test_iterator.txt");
-    test_iterator(ofs3);
-
-    ofstream ofs4("vector/test_insert_remove.txt");
-    test_insert_remove(ofs4);
-
-    return 0;
+    ::testing::InitGoogleTest();
+    return RUN_ALL_TESTS();
 }
