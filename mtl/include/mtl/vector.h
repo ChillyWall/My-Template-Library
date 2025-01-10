@@ -348,14 +348,15 @@ private:
 public:
     vector_iterator() : elem_(nullptr) {}
 
-    virtual ~vector_iterator() = default;
+    ~vector_iterator() = default;
 
     // construct from pointer
     explicit vector_iterator(T* elem) : elem_(elem) {}
 
     template <typename Iter,
-              typename = std::_Require<std::is_same<Iter, iterator>,
-                                       std::is_same<self_t, const_iterator>>>
+              typename = std::enable_if_t<
+                  std::is_same<self_t, const_iterator>::value &&
+                  std::is_same<Iter, iterator>::value>>
     vector_iterator(const Iter& rhs) : elem_(rhs.elem_) {}
 
     vector_iterator(const vector_iterator& rhs) : elem_(rhs.elem_) {}
@@ -412,11 +413,12 @@ public:
     self_t& operator=(const vector_iterator& rhs) = default;
 
     template <typename Iter,
-              typename =
-                  std::enable_if_t<std::is_same<Iter, iterator>::value &&
-                                   std::is_same<self_t, const_iterator>::value>>
+              typename = std::enable_if_t<
+                  std::is_same<self_t, const_iterator>::value &&
+                  std::is_same<Iter, iterator>::value>>
     self_t& operator=(const Iter& rhs) {
         elem_ = rhs.elem_;
+        return *this;
     }
 
     // move n items next, it don't check the boundary
