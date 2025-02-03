@@ -22,7 +22,7 @@ struct NullIterator : public std::exception {
 struct EmptyContainer : public std::exception {
     const char* msg_;
 
-    EmptyContainer() : msg_("This container is already empty.") {}
+    EmptyContainer() : msg_("This container is empty.") {}
     explicit EmptyContainer(const char* msg) : msg_(msg) {}
     ~EmptyContainer() noexcept override = default;
     [[nodiscard]] const char* what() {
