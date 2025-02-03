@@ -8,12 +8,16 @@
 #include <type_traits>
 
 namespace mtl {
+
+/* the list ADT, it's a double linked list. */
 template <typename T>
 class list {
 private:
+    // the node class
     class Node;
     using NdPtr = Node*;
 
+    // the list iterator class
     template <typename Ref, typename Ptr>
     class list_iterator;
 
@@ -83,17 +87,57 @@ public:
     void pop_front();
     void pop_back();
 
+    /* insert a element at the position itr points to.
+     * the return value points to the element after the inserted element.
+     */
     template <typename V>
     iterator insert(iterator itr, V&& elem);
+
+    /* remove the element the itr points to.
+     * the return value points to the element after the removed element.
+     */
     iterator remove(iterator itr);
+
+    /* remove the elements in the range [start, stop).
+     * the start points to the first element to be removed.
+     * the stop points to the element after the last element to be removed.
+     * the return value points to the element after the last removed element.
+     */
     iterator remove(iterator start, iterator stop);
 
+    /* insert the elements in the range [start, stop) at the position itr points
+     * to. the start points to the first element to be inserted. the stop points
+     * to the element after the last element to be inserted. the return value
+     * points to the element after the last inserted element.
+     */
     template <typename InputIterator>
     iterator insert(iterator itr, InputIterator start, InputIterator stop) {
         for (auto in_itr = start; in_itr != stop; ++in_itr) {
             itr = insert(itr, *in_itr);
         }
         return itr;
+    }
+
+    const T& front() const {
+        if (size_ == 0) {
+            throw EmptyContainer();
+        }
+        return head_->next_->elem();
+    }
+
+    const T& back() const {
+        if (size_ == 0) {
+            throw EmptyContainer();
+        }
+        return tail_->prev_->elem();
+    }
+
+    T& front() {
+        return const_cast<T&>(static_cast<const list*>(this)->front());
+    }
+
+    T& back() {
+        return const_cast<T&>(static_cast<const list*>(this)->back());
     }
 
     const_iterator cbegin() const {
@@ -286,36 +330,36 @@ protected:
 public:
     list_iterator() : node_(nullptr) {}
     explicit list_iterator(NdPtr node) : node_(node) {}
+
     template <typename Iter,
               typename = std::enable_if_t<
                   std::is_same<self_t, const_iterator>::value &&
                   std::is_same<Iter, iterator>::value>>
     list_iterator(const Iter& rhs) : node_(rhs.node_) {}
+
     list_iterator(const list_iterator& rhs) : node_(rhs.node_) {}
     ~list_iterator() noexcept = default;
 
-    self_t& operator=(const list_iterator& rhs) {
-        node_ = rhs.node_;
-        return *this;
-    }
+    self_t& operator=(const list_iterator& rhs) = default;
 
     template <typename Iter,
-              typename = std::_Require<std::is_same<self_t, const_iterator>,
-                                       std::is_same<Iter, iterator>>>
+              typename = std::enable_if_t<
+                  std::is_same<self_t, const_iterator>::value &&
+                  std::is_same<Iter, iterator>::value>>
     self_t& operator=(const Iter& rhs) {
         node_ = const_cast<Ptr>(rhs.node_);
         return *this;
     }
 
     Ref operator*() const {
-        if (node_->is_head() || node_->is_tail()) {
+        if (node_ == nullptr) {
             throw NullIterator();
         }
         return node_->elem();
     }
 
     Ptr operator->() const {
-        return &node_->elememnt();
+        return &node_->elem();
     }
 
     friend bool operator==(const list_iterator& lhs, const list_iterator& rhs) {
