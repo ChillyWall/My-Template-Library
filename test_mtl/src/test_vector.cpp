@@ -1,4 +1,3 @@
-#include "mtl/types.h"
 #define GLOG_USE_GLOG_EXPORT
 
 #include <gtest/gtest.h>

@@ -691,7 +691,7 @@ public:
 
 template <typename T>
 template <typename Ref, typename Ptr>
-avl_tree<T>::avl_iterator<Ref, Ptr>::self_t&
+typename avl_tree<T>::template avl_iterator<Ref, Ptr>::self_t&
 avl_tree<T>::avl_iterator<Ref, Ptr>::operator++() {
     if (!node_) {
         throw NullIterator();
@@ -711,7 +711,7 @@ avl_tree<T>::avl_iterator<Ref, Ptr>::operator++() {
 
 template <typename T>
 template <typename Ref, typename Ptr>
-avl_tree<T>::avl_iterator<Ref, Ptr>::self_t&
+typename avl_tree<T>::template avl_iterator<Ref, Ptr>::self_t&
 avl_tree<T>::avl_iterator<Ref, Ptr>::operator--() {
     if (!node_) {
         throw NullIterator();
@@ -731,7 +731,7 @@ avl_tree<T>::avl_iterator<Ref, Ptr>::operator--() {
 
 template <typename T>
 template <typename Ref, typename Ptr>
-avl_tree<T>::avl_iterator<Ref, Ptr>::self_t&
+typename avl_tree<T>::template avl_iterator<Ref, Ptr>::self_t&
 avl_tree<T>::avl_iterator<Ref, Ptr>::operator+=(difference_t n) {
     if (n > 0) {
         for (difference_t i = 0; i < n; i++) {
