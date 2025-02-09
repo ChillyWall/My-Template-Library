@@ -1,9 +1,9 @@
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 
-#include <initializer_list>
 #include <mtl/basic_vector.h>
 #include <mtl/types.h>
+#include <initializer_list>
 #include <stdexcept>
 #include <type_traits>
 
@@ -342,7 +342,7 @@ template <typename T>
 template <typename Ref, typename Ptr>
 class vector<T>::vector_iterator {
 private:
-    T* elem_; // pointer to the element
+    T* elem_;  // pointer to the element
     using self_t = vector_iterator<Ref, Ptr>;
 
 public:
@@ -478,5 +478,5 @@ public:
         return new_itr;
     }
 };
-} // namespace mtl
-#endif // MTL_VECTOR_H
+}  // namespace mtl
+#endif  // MTL_VECTOR_H

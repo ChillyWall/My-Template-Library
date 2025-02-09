@@ -1,11 +1,11 @@
+#include <mtl/algorithms.h>
+#include <mtl/vector.h>
+#include <test_mtl/myutils.h>
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <mtl/algorithms.h>
-#include <mtl/vector.h>
 #include <random>
-#include <test_mtl/myutils.h>
 #include <vector>
 
 void test_quicksort(ostream& os) {

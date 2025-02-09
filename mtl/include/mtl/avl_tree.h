@@ -696,9 +696,9 @@ avl_tree<T>::avl_iterator<Ref, Ptr>::operator++() {
     if (!node_) {
         throw NullIterator();
     }
-    if (node_->has_right()) { // node_ has right child
+    if (node_->has_right()) {  // node_ has right child
         node_ = find_min_(node_->right_);
-    } else { // node_ doesn't have right child
+    } else {  // node_ doesn't have right child
         NdPtr p = node_->parent_;
         while (p && node_->is_right()) {
             node_ = p;
@@ -745,6 +745,6 @@ avl_tree<T>::avl_iterator<Ref, Ptr>::operator+=(difference_t n) {
     }
     return *this;
 }
-} // namespace mtl
+}  // namespace mtl
 
 #endif

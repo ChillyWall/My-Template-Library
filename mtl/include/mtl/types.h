@@ -29,6 +29,6 @@ struct EmptyContainer : public std::exception {
         return msg_;
     }
 };
-} // namespace mtl
+}  // namespace mtl
 
 #endif

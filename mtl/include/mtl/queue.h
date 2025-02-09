@@ -74,6 +74,6 @@ template <typename T, template <typename> typename allocator>
 queue<T, allocator>::~queue() noexcept {
     delete data_;
 }
-} // namespace mtl
+}  // namespace mtl
 
 #endif

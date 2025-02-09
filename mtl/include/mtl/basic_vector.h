@@ -165,6 +165,6 @@ basic_vector<T>& basic_vector<T>::operator=(basic_vector<T>&& vec) noexcept {
     vec.clear();
     return *this;
 }
-} // namespace mtl
+}  // namespace mtl
 
 #endif

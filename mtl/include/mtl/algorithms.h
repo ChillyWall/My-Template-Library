@@ -182,6 +182,6 @@ Iterator find_mid(Iterator begin, Iterator end) {
     }
     return slow;
 }
-} // namespace mtl
+}  // namespace mtl
 
 #endif

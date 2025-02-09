@@ -118,7 +118,7 @@ void priority_queue<T>::percolate_up() noexcept {
     auto data = data_->data();
     T temp = std::move(data[pos]);
 
-    while (temp < data[pos >> 1]) { // pos >> 1 is equivalent to pos / 2.
+    while (temp < data[pos >> 1]) {  // pos >> 1 is equivalent to pos / 2.
         // move the parent down
         data[pos] = std::move(data[pos >> 1]);
         pos >>= 1;
@@ -132,7 +132,7 @@ void priority_queue<T>::percolate_down() noexcept {
     T temp = std::move(data[size_]);
     --size_;
     size_t pos = 1;
-    while ((pos << 1) <= size_) { // pos << 1 is equivalent to pos * 2
+    while ((pos << 1) <= size_) {  // pos << 1 is equivalent to pos * 2
         size_t child = pos << 1;
         // choose the smaller child
         if (child + 1 <= size_) {
@@ -148,5 +148,5 @@ void priority_queue<T>::percolate_down() noexcept {
     }
     data[pos] = std::move(temp);
 }
-} // namespace mtl
+}  // namespace mtl
 #endif

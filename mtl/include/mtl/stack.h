@@ -59,5 +59,5 @@ stack<T, allocator>::stack(stack<T, allocator>&& rhs) noexcept
     : data_(rhs.data_) {
     rhs.data_ = nullptr;
 }
-} // namespace mtl
+}  // namespace mtl
 #endif

@@ -1,11 +1,11 @@
 #ifndef MTL_DEQUE_H
 #define MTL_DEQUE_H
 
-#include "mtl/algorithms.h"
-#include "mtl/types.h"
 #include <initializer_list>
 #include <stdexcept>
 #include <type_traits>
+#include "mtl/algorithms.h"
+#include "mtl/types.h"
 
 namespace mtl {
 /* The deque (double-end queue) ADT.
@@ -32,11 +32,11 @@ public:
     using const_iterator = deque_iterator<const T&, const T*>;
 
 private:
-    MapPtr map_;      // the map of nodes
-    size_t map_size_; // the size of the map array
-    size_t size_;     // the number of elements
-    iterator front_;  // the front element
-    iterator back_;   // the back element
+    MapPtr map_;       // the map of nodes
+    size_t map_size_;  // the size of the map array
+    size_t size_;      // the number of elements
+    iterator front_;   // the front element
+    iterator back_;    // the back element
 
     MapPtr allocate_map_(size_t map_size);
 
@@ -344,10 +344,10 @@ template <typename Ref, typename Ptr>
 class deque<T>::deque_iterator {
 private:
     using self_t = deque_iterator<Ref, Ptr>;
-    EltPtr first_; // the first element of current node
-    EltPtr last_;  // the element past the last element of current node
-    MapPtr node_;  // the current node
-    EltPtr cur_;   // the current element
+    EltPtr first_;  // the first element of current node
+    EltPtr last_;   // the element past the last element of current node
+    MapPtr node_;   // the current node
+    EltPtr cur_;    // the current element
 
     // set the iterator's node as new_node
     void set_node_(MapPtr new_node) {
@@ -509,5 +509,5 @@ public:
 
     friend class deque<T>;
 };
-} // namespace mtl
+}  // namespace mtl
 #endif

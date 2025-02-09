@@ -1,8 +1,8 @@
 #ifndef MYUTILS_H
 #define MYUTILS_H
 
-#include <iostream>
 #include <mtl/vector.h>
+#include <iostream>
 
 using namespace mtl;
 using std::ostream;
