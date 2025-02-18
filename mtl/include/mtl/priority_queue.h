@@ -11,20 +11,12 @@ template <typename T>
 class priority_queue {
 private:
     /* the number of elements, note that the first element is at index 1 */
-    size_t size_;
-    basic_vector<T>* data_;
+    basic_vector<T> data_;
 
     // check whether the queue is empty, if true, throw a out_of_range exception
-    void check_empty() {
-        if (size_ == 0) {
+    void check_empty() const {
+        if (empty()) {
             throw EmptyContainer("There's no element.");
-        }
-    }
-
-    // check whether an expansion is needed.
-    void check_expand() {
-        if (size_ + 1 >= data_->capacity()) {
-            data_->expand(2 * data_->capacity());
         }
     }
 
@@ -43,37 +35,31 @@ public:
 
     // clear the queue
     virtual void clear() {
-        size_ = 0;
-        data_->clear();
+        data_.clear();
     }
 
     size_t size() const {
-        return size_;
+        return data_.size() - 1;
     }
 
     bool empty() const {
-        return size_ == 0;
+        return size() <= 0;
     }
 
     priority_queue<T>& operator=(const priority_queue<T>& rhs) {
-        size_ = rhs.size_;
-        *data_ = *rhs.data_;
+        data_ = rhs.data_;
         return *this;
     }
 
     priority_queue<T>& operator=(priority_queue<T>&& rhs) noexcept {
-        size_ = rhs.size_;
-        data_ = rhs.data_;
-        rhs.data_ = nullptr;
+        data_ = std::move(rhs.data_);
         return *this;
     }
 
     // push a new element
     template <typename V>
     void push(V&& elem) noexcept {
-        check_expand();
-        ++size_;
-        data_->data()[size_] = std::forward<V>(elem);
+        data_.push_back(std::forward<V>(elem));
         percolate_up();
     }
 
@@ -86,7 +72,7 @@ public:
     // return the minimum element
     const T& top() const {
         check_empty();
-        return data_->data()[1];
+        return data_[1];
     }
 
     T& top() {
@@ -96,57 +82,56 @@ public:
 };
 
 template <typename T>
-priority_queue<T>::priority_queue() : size_(0) {}
-
-template <typename T>
-priority_queue<T>::priority_queue(size_t size)
-    : size_(0), data_(new basic_vector<T>(size)) {}
-
-template <typename T>
-priority_queue<T>::priority_queue(const priority_queue<T>& rhs)
-    : size_(rhs.size_), data_(new basic_vector<T>(*rhs.data_)) {}
-
-template <typename T>
-priority_queue<T>::priority_queue(priority_queue<T>&& rhs) noexcept
-    : size_(rhs.size_), data_(rhs.data_) {
-    rhs.data_ = new basic_vector<T>();
+priority_queue<T>::priority_queue() : data_(1) {
+    data_.push_back(T());
 }
 
 template <typename T>
-void priority_queue<T>::percolate_up() noexcept {
-    size_t pos = size_;
-    auto data = data_->data();
-    T temp = std::move(data[pos]);
+priority_queue<T>::priority_queue(size_t capacity) : data_(capacity) {
+    data_.push_back(T());
+}
 
-    while (temp < data[pos >> 1]) {  // pos >> 1 is equivalent to pos / 2.
+template <typename T>
+priority_queue<T>::priority_queue(const priority_queue<T>& rhs)
+    : data_(rhs.data_) {}
+
+template <typename T>
+priority_queue<T>::priority_queue(priority_queue<T>&& rhs) noexcept
+    : data_(std::move(rhs.data_)) {}
+
+template <typename T>
+void priority_queue<T>::percolate_up() noexcept {
+    size_t pos = size();
+    T temp = std::move(data_[pos]);
+
+    while (temp < data_[pos / 2]) {
         // move the parent down
-        data[pos] = std::move(data[pos >> 1]);
-        pos >>= 1;
+        data_[pos] = std::move(data_[pos / 2]);
+        pos /= 2;
     }
-    data[pos] = std::move(temp);
+    data_[pos] = std::move(temp);
 }
 
 template <typename T>
 void priority_queue<T>::percolate_down() noexcept {
-    auto data = data_->data();
-    T temp = std::move(data[size_]);
-    --size_;
+    T temp = std::move(data_[size()]);
+    data_.pop_back();
     size_t pos = 1;
-    while ((pos << 1) <= size_) {  // pos << 1 is equivalent to pos * 2
-        size_t child = pos << 1;
+    while ((pos * 2) <= size()) {
+        size_t child = pos * 2;
         // choose the smaller child
-        if (child + 1 <= size_) {
-            child = data[child] > data[child + 1] ? child + 1 : child;
+        if (child + 1 <= size()) {
+            child = data_[child] > data_[child + 1] ? child + 1 : child;
         }
         // move the child up
-        if (data[child] < temp) {
-            data[pos] = std::move(data[child]);
+        if (data_[child] < temp) {
+            data_[pos] = std::move(data_[child]);
             pos = child;
         } else {
             break;
         }
     }
-    data[pos] = std::move(temp);
+    data_[pos] = std::move(temp);
 }
 }  // namespace mtl
 #endif
