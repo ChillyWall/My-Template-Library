@@ -151,7 +151,7 @@ TEST_F(TestVector, TestPopBack) {
     for (int i = 0; i < 4; ++i) {
         v.pop_back();
     }
-    EXPECT_THROW(v.pop_back(), std::out_of_range);
+    EXPECT_THROW(v.pop_back(), mtl::EmptyContainer);
 }
 
 TEST_F(TestVector, TestPushFront) {
