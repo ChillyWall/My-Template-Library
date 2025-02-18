@@ -1,11 +1,11 @@
 #ifndef MTL_DEQUE_H
 #define MTL_DEQUE_H
 
+#include <mtl/algorithms.h>
+#include <mtl/types.h>
 #include <initializer_list>
 #include <stdexcept>
 #include <type_traits>
-#include "mtl/algorithms.h"
-#include "mtl/types.h"
 
 namespace mtl {
 /* The deque (double-end queue) ADT.
