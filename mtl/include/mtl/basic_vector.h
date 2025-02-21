@@ -5,12 +5,8 @@
 #include <memory>
 
 namespace mtl {
-template <typename T, typename Alloc = std::allocator<T>>
+template <typename T, template <typename> typename Alloc = std::allocator>
 class basic_vector {
-public:
-    using allocator_type =
-        typename std::allocator_traits<Alloc>::template rebind_alloc<T>;
-
 private:
     // the length of the array
     size_t capacity_;
@@ -21,7 +17,7 @@ private:
 protected:
     size_t size_;
 
-    allocator_type allocator_;
+    Alloc<T> allocator_;
     /* allocate a new array with length size it don't delete the original array
      */
     void allocate(size_t new_capacity) {
@@ -142,16 +138,16 @@ public:
     }
 };
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 basic_vector<T, Alloc>::basic_vector()
     : capacity_(0), data_(nullptr), size_(0) {}
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 basic_vector<T, Alloc>::basic_vector(size_t s) : capacity_(s), size_(0) {
     allocate(capacity_);
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 basic_vector<T, Alloc>::basic_vector(const basic_vector<T, Alloc>& rhs)
     : size_(rhs.size_) {
     allocate(rhs.capacity_);
@@ -160,7 +156,7 @@ basic_vector<T, Alloc>::basic_vector(const basic_vector<T, Alloc>& rhs)
     }
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 basic_vector<T, Alloc>::basic_vector(basic_vector<T, Alloc>&& rhs) noexcept
     : data_(rhs.data_), capacity_(rhs.capacity_), size_(rhs.size_) {
     rhs.data_ = nullptr;
@@ -168,13 +164,13 @@ basic_vector<T, Alloc>::basic_vector(basic_vector<T, Alloc>&& rhs) noexcept
     rhs.size_ = 0;
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 basic_vector<T, Alloc>::~basic_vector() {
     destroy_all();
     deallocate();
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 void basic_vector<T, Alloc>::expand(size_t new_capacity) noexcept {
     if (new_capacity <= capacity_) {
         return;
@@ -193,7 +189,7 @@ void basic_vector<T, Alloc>::expand(size_t new_capacity) noexcept {
     allocator_.deallocate(old_data, old_capacity);
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 void basic_vector<T, Alloc>::shrink(size_t new_capacity) noexcept {
     if (new_capacity >= capacity_) {
         return;
@@ -223,7 +219,7 @@ void basic_vector<T, Alloc>::shrink(size_t new_capacity) noexcept {
     allocator_.deallocate(old_data, old_capacity);
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 basic_vector<T, Alloc>&
 basic_vector<T, Alloc>::operator=(const basic_vector<T, Alloc>& rhs) {
     if (this == &rhs) {
@@ -243,7 +239,7 @@ basic_vector<T, Alloc>::operator=(const basic_vector<T, Alloc>& rhs) {
     return *this;
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 basic_vector<T, Alloc>&
 basic_vector<T, Alloc>::operator=(basic_vector<T, Alloc>&& vec) noexcept {
     if (this == &vec) {

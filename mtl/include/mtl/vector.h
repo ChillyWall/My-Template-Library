@@ -8,9 +8,10 @@
 
 // The namespace where the ADTs are.
 namespace mtl {
+
 /* The vector ADT, it can expand its data array to double size when space is
  * not enough. */
-template <typename T, typename Alloc = std::allocator<T>>
+template <typename T, template <typename> typename Alloc = std::allocator>
 class vector : public basic_vector<T, Alloc> {
 private:
     void check_empty() const {
@@ -173,7 +174,7 @@ public:
     }
 };
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 vector<T, Alloc>::vector(std::initializer_list<T>&& il) noexcept
     : basic_vector<T, Alloc>(il.size()) {
     basic_vector<T, Alloc>::size_ = il.size();
@@ -184,7 +185,7 @@ vector<T, Alloc>::vector(std::initializer_list<T>&& il) noexcept
     }
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 vector<T, Alloc> vector<T, Alloc>::splice(size_t begin, size_t stop) {
     size_t size = stop - begin;
     vector<T, Alloc> vec(size);
@@ -196,7 +197,7 @@ vector<T, Alloc> vector<T, Alloc>::splice(size_t begin, size_t stop) {
     return vec;
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 template <typename V>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(iterator index, V&& elem) noexcept {
@@ -237,7 +238,7 @@ vector<T, Alloc>::insert(iterator index, V&& elem) noexcept {
     return index;
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 template <typename InputIterator>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(iterator index, InputIterator begin,
@@ -298,7 +299,7 @@ vector<T, Alloc>::insert(iterator index, InputIterator begin,
     return index;
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::remove(iterator index) noexcept {
     // check whether the position is valid
@@ -318,7 +319,7 @@ vector<T, Alloc>::remove(iterator index) noexcept {
     return index;
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::remove(iterator begin, iterator stop) noexcept {
     // check whether the range is valid
@@ -342,7 +343,7 @@ vector<T, Alloc>::remove(iterator begin, iterator stop) noexcept {
     return begin;
 }
 
-template <typename T, typename Alloc>
+template <typename T, template <typename> typename Alloc>
 template <typename Ref, typename Ptr>
 class vector<T, Alloc>::vector_iterator {
 private:
