@@ -7,6 +7,9 @@
 namespace mtl {
 template <typename T, template <typename> typename Alloc = std::allocator>
 class basic_vector {
+public:
+    using self_t = basic_vector<T, Alloc>;
+
 private:
     // the length of the array
     size_t capacity_;
@@ -49,8 +52,8 @@ protected:
 public:
     basic_vector();
     explicit basic_vector(size_t s);
-    basic_vector(const basic_vector<T, Alloc>& rhs);
-    basic_vector(basic_vector<T, Alloc>&& rhs) noexcept;
+    basic_vector(const self_t& rhs);
+    basic_vector(self_t&& rhs) noexcept;
     virtual ~basic_vector();
 
     basic_vector& operator=(const basic_vector& rhs);
@@ -65,8 +68,7 @@ public:
     // the const version
     T& operator[](size_t index) {
         return const_cast<T&>(
-            static_cast<const basic_vector<T, Alloc>*>(this)->operator[](
-                index));
+            static_cast<const self_t*>(this)->operator[](index));
     }
 
     const T& at(size_t index) const {
@@ -77,8 +79,7 @@ public:
     }
 
     T& at(size_t index) {
-        return const_cast<T&>(
-            static_cast<const basic_vector<T, Alloc>*>(this)->at(index));
+        return const_cast<T&>(static_cast<const self_t*>(this)->at(index));
     }
 
     size_t size() const {
@@ -148,8 +149,7 @@ basic_vector<T, Alloc>::basic_vector(size_t s) : capacity_(s), size_(0) {
 }
 
 template <typename T, template <typename> typename Alloc>
-basic_vector<T, Alloc>::basic_vector(const basic_vector<T, Alloc>& rhs)
-    : size_(rhs.size_) {
+basic_vector<T, Alloc>::basic_vector(const self_t& rhs) : size_(rhs.size_) {
     allocate(rhs.capacity_);
     for (size_t i = 0; i < size_; ++i) {
         construct(i, rhs.data_[i]);
@@ -157,7 +157,7 @@ basic_vector<T, Alloc>::basic_vector(const basic_vector<T, Alloc>& rhs)
 }
 
 template <typename T, template <typename> typename Alloc>
-basic_vector<T, Alloc>::basic_vector(basic_vector<T, Alloc>&& rhs) noexcept
+basic_vector<T, Alloc>::basic_vector(self_t&& rhs) noexcept
     : data_(rhs.data_), capacity_(rhs.capacity_), size_(rhs.size_) {
     rhs.data_ = nullptr;
     rhs.capacity_ = 0;
@@ -220,8 +220,8 @@ void basic_vector<T, Alloc>::shrink(size_t new_capacity) noexcept {
 }
 
 template <typename T, template <typename> typename Alloc>
-basic_vector<T, Alloc>&
-basic_vector<T, Alloc>::operator=(const basic_vector<T, Alloc>& rhs) {
+typename basic_vector<T, Alloc>::self_t&
+basic_vector<T, Alloc>::operator=(const self_t& rhs) {
     if (this == &rhs) {
         return *this;
     }
@@ -240,8 +240,8 @@ basic_vector<T, Alloc>::operator=(const basic_vector<T, Alloc>& rhs) {
 }
 
 template <typename T, template <typename> typename Alloc>
-basic_vector<T, Alloc>&
-basic_vector<T, Alloc>::operator=(basic_vector<T, Alloc>&& vec) noexcept {
+basic_vector<T, Alloc>::self_t&
+basic_vector<T, Alloc>::operator=(self_t&& vec) noexcept {
     if (this == &vec) {
         return *this;
     }

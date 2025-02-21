@@ -8,16 +8,18 @@
 namespace mtl {
 template <typename T, template <typename> typename Alloc = std::allocator>
 class stack {
+public:
+    using self_t = stack<T, Alloc>;
+
 private:
     using container_type = deque<T, Alloc>;
-    deque<T>* data_;
+    deque<T> data_;
 
 public:
-    stack();
-    explicit stack(size_t size_);
-    stack(const stack<T, Alloc>& rhs);
-    stack(stack<T, Alloc>&& rhs) noexcept;
-    virtual ~stack();
+    stack() = default;
+    stack(const self_t& rhs) = default;
+    stack(self_t&& rhs) noexcept = default;
+    virtual ~stack() = default;
 
     bool empty() const {
         data_->empty();
@@ -45,20 +47,5 @@ public:
     }
 };
 
-template <typename T, template <typename> typename allocator>
-stack<T, allocator>::stack() : data_(new allocator()) {}
-
-template <typename T, template <typename> typename allocator>
-stack<T, allocator>::stack(size_t s) : data_(new allocator(s)) {}
-
-template <typename T, template <typename> typename allocator>
-stack<T, allocator>::stack(const stack<T, allocator>& rhs)
-    : data_(new allocator(*rhs.data_)) {}
-
-template <typename T, template <typename> typename allocator>
-stack<T, allocator>::stack(stack<T, allocator>&& rhs) noexcept
-    : data_(rhs.data_) {
-    rhs.data_ = nullptr;
-}
 }  // namespace mtl
 #endif

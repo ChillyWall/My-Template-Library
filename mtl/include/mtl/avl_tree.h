@@ -9,6 +9,9 @@
 namespace mtl {
 template <typename T, template <typename> typename Alloc = std::allocator>
 class avl_tree {
+public:
+    using self_t = avl_tree<T, Alloc>;
+
 private:
     // The iterator class
     template <typename Ref, typename Ptr>
@@ -100,8 +103,8 @@ private:
 
 public:
     avl_tree();
-    avl_tree(const avl_tree& rhs);
-    avl_tree(avl_tree&& rhs) noexcept;
+    avl_tree(const self_t& rhs);
+    avl_tree(self_t&& rhs) noexcept;
     ~avl_tree() noexcept;
 
     bool empty() const {
@@ -169,7 +172,7 @@ public:
 
     // return iterator to the node containing element
     iterator find(const T& elem) {
-        return const_cast<const avl_tree<T, Alloc>*>(this)->find(elem);
+        return const_cast<const self_t*>(this)->find(elem);
     }
 
     // return iterator to the minimum element
@@ -197,12 +200,12 @@ template <typename T, template <typename> typename Alloc>
 avl_tree<T, Alloc>::avl_tree() : root_(nullptr), size_(0) {}
 
 template <typename T, template <typename> typename Alloc>
-avl_tree<T, Alloc>::avl_tree(const avl_tree& rhs) : size_(rhs.size_) {
+avl_tree<T, Alloc>::avl_tree(const self_t& rhs) : size_(rhs.size_) {
     root_ = copy_node(rhs.root_);
 }
 
 template <typename T, template <typename> typename Alloc>
-avl_tree<T, Alloc>::avl_tree(avl_tree&& rhs) noexcept
+avl_tree<T, Alloc>::avl_tree(self_t&& rhs) noexcept
     : root_(rhs.root_), size_(rhs.size_) {
     rhs.root_ = nullptr;
     rhs.size_ = 0;

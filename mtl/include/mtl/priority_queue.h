@@ -3,15 +3,20 @@
 
 #include <mtl/basic_vector.h>
 #include <mtl/types.h>
+#include <memory>
 
 namespace mtl {
 /* The priority queue ADT, implemented by basic_vector so that it could
  * dynamicly expand its capacity. */
-template <typename T>
+template <typename T, template <typename> typename Alloc = std::allocator>
 class priority_queue {
+public:
+    using self_t = priority_queue<T, Alloc>;
+    using container_t = basic_vector<T, Alloc>;
+
 private:
     /* the number of elements, note that the first element is at index 1 */
-    basic_vector<T> data_;
+    container_t data_;
 
     // check whether the queue is empty, if true, throw a out_of_range exception
     void check_empty() const {
@@ -29,8 +34,8 @@ private:
 public:
     priority_queue();
     priority_queue(size_t n);
-    priority_queue(const priority_queue<T>& rhs);
-    priority_queue(priority_queue<T>&& rhs) noexcept;
+    priority_queue(const self_t& rhs);
+    priority_queue(self_t&& rhs) noexcept;
     virtual ~priority_queue() = default;
 
     // clear the queue
@@ -46,12 +51,12 @@ public:
         return size() <= 0;
     }
 
-    priority_queue<T>& operator=(const priority_queue<T>& rhs) {
+    self_t& operator=(const self_t& rhs) {
         data_ = rhs.data_;
         return *this;
     }
 
-    priority_queue<T>& operator=(priority_queue<T>&& rhs) noexcept {
+    self_t& operator=(self_t&& rhs) noexcept {
         data_ = std::move(rhs.data_);
         return *this;
     }
@@ -76,31 +81,30 @@ public:
     }
 
     T& top() {
-        return const_cast<T&>(
-            static_cast<const priority_queue<T>*>(this)->top());
+        return const_cast<T&>(static_cast<const self_t*>(this)->top());
     }
 };
 
-template <typename T>
-priority_queue<T>::priority_queue() : data_(1) {
+template <typename T, template <typename> typename Alloc>
+priority_queue<T, Alloc>::priority_queue() : data_(1) {
     data_.push_back(T());
 }
 
-template <typename T>
-priority_queue<T>::priority_queue(size_t capacity) : data_(capacity) {
+template <typename T, template <typename> typename Alloc>
+priority_queue<T, Alloc>::priority_queue(size_t capacity) : data_(capacity) {
     data_.push_back(T());
 }
 
-template <typename T>
-priority_queue<T>::priority_queue(const priority_queue<T>& rhs)
+template <typename T, template <typename> typename Alloc>
+priority_queue<T, Alloc>::priority_queue(const self_t& rhs)
     : data_(rhs.data_) {}
 
-template <typename T>
-priority_queue<T>::priority_queue(priority_queue<T>&& rhs) noexcept
+template <typename T, template <typename> typename Alloc>
+priority_queue<T, Alloc>::priority_queue(self_t&& rhs) noexcept
     : data_(std::move(rhs.data_)) {}
 
-template <typename T>
-void priority_queue<T>::percolate_up() noexcept {
+template <typename T, template <typename> typename Alloc>
+void priority_queue<T, Alloc>::percolate_up() noexcept {
     size_t pos = size();
     T temp = std::move(data_[pos]);
 
@@ -112,8 +116,8 @@ void priority_queue<T>::percolate_up() noexcept {
     data_[pos] = std::move(temp);
 }
 
-template <typename T>
-void priority_queue<T>::percolate_down() noexcept {
+template <typename T, template <typename> typename Alloc>
+void priority_queue<T, Alloc>::percolate_down() noexcept {
     T temp = std::move(data_[size()]);
     data_.pop_back();
     size_t pos = 1;

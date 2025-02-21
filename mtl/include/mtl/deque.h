@@ -16,6 +16,9 @@ namespace mtl {
  * time. */
 template <typename T, template <typename> typename Alloc = std::allocator>
 class deque {
+public:
+    using self_t = deque<T, Alloc>;
+
 private:
     /* The default size of map array. In any situations, map_size_ won't be less
      * than it */

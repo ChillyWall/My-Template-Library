@@ -13,6 +13,9 @@ namespace mtl {
 /* the list ADT, it's a double linked list. */
 template <typename T, template <typename> typename Alloc = std::allocator>
 class list {
+public:
+    using self_t = list<T, Alloc>;
+
 private:
     // the node class
     class Node;
@@ -193,7 +196,7 @@ void list<T, Alloc>::init() {
 }
 
 template <typename T, template <typename> typename Alloc>
-list<T, Alloc>& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
+list<T, Alloc>::self_t& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
     if (this == &l) {
         return *this;
     }
@@ -207,7 +210,7 @@ list<T, Alloc>& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
 }
 
 template <typename T, template <typename> typename Alloc>
-list<T, Alloc>& list<T, Alloc>::operator=(list<T, Alloc>&& l) noexcept {
+list<T, Alloc>::self_t& list<T, Alloc>::operator=(list<T, Alloc>&& l) noexcept {
     clear();
     head_ = l.head_;
     tail_ = l.tail_;

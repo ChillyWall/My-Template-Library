@@ -8,16 +8,18 @@
 namespace mtl {
 template <typename T, template <typename> typename Alloc = std::allocator>
 class queue {
+public:
+    using self_t = queue<T, Alloc>;
+
 private:
-    using container_type = deque<T, Alloc>;
-    deque<T>* data_;
+    using container_t = deque<T, Alloc>;
+    deque<T> data_;
 
 public:
-    queue();
-    explicit queue(size_t s);
-    queue(const queue<T, Alloc>& rhs);
-    queue(queue<T, Alloc>&& rhs);
-    ~queue() noexcept;
+    queue() = default;
+    queue(const self_t& rhs) = default;
+    queue(self_t&& rhs) = default;
+    ~queue() noexcept = default;
 
     size_t size() const {
         return data_->size();
@@ -57,25 +59,6 @@ public:
     }
 };
 
-template <typename T, template <typename> typename Alloc>
-queue<T, Alloc>::queue() : data_(new container_type()) {}
-
-template <typename T, template <typename> typename Alloc>
-queue<T, Alloc>::queue(size_t s) : data_(new container_type(s)) {}
-
-template <typename T, template <typename> typename Alloc>
-queue<T, Alloc>::queue(const queue<T, Alloc>& rhs)
-    : data_(new container_type(*rhs.data_)) {}
-
-template <typename T, template <typename> typename Alloc>
-queue<T, Alloc>::queue(queue<T, Alloc>&& rhs) : data_(rhs.data_) {
-    rhs.data_ = new container_type;
-}
-
-template <typename T, template <typename> typename Alloc>
-queue<T, Alloc>::~queue() noexcept {
-    delete data_;
-}
 }  // namespace mtl
 
 #endif
