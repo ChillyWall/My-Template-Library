@@ -3,10 +3,11 @@
 
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
+#include <memory>
 #include <type_traits>
 
 namespace mtl {
-template <typename T>
+template <typename T, template <typename> typename Alloc = std::allocator>
 class avl_tree {
 private:
     // The iterator class
@@ -23,6 +24,8 @@ private:
     // the pointer to Node
     using NdPtr = Node*;
 
+    static Alloc<Node> allocator_;
+
     // The root node of the tree
     NdPtr root_;
     // The number of nodes in this tree
@@ -36,6 +39,28 @@ private:
 
     static long long calc_height_(NdPtr node) {
         return max(height_(node->left_), height_(node->right_)) + 1;
+    }
+
+    template <typename... Args>
+    static NdPtr allocate_node(Args&&... args) {
+        NdPtr ptr = allocator_.allocate(1);
+        std::construct_at(ptr, std::forward<Args>(args)...);
+        return ptr;
+    }
+
+    static void deallocate_node(NdPtr node) {
+        if (!node) {
+            return;
+        }
+
+        if (node->has_left()) {
+            deallocate_node(node->left_);
+        }
+        if (node->has_right()) {
+            deallocate_node(node->right_);
+        }
+        std::destroy_at(node);
+        allocator_.deallocate(node, 1);
     }
 
     // To update and balance the tree
@@ -86,7 +111,7 @@ public:
     // clear all the items.
     void clear() {
         size_ = 0;
-        delete root_;
+        deallocate_node(root_);
     }
 
     // return the number of items.
@@ -144,7 +169,7 @@ public:
 
     // return iterator to the node containing element
     iterator find(const T& elem) {
-        return const_cast<const avl_tree<T>*>(this)->find(elem);
+        return const_cast<const avl_tree<T, Alloc>*>(this)->find(elem);
     }
 
     // return iterator to the minimum element
@@ -168,28 +193,28 @@ public:
     }
 };
 
-template <typename T>
-avl_tree<T>::avl_tree() : root_(nullptr), size_(0) {}
+template <typename T, template <typename> typename Alloc>
+avl_tree<T, Alloc>::avl_tree() : root_(nullptr), size_(0) {}
 
-template <typename T>
-avl_tree<T>::avl_tree(const avl_tree& rhs) : size_(rhs.size_) {
+template <typename T, template <typename> typename Alloc>
+avl_tree<T, Alloc>::avl_tree(const avl_tree& rhs) : size_(rhs.size_) {
     root_ = copy_node_(rhs.root_);
 }
 
-template <typename T>
-avl_tree<T>::avl_tree(avl_tree&& rhs) noexcept
+template <typename T, template <typename> typename Alloc>
+avl_tree<T, Alloc>::avl_tree(avl_tree&& rhs) noexcept
     : root_(rhs.root_), size_(rhs.size_) {
     rhs.root_ = nullptr;
     rhs.size_ = 0;
 }
 
-template <typename T>
-avl_tree<T>::~avl_tree() noexcept {
-    delete root_;
+template <typename T, template <typename> typename Alloc>
+avl_tree<T, Alloc>::~avl_tree() noexcept {
+    deallocate_node(root_);
 }
 
-template <typename T>
-bool avl_tree<T>::contain(const T& elem) const {
+template <typename T, template <typename> typename Alloc>
+bool avl_tree<T, Alloc>::contain(const T& elem) const {
     if (this->empty()) {
         return false;
     }
@@ -213,12 +238,12 @@ bool avl_tree<T>::contain(const T& elem) const {
     }
 }
 
-template <typename T>
-typename avl_tree<T>::NdPtr avl_tree<T>::copy_node_(NdPtr node) {
+template <typename T, template <typename> typename Alloc>
+typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::copy_node_(NdPtr node) {
     if (!node) {
         return nullptr;
     }
-    NdPtr res = new Node(node->element(), nullptr, nullptr, nullptr);
+    NdPtr res = allocate_node(node->element(), nullptr, nullptr, nullptr);
     NdPtr lt = copy_node_(node->left());
     NdPtr rt = copy_node(node->right());
     if (lt) {
@@ -231,8 +256,8 @@ typename avl_tree<T>::NdPtr avl_tree<T>::copy_node_(NdPtr node) {
     res->right_ = rt;
 }
 
-template <typename T>
-typename avl_tree<T>::NdPtr avl_tree<T>::find_max_(NdPtr node) {
+template <typename T, template <typename> typename Alloc>
+typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_max_(NdPtr node) {
     if (!node) {
         return node;
     }
@@ -243,8 +268,8 @@ typename avl_tree<T>::NdPtr avl_tree<T>::find_max_(NdPtr node) {
     return node;
 }
 
-template <typename T>
-typename avl_tree<T>::NdPtr avl_tree<T>::find_min_(NdPtr node) {
+template <typename T, template <typename> typename Alloc>
+typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_min_(NdPtr node) {
     if (!node) {
         return node;
     }
@@ -255,8 +280,8 @@ typename avl_tree<T>::NdPtr avl_tree<T>::find_min_(NdPtr node) {
     return node;
 }
 
-template <typename T>
-void avl_tree<T>::rotate_left_(NdPtr node) {
+template <typename T, template <typename> typename Alloc>
+void avl_tree<T, Alloc>::rotate_left_(NdPtr node) {
     NdPtr lf, lf_rg, par;
     lf = node->left_;
     lf_rg = lf->right_;
@@ -283,8 +308,8 @@ void avl_tree<T>::rotate_left_(NdPtr node) {
     lf->height_ = calc_height_(lf);
 }
 
-template <typename T>
-void avl_tree<T>::rotate_right_(NdPtr node) {
+template <typename T, template <typename> typename Alloc>
+void avl_tree<T, Alloc>::rotate_right_(NdPtr node) {
     NdPtr rg, rg_lf, par;
     rg = node->right_;
     rg_lf = rg->left_;
@@ -311,8 +336,8 @@ void avl_tree<T>::rotate_right_(NdPtr node) {
     rg->height_ = calc_height_(rg);
 }
 
-template <typename T>
-void avl_tree<T>::update_(NdPtr node) {
+template <typename T, template <typename> typename Alloc>
+void avl_tree<T, Alloc>::update_(NdPtr node) {
     while (true) {
         if (abs(height_(node->left_) - height_(node->right_)) >
             ALLOWED_IMBALANCE) {
@@ -343,11 +368,12 @@ void avl_tree<T>::update_(NdPtr node) {
     }
 }
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename V>
-typename avl_tree<T>::iterator avl_tree<T>::insert(V&& elem) noexcept {
+typename avl_tree<T, Alloc>::iterator
+avl_tree<T, Alloc>::insert(V&& elem) noexcept {
     if (!root_) {
-        root_ = new Node(std::forward<V>(elem), nullptr, nullptr, nullptr);
+        root_ = allocate_node(std::forward<V>(elem), nullptr, nullptr, nullptr);
         ++size_;
         return iterator(root_);
     }
@@ -358,7 +384,7 @@ typename avl_tree<T>::iterator avl_tree<T>::insert(V&& elem) noexcept {
     if (elem == node->element()) {
         return iterator(node);
     } else {
-        res = new Node(std::forward<V>(elem), node, nullptr, nullptr);
+        res = allocate_node(std::forward<V>(elem), node, nullptr, nullptr);
         if (elem > node->element()) {
             node->right_ = res;
         } else {
@@ -370,8 +396,8 @@ typename avl_tree<T>::iterator avl_tree<T>::insert(V&& elem) noexcept {
     }
 }
 
-template <typename T>
-void avl_tree<T>::remove_(NdPtr node) {
+template <typename T, template <typename> typename Alloc>
+void avl_tree<T, Alloc>::remove_(NdPtr node) {
     if (!node) {
         return;
     }
@@ -386,7 +412,7 @@ void avl_tree<T>::remove_(NdPtr node) {
             sub->parent_->left_ = nullptr;
         }
         update_(sub->parent_);
-        delete sub;
+        deallocate_node(sub);
     } else {
         if (node->has_left()) {
             node->left_->parent_ = node->parent_;
@@ -419,12 +445,12 @@ void avl_tree<T>::remove_(NdPtr node) {
                 node->parent_->right_ = nullptr;
             }
         }
-        delete node;
+        deallocate_node(node);
     }
 }
 
-template <typename T>
-size_t avl_tree<T>::remove(const T& elem) noexcept {
+template <typename T, template <typename> typename Alloc>
+size_t avl_tree<T, Alloc>::remove(const T& elem) noexcept {
     if (!root_) {
         return 0;
     }
@@ -439,16 +465,18 @@ size_t avl_tree<T>::remove(const T& elem) noexcept {
     }
 }
 
-template <typename T>
-typename avl_tree<T>::iterator avl_tree<T>::remove(iterator itr) noexcept {
+template <typename T, template <typename> typename Alloc>
+typename avl_tree<T, Alloc>::iterator
+avl_tree<T, Alloc>::remove(iterator itr) noexcept {
     auto res = itr++;
     remove(res->node_);
     --size_;
     return itr;
 }
 
-template <typename T>
-typename avl_tree<T>::NdPtr avl_tree<T>::find_(const T& elem) const {
+template <typename T, template <typename> typename Alloc>
+typename avl_tree<T, Alloc>::NdPtr
+avl_tree<T, Alloc>::find_(const T& elem) const {
     if (!root_) {
         return nullptr;
     }
@@ -466,8 +494,9 @@ typename avl_tree<T>::NdPtr avl_tree<T>::find_(const T& elem) const {
     return node;
 }
 
-template <typename T>
-typename avl_tree<T>::const_iterator avl_tree<T>::find(const T& elem) const {
+template <typename T, template <typename> typename Alloc>
+typename avl_tree<T, Alloc>::const_iterator
+avl_tree<T, Alloc>::find(const T& elem) const {
     NdPtr res;
     res = find_(elem);
     if (res->element() == elem) {
@@ -477,8 +506,8 @@ typename avl_tree<T>::const_iterator avl_tree<T>::find(const T& elem) const {
     }
 }
 
-template <typename T>
-class avl_tree<T>::Node {
+template <typename T, template <typename> typename Alloc>
+class avl_tree<T, Alloc>::Node {
 private:
     T element_;
     // its parent node
@@ -495,7 +524,7 @@ public:
     Node(V&& elem, NdPtr par, NdPtr lt, NdPtr rt) noexcept;
     /* when an instance is destructed, it will automatically destruct its
      * children. */
-    ~Node() noexcept;
+    ~Node() noexcept = default;
 
     long long height() const {
         return height_;
@@ -548,29 +577,23 @@ public:
         return bool(right_);
     }
 
-    friend class avl_tree<T>;
+    friend class avl_tree<T, Alloc>;
     template <typename Ref, typename Ptr>
-    friend class avl_tree<T>::avl_iterator;
+    friend class avl_tree<T, Alloc>::avl_iterator;
 };
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename V>
-avl_tree<T>::Node::Node(V&& elem, NdPtr par, NdPtr lt, NdPtr rt) noexcept
+avl_tree<T, Alloc>::Node::Node(V&& elem, NdPtr par, NdPtr lt, NdPtr rt) noexcept
     : element_(std::forward<V>(elem)),
       parent_(par),
       left_(lt),
       right_(rt),
       height_(0) {}
 
-template <typename T>
-avl_tree<T>::Node::~Node() noexcept {
-    delete left_;
-    delete right_;
-}
-
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename Ref, typename Ptr>
-class avl_tree<T>::avl_iterator {
+class avl_tree<T, Alloc>::avl_iterator {
 private:
     // the pointer to the node
     NdPtr node_;
@@ -689,10 +712,10 @@ public:
     }
 };
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename Ref, typename Ptr>
-typename avl_tree<T>::template avl_iterator<Ref, Ptr>::self_t&
-avl_tree<T>::avl_iterator<Ref, Ptr>::operator++() {
+typename avl_tree<T, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
+avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator++() {
     if (!node_) {
         throw NullIterator();
     }
@@ -709,10 +732,10 @@ avl_tree<T>::avl_iterator<Ref, Ptr>::operator++() {
     return *this;
 }
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename Ref, typename Ptr>
-typename avl_tree<T>::template avl_iterator<Ref, Ptr>::self_t&
-avl_tree<T>::avl_iterator<Ref, Ptr>::operator--() {
+typename avl_tree<T, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
+avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator--() {
     if (!node_) {
         throw NullIterator();
     }
@@ -729,10 +752,10 @@ avl_tree<T>::avl_iterator<Ref, Ptr>::operator--() {
     return *this;
 }
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename Ref, typename Ptr>
-typename avl_tree<T>::template avl_iterator<Ref, Ptr>::self_t&
-avl_tree<T>::avl_iterator<Ref, Ptr>::operator+=(difference_t n) {
+typename avl_tree<T, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
+avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator+=(difference_t n) {
     if (n > 0) {
         for (difference_t i = 0; i < n; i++) {
             this->operator++();
