@@ -6,7 +6,7 @@
 #include <memory>
 
 namespace mtl {
-template <typename T, template <typename> typename Alloc = std::allocator>
+template <typename T, typename Alloc = std::allocator<T>>
 class queue {
 public:
     using self_t = queue<T, Alloc>;

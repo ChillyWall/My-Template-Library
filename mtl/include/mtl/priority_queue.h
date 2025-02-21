@@ -8,7 +8,7 @@
 namespace mtl {
 /* The priority queue ADT, implemented by basic_vector so that it could
  * dynamicly expand its capacity. */
-template <typename T, template <typename> typename Alloc = std::allocator>
+template <typename T, typename Alloc = std::allocator<T>>
 class priority_queue {
 public:
     using self_t = priority_queue<T, Alloc>;
@@ -85,25 +85,25 @@ public:
     }
 };
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 priority_queue<T, Alloc>::priority_queue() : data_(1) {
     data_.push_back(T());
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 priority_queue<T, Alloc>::priority_queue(size_t capacity) : data_(capacity) {
     data_.push_back(T());
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 priority_queue<T, Alloc>::priority_queue(const self_t& rhs)
     : data_(rhs.data_) {}
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 priority_queue<T, Alloc>::priority_queue(self_t&& rhs) noexcept
     : data_(std::move(rhs.data_)) {}
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void priority_queue<T, Alloc>::percolate_up() noexcept {
     size_t pos = size();
     T temp = std::move(data_[pos]);
@@ -116,7 +116,7 @@ void priority_queue<T, Alloc>::percolate_up() noexcept {
     data_[pos] = std::move(temp);
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void priority_queue<T, Alloc>::percolate_down() noexcept {
     T temp = std::move(data_[size()]);
     data_.pop_back();

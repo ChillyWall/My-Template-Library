@@ -6,7 +6,7 @@
 #include <memory>
 
 namespace mtl {
-template <typename T, template <typename> typename Alloc = std::allocator>
+template <typename T, typename Alloc = std::allocator<T>>
 class stack {
 public:
     using self_t = stack<T, Alloc>;

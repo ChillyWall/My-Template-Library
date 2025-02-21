@@ -14,7 +14,7 @@ namespace mtl {
  * When push or pop an element from front or back end, it's only needed to add a
  * new node, which ensure that the push and pop operations will take only O(1)
  * time. */
-template <typename T, template <typename> typename Alloc = std::allocator>
+template <typename T, typename Alloc = std::allocator<T>>
 class deque {
 public:
     using self_t = deque<T, Alloc>;
@@ -42,8 +42,11 @@ private:
     iterator front_;   // the front element
     iterator back_;    // the back element
 
-    Alloc<T> node_allocator_;
-    Alloc<EltPtr> map_allocator_;
+    using MapAlloc =
+        typename std::allocator_traits<Alloc>::template rebind_alloc<EltPtr>;
+
+    Alloc node_allocator_;
+    MapAlloc map_allocator_;
 
     MapPtr allocate_map(size_t map_size);
 
@@ -244,7 +247,7 @@ public:
     }
 };
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 deque<T, Alloc>::deque(size_t n) {
     init(n / BUF_LEN + 3);
     for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
@@ -259,7 +262,7 @@ deque<T, Alloc>::deque(size_t n) {
     }
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 deque<T, Alloc>::deque(size_t n, const T& val) {
     init(n / BUF_LEN + 3);
     for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
@@ -274,7 +277,7 @@ deque<T, Alloc>::deque(size_t n, const T& val) {
     }
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 deque<T, Alloc>::deque(std::initializer_list<T>&& il) noexcept {
     init(il.size() / BUF_LEN + 3);
     for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
@@ -290,7 +293,7 @@ deque<T, Alloc>::deque(std::initializer_list<T>&& il) noexcept {
     }
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 deque<T, Alloc>::deque(const deque<T, Alloc>& rhs)
     : map_size_(rhs.map_size_), size_(rhs.size_) {
     map_ = allocate_map(map_size_);
@@ -316,7 +319,7 @@ deque<T, Alloc>::deque(const deque<T, Alloc>& rhs)
     }
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 typename deque<T, Alloc>::MapPtr
 deque<T, Alloc>::allocate_map(size_t map_size) {
     auto map = map_allocator_.allocate(map_size);
@@ -326,7 +329,7 @@ deque<T, Alloc>::allocate_map(size_t map_size) {
     return map;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void deque<T, Alloc>::init(size_t map_size) {
     map_size_ = map_size;
     map_ = allocate_map(map_size_);
@@ -338,7 +341,7 @@ void deque<T, Alloc>::init(size_t map_size) {
     front_ = back_;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void deque<T, Alloc>::expand(bool backward) noexcept {
     auto old_map = map_;
     auto old_map_size = map_size_;
@@ -375,7 +378,7 @@ void deque<T, Alloc>::expand(bool backward) noexcept {
     deallocate_map(old_map, old_map_size);
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void deque<T, Alloc>::clear() {
     MapPtr start = front_.node_ - 1;
     MapPtr stop = back_.node_ + 2;
@@ -391,7 +394,7 @@ void deque<T, Alloc>::clear() {
     front_ = back_ = iterator();
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 template <typename Ref, typename Ptr>
 class deque<T, Alloc>::deque_iterator {
 private:

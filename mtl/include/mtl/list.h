@@ -4,6 +4,7 @@
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
 #include <initializer_list>
+#include <list>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
@@ -11,7 +12,7 @@
 namespace mtl {
 
 /* the list ADT, it's a double linked list. */
-template <typename T, template <typename> typename Alloc = std::allocator>
+template <typename T, typename Alloc = std::allocator<T>>
 class list {
 public:
     using self_t = list<T, Alloc>;
@@ -28,7 +29,9 @@ private:
     using const_iterator = list_iterator<const T&, const Node*>;
     using iterator = list_iterator<T&, Node*>;
 
-    Alloc<Node> allocator_;
+    using NodeAlloc =
+        typename std::allocator_traits<Alloc>::template rebind_alloc<Node>;
+    NodeAlloc allocator_;
 
     NdPtr head_;
     NdPtr tail_;
@@ -186,7 +189,7 @@ public:
     }
 };
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void list<T, Alloc>::init() {
     head_ = allocate_node();
     tail_ = allocate_node();
@@ -195,7 +198,7 @@ void list<T, Alloc>::init() {
     size_ = 0;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 list<T, Alloc>::self_t& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
     if (this == &l) {
         return *this;
@@ -209,7 +212,7 @@ list<T, Alloc>::self_t& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
     return *this;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 list<T, Alloc>::self_t& list<T, Alloc>::operator=(list<T, Alloc>&& l) noexcept {
     clear();
     head_ = l.head_;
@@ -219,7 +222,7 @@ list<T, Alloc>::self_t& list<T, Alloc>::operator=(list<T, Alloc>&& l) noexcept {
     return *this;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 template <typename V>
 void list<T, Alloc>::push_back(V&& elem) {
     auto node = allocate_node(std::forward<V>(elem), tail_->prev_, tail_);
@@ -228,7 +231,7 @@ void list<T, Alloc>::push_back(V&& elem) {
     ++size_;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 template <typename V>
 void list<T, Alloc>::push_front(V&& elem) {
     auto node = allocate_node(std::forward<V>(elem), head_, head_->next_);
@@ -237,7 +240,7 @@ void list<T, Alloc>::push_front(V&& elem) {
     ++size_;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void list<T, Alloc>::pop_back() {
     check_empty();
 
@@ -249,7 +252,7 @@ void list<T, Alloc>::pop_back() {
     destroy_node(node);
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 void list<T, Alloc>::pop_front() {
     check_empty();
 
@@ -261,7 +264,7 @@ void list<T, Alloc>::pop_front() {
     destroy_node(node);
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 template <typename V>
 typename list<T, Alloc>::iterator list<T, Alloc>::insert(iterator itr,
                                                          V&& elem) {
@@ -273,7 +276,7 @@ typename list<T, Alloc>::iterator list<T, Alloc>::insert(iterator itr,
     return itr;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator itr) {
     if (itr.node_->is_head() || itr.node_->is_tail() || !bool(itr)) {
         throw std::out_of_range(
@@ -290,7 +293,7 @@ typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator itr) {
     return itr;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator start,
                                                          iterator stop) {
     if (start == stop) {
@@ -305,7 +308,7 @@ typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator start,
     return stop;
 }
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 class list<T, Alloc>::Node {
 private:
     T elem_;
@@ -341,7 +344,7 @@ public:
     friend class list<T, Alloc>;
 };
 
-template <typename T, template <typename> typename Alloc>
+template <typename T, typename Alloc>
 template <typename Ref, typename Ptr>
 class list<T, Alloc>::list_iterator {
 protected:
