@@ -48,11 +48,11 @@ private:
         return node_allocator_.allocate(BUF_LEN);
     }
 
-    void deallocate_map_(MapPtr map, size_t map_size) {
+    void deallocate_map(MapPtr map, size_t map_size) {
         map_allocator_.deallocate(map, map_size);
     }
 
-    void deallocate_node_(EltPtr node) {
+    void deallocate_node(EltPtr node) {
         node_allocator_.deallocate(node, BUF_LEN);
     }
 
@@ -177,7 +177,7 @@ public:
     void pop_back() {
         check_empty();
         if (back_.cur_ == back_.first_) {
-            deallocate_node_(*(back_.node_ + 1));
+            deallocate_node(*(back_.node_ + 1));
             *(back_.node_ + 1) = nullptr;
         }
         std::destroy_at(back_.cur_);
@@ -188,7 +188,7 @@ public:
     void pop_front() {
         check_empty();
         if (front_.cur_ == front_.last_ - 1) {
-            deallocate_node_(*(front_.node_ - 1));
+            deallocate_node(*(front_.node_ - 1));
             *(front_.node_ - 1) = nullptr;
         }
         std::destroy_at(front_.cur_);
@@ -369,7 +369,7 @@ void deque<T, Alloc>::expand(bool backward) noexcept {
         back_.node_ = start_node;
         front_.node_ = end_node;
     }
-    deallocate_map_(old_map, old_map_size);
+    deallocate_map(old_map, old_map_size);
 }
 
 template <typename T, template <typename> typename Alloc>
@@ -378,10 +378,10 @@ void deque<T, Alloc>::clear() {
     MapPtr stop = back_.node_ + 2;
     destroy_all();
     for (auto ptr = start; ptr < stop; ++ptr) {
-        deallocate_node_(*ptr);
+        deallocate_node(*ptr);
         *ptr = nullptr;
     }
-    deallocate_map_(map_, map_size_);
+    deallocate_map(map_, map_size_);
     map_ = nullptr;
     size_ = 0;
     map_size_ = 0;
@@ -399,7 +399,7 @@ private:
     EltPtr cur_;    // the current element
 
     // set the iterator's node as new_node
-    void set_node_(MapPtr new_node) {
+    void set_node(MapPtr new_node) {
         node_ = new_node;
         first_ = *node_;
         last_ = first_ + BUF_LEN;
@@ -410,7 +410,7 @@ public:
         : first_(nullptr), last_(nullptr), node_(nullptr), cur_(nullptr) {}
 
     deque_iterator(EltPtr cur, MapPtr node) : node_(node), cur_(cur) {
-        set_node_(node);
+        set_node(node);
     }
 
     deque_iterator(const iterator& rhs)
@@ -461,7 +461,7 @@ public:
     self_t& operator++() {
         ++cur_;
         if (cur_ == last_) {
-            set_node_(node_ + 1);
+            set_node(node_ + 1);
             cur_ = first_;
         }
         return *this;
@@ -469,7 +469,7 @@ public:
 
     self_t& operator--() {
         if (cur_ == first_) {
-            set_node_(node_ - 1);
+            set_node(node_ - 1);
             cur_ = last_;
         }
         --cur_;
@@ -498,7 +498,7 @@ public:
             difference_t node_offset = offset > 0
                 ? offset / BUF_LEN
                 : -static_cast<difference_t>((-offset - 1) / BUF_LEN) - 1;
-            set_node_(node_ + node_offset);
+            set_node(node_ + node_offset);
             cur_ = first_ +
                 (offset - static_cast<difference_t>(BUF_LEN) * node_offset);
         }

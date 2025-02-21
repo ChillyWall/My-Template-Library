@@ -24,7 +24,7 @@ private:
     // the pointer to Node
     using NdPtr = Node*;
 
-    static Alloc<Node> allocator_;
+    Alloc<Node> allocator_;
 
     // The root node of the tree
     NdPtr root_;
@@ -42,13 +42,13 @@ private:
     }
 
     template <typename... Args>
-    static NdPtr allocate_node(Args&&... args) {
+    NdPtr allocate_node(Args&&... args) {
         NdPtr ptr = allocator_.allocate(1);
         std::construct_at(ptr, std::forward<Args>(args)...);
         return ptr;
     }
 
-    static void deallocate_node(NdPtr node) {
+    void deallocate_node(NdPtr node) {
         if (!node) {
             return;
         }
@@ -64,7 +64,7 @@ private:
     }
 
     // To update and balance the tree
-    void update_(NdPtr node);
+    void update(NdPtr node);
 
     // To remove the node
     void remove_(NdPtr node);
@@ -74,29 +74,29 @@ private:
     NdPtr find_(const T& elem) const;
 
     // perform single rotation
-    void rotate_left_(NdPtr node);
+    void rotate_left(NdPtr node);
 
     // perform single rotation
-    void rotate_right_(NdPtr node);
+    void rotate_right(NdPtr node);
 
     // perform double rotation
-    void double_rotate_left_(NdPtr node) {
-        rotate_right_(node->left_);
-        rotate_left_(node);
+    void double_rotate_left(NdPtr node) {
+        rotate_right(node->left_);
+        rotate_left(node);
     }
 
     // perform double rotation
     void double_rotate_right_(NdPtr node) {
-        rotate_left_(node->right_);
-        rotate_right_(node);
+        rotate_left(node->right_);
+        rotate_right(node);
     }
 
     // find the node containing the minimum in the tree with node as root
-    static NdPtr find_min_(NdPtr node);
+    static NdPtr find_min(NdPtr node);
     // find the node containing the maximum int the tree with node as root
-    static NdPtr find_max_(NdPtr node);
+    static NdPtr find_max(NdPtr node);
     // Copy the nodes recursively.
-    static NdPtr copy_node_(NdPtr node);
+    NdPtr copy_node(NdPtr node);
 
 public:
     avl_tree();
@@ -174,22 +174,22 @@ public:
 
     // return iterator to the minimum element
     const_iterator find_min() const {
-        return const_iterator(find_min_(root_));
+        return const_iterator(find_min(root_));
     }
 
     // return iterator to the minimum element
     const_iterator find_max() const {
-        return const_iterator(find_max_(root_));
+        return const_iterator(find_max(root_));
     }
 
     // find the minimum element
     iterator find_min() {
-        return iterator(find_min_(root_));
+        return iterator(find_min(root_));
     }
 
     // find the maximum element
     iterator find_max() {
-        return iterator(find_max_(root_));
+        return iterator(find_max(root_));
     }
 };
 
@@ -198,7 +198,7 @@ avl_tree<T, Alloc>::avl_tree() : root_(nullptr), size_(0) {}
 
 template <typename T, template <typename> typename Alloc>
 avl_tree<T, Alloc>::avl_tree(const avl_tree& rhs) : size_(rhs.size_) {
-    root_ = copy_node_(rhs.root_);
+    root_ = copy_node(rhs.root_);
 }
 
 template <typename T, template <typename> typename Alloc>
@@ -239,12 +239,12 @@ bool avl_tree<T, Alloc>::contain(const T& elem) const {
 }
 
 template <typename T, template <typename> typename Alloc>
-typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::copy_node_(NdPtr node) {
+typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::copy_node(NdPtr node) {
     if (!node) {
         return nullptr;
     }
     NdPtr res = allocate_node(node->element(), nullptr, nullptr, nullptr);
-    NdPtr lt = copy_node_(node->left());
+    NdPtr lt = copy_node(node->left());
     NdPtr rt = copy_node(node->right());
     if (lt) {
         lt->parent_ = res;
@@ -257,7 +257,7 @@ typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::copy_node_(NdPtr node) {
 }
 
 template <typename T, template <typename> typename Alloc>
-typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_max_(NdPtr node) {
+typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_max(NdPtr node) {
     if (!node) {
         return node;
     }
@@ -269,7 +269,7 @@ typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_max_(NdPtr node) {
 }
 
 template <typename T, template <typename> typename Alloc>
-typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_min_(NdPtr node) {
+typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_min(NdPtr node) {
     if (!node) {
         return node;
     }
@@ -281,7 +281,7 @@ typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_min_(NdPtr node) {
 }
 
 template <typename T, template <typename> typename Alloc>
-void avl_tree<T, Alloc>::rotate_left_(NdPtr node) {
+void avl_tree<T, Alloc>::rotate_left(NdPtr node) {
     NdPtr lf, lf_rg, par;
     lf = node->left_;
     lf_rg = lf->right_;
@@ -309,7 +309,7 @@ void avl_tree<T, Alloc>::rotate_left_(NdPtr node) {
 }
 
 template <typename T, template <typename> typename Alloc>
-void avl_tree<T, Alloc>::rotate_right_(NdPtr node) {
+void avl_tree<T, Alloc>::rotate_right(NdPtr node) {
     NdPtr rg, rg_lf, par;
     rg = node->right_;
     rg_lf = rg->left_;
@@ -337,21 +337,21 @@ void avl_tree<T, Alloc>::rotate_right_(NdPtr node) {
 }
 
 template <typename T, template <typename> typename Alloc>
-void avl_tree<T, Alloc>::update_(NdPtr node) {
+void avl_tree<T, Alloc>::update(NdPtr node) {
     while (true) {
         if (abs(height_(node->left_) - height_(node->right_)) >
             ALLOWED_IMBALANCE) {
             if (height_(node->left_) > height_(node->right_)) {
                 if (height_(node->left_->left_) >
                     height_(node->left_->right_)) {
-                    rotate_left_(node);
+                    rotate_left(node);
                 } else {
-                    double_rotate_left_(node);
+                    double_rotate_left(node);
                 }
             } else {
                 if (height_(node->right_->right_) >
                     height_(node->right_->left_)) {
-                    rotate_right_(node);
+                    rotate_right(node);
                 } else {
                     double_rotate_right_(node);
                 }
@@ -390,7 +390,7 @@ avl_tree<T, Alloc>::insert(V&& elem) noexcept {
         } else {
             node->left_ = res;
         }
-        update_(node);
+        update(node);
         ++size_;
         return iterator(res);
     }
@@ -402,7 +402,7 @@ void avl_tree<T, Alloc>::remove_(NdPtr node) {
         return;
     }
     if (node->has_right() && node->has_left()) {
-        auto sub = find_min_(node->right_);
+        auto sub = find_min(node->right_);
         node->element() = std::move(sub->element());
         if (sub->has_right()) {
             sub->right_->parent_ = sub->parent_;
@@ -411,7 +411,7 @@ void avl_tree<T, Alloc>::remove_(NdPtr node) {
         } else {
             sub->parent_->left_ = nullptr;
         }
-        update_(sub->parent_);
+        update(sub->parent_);
         deallocate_node(sub);
     } else {
         if (node->has_left()) {
@@ -423,7 +423,7 @@ void avl_tree<T, Alloc>::remove_(NdPtr node) {
             } else {
                 node->parent_->right_ = node->left_;
             }
-            update_(node->left_);
+            update(node->left_);
             node->left_ = nullptr;
         } else if (node->has_right()) {
             node->right_->parent_ = node->parent_;
@@ -434,7 +434,7 @@ void avl_tree<T, Alloc>::remove_(NdPtr node) {
             } else {
                 node->parent_->right_ = node->right_;
             }
-            update_(node->right_);
+            update(node->right_);
             node->right_ = nullptr;
         } else {
             if (node->is_root()) {
@@ -720,7 +720,7 @@ avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator++() {
         throw NullIterator();
     }
     if (node_->has_right()) {  // node_ has right child
-        node_ = find_min_(node_->right_);
+        node_ = find_min(node_->right_);
     } else {  // node_ doesn't have right child
         NdPtr p = node_->parent_;
         while (p && node_->is_right()) {
@@ -740,7 +740,7 @@ avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator--() {
         throw NullIterator();
     }
     if (node_->has_left()) {
-        node_ = find_max_(node_->left_);
+        node_ = find_max(node_->left_);
     } else {
         NdPtr p = node_->parent_;
         while (p && node_->is_left()) {

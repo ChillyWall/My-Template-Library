@@ -39,15 +39,15 @@ private:
     }
 
     template <typename... Args>
-    NdPtr allocate_node_(Args&&... args) {
+    NdPtr allocate_node(Args&&... args) {
         auto ptr = allocator_.allocate(1);
         std::construct_at(ptr, std::forward<Args>(args)...);
         return ptr;
     }
 
-    void destroy_node_(NdPtr ptr) {
+    void destroy_node(NdPtr ptr) {
         if (ptr && ptr->next_) {
-            destroy_node_(ptr->next_);
+            destroy_node(ptr->next_);
         }
         std::destroy_at(ptr);
         allocator_.deallocate(ptr, 1);
@@ -78,14 +78,14 @@ public:
     }
 
     ~list() noexcept {
-        destroy_node_(head_);
+        destroy_node(head_);
     }
 
     list<T, Alloc>& operator=(const list<T, Alloc>& l);
     list<T, Alloc>& operator=(list<T, Alloc>&& l) noexcept;
 
     void clear() {
-        destroy_node_(head_);
+        destroy_node(head_);
         init();
     }
 
@@ -185,8 +185,8 @@ public:
 
 template <typename T, template <typename> typename Alloc>
 void list<T, Alloc>::init() {
-    head_ = allocate_node_();
-    tail_ = allocate_node_();
+    head_ = allocate_node();
+    tail_ = allocate_node();
     head_->next_ = tail_;
     tail_->prev_ = head_;
     size_ = 0;
@@ -219,7 +219,7 @@ list<T, Alloc>& list<T, Alloc>::operator=(list<T, Alloc>&& l) noexcept {
 template <typename T, template <typename> typename Alloc>
 template <typename V>
 void list<T, Alloc>::push_back(V&& elem) {
-    auto node = allocate_node_(std::forward<V>(elem), tail_->prev_, tail_);
+    auto node = allocate_node(std::forward<V>(elem), tail_->prev_, tail_);
     tail_->prev_->next_ = node;
     tail_->prev_ = node;
     ++size_;
@@ -228,7 +228,7 @@ void list<T, Alloc>::push_back(V&& elem) {
 template <typename T, template <typename> typename Alloc>
 template <typename V>
 void list<T, Alloc>::push_front(V&& elem) {
-    auto node = allocate_node_(std::forward<V>(elem), head_, head_->next_);
+    auto node = allocate_node(std::forward<V>(elem), head_, head_->next_);
     head_->next_->prev_ = node;
     head_->next_ = node;
     ++size_;
@@ -243,7 +243,7 @@ void list<T, Alloc>::pop_back() {
     tail_->prev_ = node->prev_;
     node->prev_ = node->next_ = nullptr;
     --size_;
-    destroy_node_(node);
+    destroy_node(node);
 }
 
 template <typename T, template <typename> typename Alloc>
@@ -255,7 +255,7 @@ void list<T, Alloc>::pop_front() {
     head_->next_ = node->next_;
     node->prev_ = node->next_ = nullptr;
     --size_;
-    destroy_node_(node);
+    destroy_node(node);
 }
 
 template <typename T, template <typename> typename Alloc>
@@ -263,7 +263,7 @@ template <typename V>
 typename list<T, Alloc>::iterator list<T, Alloc>::insert(iterator itr,
                                                          V&& elem) {
     auto new_node =
-        allocate_node_(std::forward<V>(elem), itr.node_->prev_, itr.node_);
+        allocate_node(std::forward<V>(elem), itr.node_->prev_, itr.node_);
     itr.node_->prev_->next_ = new_node;
     itr.node_->prev_ = new_node;
     ++size_;
@@ -282,7 +282,7 @@ typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator itr) {
     node->prev_->next_ = node->next_;
     node->next_->prev_ = node->prev_;
     node->prev_ = node->next_ = nullptr;
-    destroy_node_(node);
+    destroy_node(node);
     --size_;
     return itr;
 }
@@ -298,7 +298,7 @@ typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator start,
     stop.node_->prev_->next_ = nullptr;
     stop.node_->prev_ = start.node_->prev_;
     start.node_->prev_ = nullptr;
-    destroy_node_(start.node_);
+    destroy_node(start.node_);
     return stop;
 }
 
