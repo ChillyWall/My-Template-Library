@@ -4,13 +4,14 @@
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
 #include <initializer_list>
+#include <memory>
 #include <stdexcept>
 #include <type_traits>
 
 namespace mtl {
 
 /* the list ADT, it's a double linked list. */
-template <typename T>
+template <typename T, template <typename> typename Alloc = std::allocator>
 class list {
 private:
     // the node class
@@ -24,6 +25,8 @@ private:
     using const_iterator = list_iterator<const T&, const Node*>;
     using iterator = list_iterator<T&, Node*>;
 
+    Alloc<Node> allocator_;
+
     NdPtr head_;
     NdPtr tail_;
     size_t size_;
@@ -35,19 +38,34 @@ private:
         }
     }
 
+    template <typename... Args>
+    NdPtr allocate_node_(Args&&... args) {
+        auto ptr = allocator_.allocate(1);
+        std::construct_at(ptr, std::forward<Args>(args)...);
+        return ptr;
+    }
+
+    void destroy_node_(NdPtr ptr) {
+        if (ptr && ptr->next_) {
+            destroy_node_(ptr->next_);
+        }
+        std::destroy_at(ptr);
+        allocator_.deallocate(ptr, 1);
+    }
+
 public:
     list() {
         init();
     }
 
-    list(const list<T>& l) {
+    list(const list<T, Alloc>& l) {
         init();
         for (auto itr = l.begin(); itr != l.end(); ++itr) {
             push_back(*itr);
         }
     }
 
-    list(list<T>&& l) noexcept
+    list(list<T, Alloc>&& l) noexcept
         : head_(l.head_), tail_(l.tail_), size_(l.size_) {
         l.init();
     }
@@ -60,14 +78,14 @@ public:
     }
 
     ~list() noexcept {
-        delete head_;
+        destroy_node_(head_);
     }
 
-    list<T>& operator=(const list<T>& l);
-    list<T>& operator=(list<T>&& l) noexcept;
+    list<T, Alloc>& operator=(const list<T, Alloc>& l);
+    list<T, Alloc>& operator=(list<T, Alloc>&& l) noexcept;
 
     void clear() {
-        delete head_;
+        destroy_node_(head_);
         init();
     }
 
@@ -165,17 +183,17 @@ public:
     }
 };
 
-template <typename T>
-void list<T>::init() {
-    head_ = new Node();
-    tail_ = new Node();
+template <typename T, template <typename> typename Alloc>
+void list<T, Alloc>::init() {
+    head_ = allocate_node_();
+    tail_ = allocate_node_();
     head_->next_ = tail_;
     tail_->prev_ = head_;
     size_ = 0;
 }
 
-template <typename T>
-list<T>& list<T>::operator=(const list<T>& l) {
+template <typename T, template <typename> typename Alloc>
+list<T, Alloc>& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
     if (this == &l) {
         return *this;
     }
@@ -188,8 +206,8 @@ list<T>& list<T>::operator=(const list<T>& l) {
     return *this;
 }
 
-template <typename T>
-list<T>& list<T>::operator=(list<T>&& l) noexcept {
+template <typename T, template <typename> typename Alloc>
+list<T, Alloc>& list<T, Alloc>::operator=(list<T, Alloc>&& l) noexcept {
     clear();
     head_ = l.head_;
     tail_ = l.tail_;
@@ -198,78 +216,80 @@ list<T>& list<T>::operator=(list<T>&& l) noexcept {
     return *this;
 }
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename V>
-void list<T>::push_back(V&& elem) {
-    Node* node = new Node(std::forward<V>(elem), tail_->prev_, tail_);
+void list<T, Alloc>::push_back(V&& elem) {
+    auto node = allocate_node_(std::forward<V>(elem), tail_->prev_, tail_);
     tail_->prev_->next_ = node;
     tail_->prev_ = node;
     ++size_;
 }
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename V>
-void list<T>::push_front(V&& elem) {
-    Node* node = new Node(std::forward<V>(elem), head_, head_->next_);
+void list<T, Alloc>::push_front(V&& elem) {
+    auto node = allocate_node_(std::forward<V>(elem), head_, head_->next_);
     head_->next_->prev_ = node;
     head_->next_ = node;
     ++size_;
 }
 
-template <typename T>
-void list<T>::pop_back() {
+template <typename T, template <typename> typename Alloc>
+void list<T, Alloc>::pop_back() {
     check_empty();
 
-    Node* node = tail_->prev_;
+    auto node = tail_->prev_;
     node->prev_->next_ = tail_;
     tail_->prev_ = node->prev_;
     node->prev_ = node->next_ = nullptr;
     --size_;
-    delete node;
+    destroy_node_(node);
 }
 
-template <typename T>
-void list<T>::pop_front() {
+template <typename T, template <typename> typename Alloc>
+void list<T, Alloc>::pop_front() {
     check_empty();
 
-    Node* node = head_->next_;
+    auto node = head_->next_;
     node->next_->prev_ = head_;
     head_->next_ = node->next_;
     node->prev_ = node->next_ = nullptr;
     --size_;
-    delete node;
+    destroy_node_(node);
 }
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename V>
-typename list<T>::iterator list<T>::insert(iterator itr, V&& elem) {
-    Node* new_node =
-        new Node(std::forward<V>(elem), itr.node_->prev_, itr.node_);
+typename list<T, Alloc>::iterator list<T, Alloc>::insert(iterator itr,
+                                                         V&& elem) {
+    auto new_node =
+        allocate_node_(std::forward<V>(elem), itr.node_->prev_, itr.node_);
     itr.node_->prev_->next_ = new_node;
     itr.node_->prev_ = new_node;
     ++size_;
     return itr;
 }
 
-template <typename T>
-typename list<T>::iterator list<T>::remove(iterator itr) {
+template <typename T, template <typename> typename Alloc>
+typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator itr) {
     if (itr.node_->is_head() || itr.node_->is_tail() || !bool(itr)) {
         throw std::out_of_range(
             "This iterator had tried to remove a non-existing element.");
     }
-    Node* node = itr.node_;
+    auto node = itr.node_;
     itr.node_ = node->next_;
 
     node->prev_->next_ = node->next_;
     node->next_->prev_ = node->prev_;
     node->prev_ = node->next_ = nullptr;
-    delete node;
+    destroy_node_(node);
     --size_;
     return itr;
 }
 
-template <typename T>
-typename list<T>::iterator list<T>::remove(iterator start, iterator stop) {
+template <typename T, template <typename> typename Alloc>
+typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator start,
+                                                         iterator stop) {
     if (start == stop) {
         return stop;
     }
@@ -278,12 +298,12 @@ typename list<T>::iterator list<T>::remove(iterator start, iterator stop) {
     stop.node_->prev_->next_ = nullptr;
     stop.node_->prev_ = start.node_->prev_;
     start.node_->prev_ = nullptr;
-    delete start.node_;
+    destroy_node_(start.node_);
     return stop;
 }
 
-template <typename T>
-class list<T>::Node {
+template <typename T, template <typename> typename Alloc>
+class list<T, Alloc>::Node {
 private:
     T elem_;
     NdPtr prev_;
@@ -297,9 +317,7 @@ public:
 
     Node(const Node& node) = delete;
 
-    ~Node() noexcept {
-        delete next_;
-    }
+    ~Node() noexcept {}
 
     const T& elem() const {
         return elem_;
@@ -317,12 +335,12 @@ public:
         return !prev_;
     }
 
-    friend class list<T>;
+    friend class list<T, Alloc>;
 };
 
-template <typename T>
+template <typename T, template <typename> typename Alloc>
 template <typename Ref, typename Ptr>
-class list<T>::list_iterator {
+class list<T, Alloc>::list_iterator {
 protected:
     NdPtr node_;
     using self_t = list_iterator<Ref, Ptr>;
@@ -438,7 +456,7 @@ public:
         return node_;
     }
 
-    friend class list<T>;
+    friend class list<T, Alloc>;
 };
 }  // namespace mtl
 #endif  // LIST_H
