@@ -3,18 +3,20 @@
 
 #include <mtl/deque.h>
 #include <mtl/types.h>
+#include <memory>
 
 namespace mtl {
-template <typename T, template <typename> typename allocator>
+template <typename T, template <typename> typename Alloc = std::allocator>
 class queue {
 private:
-    allocator<T>* data_;
+    using container_type = deque<T, Alloc>;
+    deque<T>* data_;
 
 public:
     queue();
     explicit queue(size_t s);
-    queue(const queue<T, allocator>& rhs);
-    queue(queue<T, allocator>&& rhs);
+    queue(const queue<T, Alloc>& rhs);
+    queue(queue<T, Alloc>&& rhs);
     ~queue() noexcept;
 
     size_t size() const {
@@ -55,23 +57,23 @@ public:
     }
 };
 
-template <typename T, template <typename> typename allocator>
-queue<T, allocator>::queue() : data_(new allocator()) {}
+template <typename T, template <typename> typename Alloc>
+queue<T, Alloc>::queue() : data_(new container_type()) {}
 
-template <typename T, template <typename> typename allocator>
-queue<T, allocator>::queue(size_t s) : data_(new allocator(s)) {}
+template <typename T, template <typename> typename Alloc>
+queue<T, Alloc>::queue(size_t s) : data_(new container_type(s)) {}
 
-template <typename T, template <typename> typename allocator>
-queue<T, allocator>::queue(const queue<T, allocator>& rhs)
-    : data_(new allocator(*rhs.data_)) {}
+template <typename T, template <typename> typename Alloc>
+queue<T, Alloc>::queue(const queue<T, Alloc>& rhs)
+    : data_(new container_type(*rhs.data_)) {}
 
-template <typename T, template <typename> typename allocator>
-queue<T, allocator>::queue(queue<T, allocator>&& rhs) : data_(rhs.data_) {
-    rhs.data_ = new allocator;
+template <typename T, template <typename> typename Alloc>
+queue<T, Alloc>::queue(queue<T, Alloc>&& rhs) : data_(rhs.data_) {
+    rhs.data_ = new container_type;
 }
 
-template <typename T, template <typename> typename allocator>
-queue<T, allocator>::~queue() noexcept {
+template <typename T, template <typename> typename Alloc>
+queue<T, Alloc>::~queue() noexcept {
     delete data_;
 }
 }  // namespace mtl

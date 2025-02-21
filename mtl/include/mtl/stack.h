@@ -3,19 +3,20 @@
 
 #include <mtl/deque.h>
 #include <mtl/types.h>
-#include <utility>
+#include <memory>
 
 namespace mtl {
-template <typename T, template <typename> typename allocator = deque>
+template <typename T, template <typename> typename Alloc = std::allocator>
 class stack {
 private:
-    allocator<T>* data_;
+    using container_type = deque<T, Alloc>;
+    deque<T>* data_;
 
 public:
     stack();
     explicit stack(size_t size_);
-    stack(const stack<T, allocator>& rhs);
-    stack(stack<T, allocator>&& rhs) noexcept;
+    stack(const stack<T, Alloc>& rhs);
+    stack(stack<T, Alloc>&& rhs) noexcept;
     virtual ~stack();
 
     bool empty() const {
