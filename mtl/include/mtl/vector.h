@@ -32,7 +32,7 @@ private:
 
 public:
     // the default constructor
-    vector() {}
+    vector() = default;
 
     // construct the vector with particular size
     explicit vector(size_t init_size) : base_type(init_size) {
@@ -57,7 +57,7 @@ public:
     vector(const self_t& rhs) : base_type(rhs) {}
 
     // moving copy constructor
-    vector(vector<T, Alloc>&& rhs) noexcept : base_type(std::move(rhs)) {}
+    vector(self_t&& rhs) noexcept : base_type(std::move(rhs)) {}
 
     // the destructor
     ~vector() override = default;
