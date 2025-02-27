@@ -72,6 +72,35 @@ void replace(Iterator1 begin1, Iterator1 end1, Iterator2 begin2,
 template <typename Iterator1, typename Iterator2>
 void copy(Iterator1 begin, Iterator1 end, Iterator2 output);
 
+inline bool is_prime(size_t num) {
+    if (num <= 1)
+        return false;
+    if (num <= 3)
+        return true;
+    if (num % 2 == 0 || num % 3 == 0)
+        return false;
+    for (size_t i = 5; i * i <= num; i += 6) {
+        if (num % i == 0 || num % (i + 2) == 0)
+            return false;
+    }
+    return true;
+}
+
+inline size_t next_prime(size_t n) {
+    if (n <= 1)
+        return 2;
+    size_t prime = n;
+    bool found = false;
+
+    while (!found) {
+        prime++;
+        if (is_prime(prime)) {
+            found = true;
+        }
+    }
+    return prime;
+}
+
 template <typename Iterator>
 void inplace_quicksort(Iterator begin, Iterator end) {
     if (begin != end) {
