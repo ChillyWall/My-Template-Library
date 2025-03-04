@@ -86,11 +86,6 @@ inline bool is_prime(size_t num) {
     return true;
 }
 
-/**
- * @brief get the least primer that is bigger than n
- * @param n the n
- * @return the prime number
- */
 inline size_t next_prime(size_t n) {
     if (n <= 1)
         return 2;
