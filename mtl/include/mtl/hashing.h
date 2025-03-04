@@ -4,7 +4,6 @@
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
 #include <bitset>
-#include <deque>
 #include <memory>
 #include <utility>
 
@@ -174,6 +173,25 @@ public:
         clear_all();
         init(DEFAULT_SIZE);
     }
+
+    const_iterator begin() const {
+        return const_iterator(data_);
+    }
+    const_iterator end() const {
+        return const_iterator(data_ + max_size_);
+    }
+    const_iterator cbegin() const {
+        return const_iterator(data_);
+    }
+    const_iterator cend() const {
+        return const_iterator(data_ + max_size_);
+    }
+    iterator begin() {
+        return iterator(data_);
+    }
+    iterator end() {
+        return iterator(data_ + max_size_);
+    }
 };
 
 template <typename T, typename hash_func, typename Alloc>
@@ -229,12 +247,17 @@ hashing<T, hash_func, Alloc>::operator=(const self_t& rhs) {
 
 template <typename T, typename hash_func, typename Alloc>
 size_t hashing<T, hash_func, Alloc>::move_elem(size_t pos) {
-    int start = pos - MAX_DIST + 1;
+    int start;
+    if (pos < MAX_DIST - 1) {
+        start = max_size_ + pos - MAX_DIST + 1;
+    } else {
+        start = pos + 1 - MAX_DIST;
+    }
     for (int i = 0; i < MAX_DIST - 1; ++i) {
-        auto cell = data_[start + 1];
+        auto cell = data_[start + i];
         for (int j = 0; j < MAX_DIST - i - 1; ++j) {
             if (cell.get_hop(j)) {
-                size_t new_pos = start + i + j;
+                size_t new_pos = (start + i + j) % max_size_;
                 data_[pos].element() = std::move(data_[new_pos].element());
                 data_[new_pos].set_unoccupied();
                 data_[start].set_hop(j);
@@ -424,6 +447,68 @@ public:
 
     Ptr operator->() const {
         return &cell_->element();
+    }
+
+    template <typename RefR, typename PtrR>
+    friend bool operator==(const self_t& lhs,
+                           const hashing_iterator<RefR, PtrR>& rhs) {
+        return lhs.cell_ == rhs.cell_;
+    }
+
+    template <typename RefR, typename PtrR>
+    friend bool operator!=(const self_t& lhs,
+                           const hashing_iterator<RefR, PtrR>& rhs) {
+        return lhs.cell_ != rhs.cell_;
+    }
+
+    template <typename RefR, typename PtrR>
+    friend bool operator>(const self_t& lhs,
+                          const hashing_iterator<RefR, PtrR>& rhs) {
+        return lhs.cell_ > rhs.cell_;
+    }
+
+    template <typename RefR, typename PtrR>
+    friend bool operator<(const self_t& lhs,
+                          const hashing_iterator<RefR, PtrR>& rhs) {
+        return lhs.cell_ < rhs.cell_;
+    }
+
+    template <typename RefR, typename PtrR>
+    friend bool operator>=(const self_t& lhs,
+                           const hashing_iterator<RefR, PtrR>& rhs) {
+        return lhs.cell_ >= rhs.cell_;
+    }
+
+    template <typename RefR, typename PtrR>
+    friend bool operator<=(const self_t& lhs,
+                           const hashing_iterator<RefR, PtrR>& rhs) {
+        return lhs.cell_ <= rhs.cell_;
+    }
+
+    self_t& operator++() {
+        do {
+            ++cell_;
+        } while (!cell_->is_occupied());
+        return *this;
+    }
+
+    self_t operator++(int) {
+        self_t tmp(*this);
+        ++(*this);
+        return tmp;
+    }
+
+    self_t& operator--() {
+        do {
+            --cell_;
+        } while (!cell_->is_occupied());
+        return *this;
+    }
+
+    self_t operator--(int) {
+        self_t tmp(*this);
+        --(*this);
+        return tmp;
     }
 };
 }  // namespace mtl
