@@ -44,8 +44,8 @@ private:
 
     Cell* data_;
 
-    size_t get_next_size_(size_t old_sie) {
-        return next_prime(max_size_ * 2);
+    size_t get_next_size_(size_t old_size) {
+        return next_prime(old_size * 2);
     }
 
     Cell* allocate_memory(size_t size) {
@@ -94,7 +94,8 @@ private:
 
 protected:
     virtual size_t hash_value(const T& elem) const {
-        return hash_func(elem) % max_size_;
+        hash_func hsh_fun;
+        return hsh_fun(elem) % max_size_;
     }
 
 public:
@@ -145,7 +146,8 @@ public:
     }
 
     /**
-     * @brief to insert a element into the hash table, return true if success
+     * @brief to insert a element into the hash table, return true if success,
+     * too many elements with the same hash value would cause insertion to fail.
      * @param elem the element to be inserted
      * @return if the element is inserted successfully
      */
@@ -153,7 +155,7 @@ public:
 
     /**
      * @brief remove an element from the hash table, return true if success, if
-     * the element doesn't exist, return true either
+     * the element doesn't exist, return false
      * @param elem the element to be removed
      * @return if the element is removed successfully
      */
@@ -175,22 +177,22 @@ public:
     }
 
     const_iterator begin() const {
-        return const_iterator(data_);
+        return const_iterator(data_, data_ + max_size_, data_);
     }
     const_iterator end() const {
-        return const_iterator(data_ + max_size_);
+        return const_iterator(data_, data_ + max_size_, data_ + max_size_);
     }
     const_iterator cbegin() const {
-        return const_iterator(data_);
+        return begin();
     }
     const_iterator cend() const {
-        return const_iterator(data_ + max_size_);
+        return end();
     }
     iterator begin() {
-        return iterator(data_);
+        return iterator(data_, data_ + max_size_, data_);
     }
     iterator end() {
-        return iterator(data_ + max_size_);
+        return iterator(data_, data_ + max_size_, data_ + max_size_);
     }
 };
 
@@ -258,9 +260,8 @@ size_t hashing<T, hash_func, Alloc>::move_elem(size_t pos) {
         for (int j = 0; j < MAX_DIST - i - 1; ++j) {
             if (cell.get_hop(j)) {
                 size_t new_pos = (start + i + j) % max_size_;
-                data_[pos].element() = std::move(data_[new_pos].element());
+                data_[pos].set_element(std::move(data_[new_pos].element()));
                 data_[new_pos].set_unoccupied();
-                data_[start].set_hop(j);
                 cell.clear_hop(j);
                 cell.set_hop(MAX_DIST - i - 1);
                 return new_pos;
@@ -282,7 +283,8 @@ bool hashing<T, hash_func, Alloc>::insert(const T& elem) {
     size_t hash_val = hash_value(elem);
     size_t pos = find_pos(elem);
 
-    while (pos - hash_val >= MAX_DIST) {
+    while ((pos >= hash_val ? pos - hash_val : max_size_ - hash_val + pos) >=
+           MAX_DIST) {
         pos = move_elem(pos);
         if (pos == max_size_) {
             return false;
@@ -379,12 +381,18 @@ public:
         occupied_ = false;
     }
 
-    const Cell& element() const {
+    const T& element() const {
         return elem_;
     }
 
-    Cell& element() {
-        return const_cast<Cell&>(static_cast<const self_t*>(this)->element());
+    T& element() {
+        return const_cast<T&>(static_cast<const self_t*>(this)->element());
+    }
+
+    template <typename V>
+    void set_element(V&& elem) {
+        elem_ = std::forward<V>(elem);
+        set_occupied();
     }
 
     bool get_hop(size_t dist) const {
@@ -415,19 +423,23 @@ template <typename T, typename hash_func, typename Alloc>
 template <typename Ref, typename Ptr>
 class hashing<T, hash_func, Alloc>::hashing_iterator {
 private:
-    Cell* cell_;
+    Cell* begin_;
+    Cell* end_;
+    Cell* cur_;
     using self_t = hashing_iterator<Ref, Ptr>;
 
 public:
-    hashing_iterator() : cell_(nullptr) {}
-    explicit hashing_iterator(Cell* cell) : cell_(cell) {}
-    hashing_iterator(const self_t& rhs) : cell_(rhs.cell_) {}
+    hashing_iterator() : begin_(nullptr), end_(nullptr), cur_(nullptr) {}
+    explicit hashing_iterator(Cell* begin, Cell* end, Cell* cur)
+        : begin_(begin), end_(end), cur_(cur) {}
+    hashing_iterator(const self_t& rhs) = default;
 
     template <typename Iter,
               typename = std::enable_if_t<
                   std::is_same<self_t, const_iterator>::value &&
                   std::is_same<Iter, iterator>::value>>
-    hashing_iterator(const Iter& rhs) : cell_(rhs.cell_) {}
+    hashing_iterator(const Iter& rhs)
+        : begin_(rhs.begin_), end_(rhs.end_), cur_(rhs.cell_) {}
 
     ~hashing_iterator() = default;
 
@@ -438,57 +450,57 @@ public:
                   std::is_same<self_t, const_iterator>::value &&
                   std::is_same<Iter, iterator>::value>>
     self_t& operator=(const Iter& rhs) {
-        cell_ = rhs.cell_;
+        cur_ = rhs.cell_;
     }
 
     Ref operator*() const {
-        return cell_->element();
+        return cur_->element();
     }
 
     Ptr operator->() const {
-        return &cell_->element();
+        return &cur_->element();
     }
 
     template <typename RefR, typename PtrR>
     friend bool operator==(const self_t& lhs,
                            const hashing_iterator<RefR, PtrR>& rhs) {
-        return lhs.cell_ == rhs.cell_;
+        return lhs.cur_ == rhs.cur_;
     }
 
     template <typename RefR, typename PtrR>
     friend bool operator!=(const self_t& lhs,
                            const hashing_iterator<RefR, PtrR>& rhs) {
-        return lhs.cell_ != rhs.cell_;
+        return lhs.cur_ != rhs.cur_;
     }
 
     template <typename RefR, typename PtrR>
     friend bool operator>(const self_t& lhs,
                           const hashing_iterator<RefR, PtrR>& rhs) {
-        return lhs.cell_ > rhs.cell_;
+        return lhs.cur_ > rhs.cur_;
     }
 
     template <typename RefR, typename PtrR>
     friend bool operator<(const self_t& lhs,
                           const hashing_iterator<RefR, PtrR>& rhs) {
-        return lhs.cell_ < rhs.cell_;
+        return lhs.cur_ < rhs.cur_;
     }
 
     template <typename RefR, typename PtrR>
     friend bool operator>=(const self_t& lhs,
                            const hashing_iterator<RefR, PtrR>& rhs) {
-        return lhs.cell_ >= rhs.cell_;
+        return lhs.cur_ >= rhs.cur_;
     }
 
     template <typename RefR, typename PtrR>
     friend bool operator<=(const self_t& lhs,
                            const hashing_iterator<RefR, PtrR>& rhs) {
-        return lhs.cell_ <= rhs.cell_;
+        return lhs.cur_ <= rhs.cur_;
     }
 
     self_t& operator++() {
         do {
-            ++cell_;
-        } while (!cell_->is_occupied());
+            ++cur_;
+        } while (cur_ < end_ && !cur_->is_occupied());
         return *this;
     }
 
@@ -500,8 +512,8 @@ public:
 
     self_t& operator--() {
         do {
-            --cell_;
-        } while (!cell_->is_occupied());
+            --cur_;
+        } while (cur_ >= begin_ && !cur_->is_occupied());
         return *this;
     }
 
