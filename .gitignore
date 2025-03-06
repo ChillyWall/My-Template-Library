@@ -1,3 +1,9 @@
 build/
 .vscode/
 CMakePresets.json
+.coc-workspace-settings.json
+.cache/
+.clangd/
+compile_commands.json
+Testing/
+.idea/
