@@ -106,7 +106,7 @@ TEST(TestListOperation, TestListRemove) {
 
 TEST(TestListOperation, TestListRemoveRange) {
     list<int> l = {1, 2, 3, 4, 5};
-    l.remove(l.begin() + 1, l.begin() + 3);
+    l.remove(mtl::advance(l.begin(), 1), mtl::advance(l.begin(), 3));
     EXPECT_EQ(l.size(), 3);
     auto itr = l.begin();
     EXPECT_EQ(*itr, 1);

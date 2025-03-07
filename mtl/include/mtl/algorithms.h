@@ -102,6 +102,30 @@ inline size_t next_prime(size_t n) {
 }
 
 template <typename Iterator>
+Iterator advance(Iterator itr, difference_t n) {
+    if (n > 0) {
+        while (n-- > 0) {
+            ++itr;
+        }
+    } else {
+        while (n++ < 0) {
+            --itr;
+        }
+    }
+    return itr;
+}
+
+template <typename Iterator>
+difference_t distance(Iterator first, Iterator last) {
+    difference_t n = 0;
+    while (first != last) {
+        ++first;
+        ++n;
+    }
+    return n;
+}
+
+template <typename Iterator>
 void inplace_quicksort(Iterator begin, Iterator end) {
     if (begin != end) {
         auto mid = partition(begin, end);

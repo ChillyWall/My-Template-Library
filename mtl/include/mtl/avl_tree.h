@@ -4,7 +4,6 @@
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
 #include <memory>
-#include <type_traits>
 
 namespace mtl {
 template <typename T, typename Alloc = std::allocator<T>>
@@ -144,18 +143,18 @@ public:
     /* return an iterator containing a nullptr,
      * so it doesn't support operator++ and operator-- */
     const_iterator end() const {
-        return iterator(nullptr);
+        return const_iterator(nullptr);
     }
 
     // return an const_iterator containing a the minimum
     const_iterator cbegin() const {
-        return const_iterator(nullptr);
+        return begin();
     }
 
     /* return an const_iterator containing a nullptr,
      * so it doesn't support operator++ and operator-- */
     const_iterator cend() const {
-        return find_max();
+        return end();
     }
 
     // return iterator to the inserted node
@@ -597,19 +596,16 @@ class avl_tree<T, Alloc>::avl_iterator {
 private:
     // the pointer to the node
     NdPtr node_;
-    using self_t = avl_iterator<Ref, Ptr>;
-    template <typename Ref2, typename Ptr2>
-    friend class avl_iterator;
+    friend const_iterator;
 
 public:
-    avl_iterator() : node_(nullptr) {}
-    explicit avl_iterator(const NdPtr node) : node_(const_cast<NdPtr>(node)) {}
-    avl_iterator(const avl_iterator& rhs) : node_(rhs.node_) {}
+    using self_t = avl_iterator<Ref, Ptr>;
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    avl_iterator() : node_(nullptr) {}
+    explicit avl_iterator(NdPtr node) : node_(node) {}
+    avl_iterator(const self_t& rhs) : node_(rhs.node_) {}
+
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     avl_iterator(const Iter& rhs) : node_(rhs.node_) {}
 
     /* it don't check whether the iterator is valid
@@ -642,23 +638,15 @@ public:
         return old;
     }
 
-    self_t& operator=(const avl_iterator& rhs) {
+    self_t& operator=(const self_t& rhs) {
         node_ = rhs.node_;
         return *this;
     }
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         node_ = rhs.node_;
         return *this;
-    }
-
-    self_t& operator+=(difference_t n);
-    self_t& operator-=(difference_t n) {
-        return this->operator+=(-n);
     }
 
     self_t operator+(difference_t n) {
@@ -673,7 +661,8 @@ public:
         return res;
     }
 
-    friend bool operator==(const avl_iterator& lhs, const avl_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator==(const self_t& lhs, const Iter& rhs) {
         if (lhs && rhs) {
             return *lhs == *rhs;
         } else if (lhs || rhs) {
@@ -683,11 +672,13 @@ public:
         }
     }
 
-    friend bool operator!=(const avl_iterator& lhs, const avl_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator!=(const self_t& lhs, const Iter& rhs) {
         return !(lhs == rhs);
     }
 
-    friend bool operator<(const avl_iterator& lhs, const avl_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<(const self_t& lhs, const Iter& rhs) {
         if (lhs && rhs) {
             return *lhs < *rhs;
         } else {
@@ -695,7 +686,8 @@ public:
         }
     }
 
-    friend bool operator>(const avl_iterator& lhs, const avl_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>(const self_t& lhs, const Iter& rhs) {
         if (lhs && rhs) {
             return *lhs > *rhs;
         } else {
@@ -703,11 +695,13 @@ public:
         }
     }
 
-    friend bool operator>=(const avl_iterator& lhs, const avl_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>=(const self_t& lhs, const Iter& rhs) {
         return !(lhs < rhs);
     }
 
-    friend bool operator<=(const avl_iterator& lhs, const avl_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<=(const self_t& lhs, const Iter& rhs) {
         return !(lhs > rhs);
     }
 };
@@ -748,23 +742,6 @@ avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator--() {
             p = node_->parent_;
         }
         node_ = p;
-    }
-    return *this;
-}
-
-template <typename T, typename Alloc>
-template <typename Ref, typename Ptr>
-typename avl_tree<T, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
-avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator+=(difference_t n) {
-    if (n > 0) {
-        for (difference_t i = 0; i < n; i++) {
-            this->operator++();
-        }
-    } else {
-        n = -n;
-        for (difference_t i = 0; i < n; i++) {
-            this->operator--();
-        }
     }
     return *this;
 }

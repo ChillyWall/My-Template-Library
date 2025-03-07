@@ -28,9 +28,11 @@ private:
     template <typename Ref, typename Ptr>
     class hashing_iterator;
 
+public:
     using iterator = hashing_iterator<T&, T*>;
     using const_iterator = hashing_iterator<const T&, const T*>;
 
+private:
     size_t size_;      // the number of elements in the hash table
     size_t max_size_;  // the max size of the table
     static constexpr double MAX_LOAD_FACTOR = 0.8;  // the max load factor
@@ -434,10 +436,7 @@ public:
         : begin_(begin), end_(end), cur_(cur) {}
     hashing_iterator(const self_t& rhs) = default;
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     hashing_iterator(const Iter& rhs)
         : begin_(rhs.begin_), end_(rhs.end_), cur_(rhs.cell_) {}
 
@@ -445,10 +444,7 @@ public:
 
     self_t& operator=(const self_t& rhs) = default;
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         cur_ = rhs.cell_;
     }
@@ -461,39 +457,33 @@ public:
         return &cur_->element();
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator==(const self_t& lhs,
-                           const hashing_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator==(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ == rhs.cur_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator!=(const self_t& lhs,
-                           const hashing_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator!=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ != rhs.cur_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator>(const self_t& lhs,
-                          const hashing_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ > rhs.cur_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator<(const self_t& lhs,
-                          const hashing_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ < rhs.cur_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator>=(const self_t& lhs,
-                           const hashing_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ >= rhs.cur_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator<=(const self_t& lhs,
-                           const hashing_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ <= rhs.cur_;
     }
 

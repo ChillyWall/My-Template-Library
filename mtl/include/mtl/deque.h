@@ -84,8 +84,8 @@ public:
     explicit deque(size_t n);
     explicit deque(size_t n, const T& val);
     deque(std::initializer_list<T>&& il) noexcept;
-    deque(const deque<T, Alloc>& rhs);
-    deque(deque<T, Alloc>&& rhs) noexcept
+    deque(const self_t& rhs);
+    deque(self_t&& rhs) noexcept
         : map_(rhs.map_),
           map_size_(rhs.map_size_),
           size_(rhs.size_),
@@ -117,7 +117,7 @@ public:
 
     T& operator[](size_t index) {
         return const_cast<T&>(
-            static_cast<const deque<T, Alloc>*>(this)->operator[](index));
+            static_cast<const self_t*>(this)->operator[](index));
     }
 
     const T& at(size_t index) const {
@@ -128,17 +128,16 @@ public:
     }
 
     T& at(size_t index) {
-        return const_cast<T&>(
-            static_cast<const deque<T, Alloc>*>(this)->at(index));
+        return const_cast<T&>(static_cast<const self_t*>(this)->at(index));
     }
 
-    deque<T, Alloc>& operator=(const deque<T, Alloc>& rhs) {
+    self_t& operator=(const self_t& rhs) {
         deque<T, Alloc> tmp(rhs);
         operator=(std::move(tmp));
         return *this;
     }
 
-    deque<T, Alloc>& operator=(deque<T, Alloc>&& rhs) noexcept {
+    self_t& operator=(self_t&& rhs) noexcept {
         map_ = rhs.map_;
         map_size_ = rhs.map_size_;
         size_ = rhs.size_;
@@ -213,13 +212,11 @@ public:
     }
 
     T& front() {
-        return const_cast<T&>(
-            static_cast<const deque<T, Alloc>*>(this)->front());
+        return const_cast<T&>(static_cast<const self_t*>(this)->front());
     }
 
     T& back() {
-        return const_cast<T&>(
-            static_cast<const deque<T, Alloc>*>(this)->back());
+        return const_cast<T&>(static_cast<const self_t*>(this)->back());
     }
 
     const_iterator begin() const {
@@ -294,7 +291,7 @@ deque<T, Alloc>::deque(std::initializer_list<T>&& il) noexcept {
 }
 
 template <typename T, typename Alloc>
-deque<T, Alloc>::deque(const deque<T, Alloc>& rhs)
+deque<T, Alloc>::deque(const self_t& rhs)
     : map_size_(rhs.map_size_), size_(rhs.size_) {
     map_ = allocate_map(map_size_);
     auto first_node = map_ + (rhs.front_.node_ - rhs.map_);
@@ -397,8 +394,10 @@ void deque<T, Alloc>::clear() {
 template <typename T, typename Alloc>
 template <typename Ref, typename Ptr>
 class deque<T, Alloc>::deque_iterator {
-private:
+public:
     using self_t = deque_iterator<Ref, Ptr>;
+
+private:
     EltPtr first_;  // the first element of current node
     EltPtr last_;   // the element past the last element of current node
     MapPtr node_;   // the current node
@@ -411,6 +410,8 @@ private:
         last_ = first_ + BUF_LEN;
     }
 
+    friend const_iterator;
+
 public:
     deque_iterator()
         : first_(nullptr), last_(nullptr), node_(nullptr), cur_(nullptr) {}
@@ -419,15 +420,13 @@ public:
         set_node(node);
     }
 
-    deque_iterator(const iterator& rhs)
+    deque_iterator(const self_t& rhs)
         : first_(rhs.first_),
           last_(rhs.last_),
           node_(rhs.node_),
           cur_(rhs.cur_) {}
 
-    template <typename Iter,
-              typename = std::_Require<std::is_same<self_t, const_iterator>,
-                                       std::is_same<Iter, iterator>>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     deque_iterator(const Iter& rhs)
         : first_(rhs.first_),
           last_(rhs.last_),
@@ -436,7 +435,7 @@ public:
 
     ~deque_iterator() noexcept = default;
 
-    self_t& operator=(const deque_iterator& rhs) {
+    self_t& operator=(const self_t& rhs) {
         first_ = rhs.first_;
         last_ = rhs.last_;
         node_ = rhs.node_;
@@ -444,10 +443,7 @@ public:
         return *this;
     }
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         first_ = rhs.first_;
         last_ = rhs.last_;
@@ -527,20 +523,24 @@ public:
         return new_itr;
     }
 
-    friend difference_t operator-(const self_t& lhs, const self_t& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend difference_t operator-(const self_t& lhs, const Iter& rhs) {
         return (lhs.cur_ - lhs.first_) + (rhs.last_ - rhs.cur_) +
             (lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) * BUF_LEN;
     }
 
-    friend bool operator==(const self_t& lhs, const self_t& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator==(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ == rhs.cur_;
     }
 
-    friend bool operator!=(const self_t& lhs, const self_t& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator!=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ != rhs.cur_;
     }
 
-    friend bool operator<(const self_t& lhs, const self_t& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<(const self_t& lhs, const Iter& rhs) {
         if (lhs.node_ < rhs.node_) {
             return true;
         } else if (lhs.node_ == rhs.node_) {
@@ -550,15 +550,18 @@ public:
         }
     }
 
-    friend bool operator<=(const self_t& lhs, const self_t& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<=(const self_t& lhs, const Iter& rhs) {
         return lhs < rhs || lhs == rhs;
     }
 
-    friend bool operator>(const self_t& lhs, const self_t& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>(const self_t& lhs, const Iter& rhs) {
         return !(lhs <= rhs);
     }
 
-    friend bool operator>=(const self_t& lhs, const self_t& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>=(const self_t& lhs, const Iter& rhs) {
         return !(lhs < rhs);
     }
 
