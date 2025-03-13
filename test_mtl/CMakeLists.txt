@@ -1,7 +1,6 @@
 find_package(GTest REQUIRED)
 find_package(glog REQUIRED)
 
-include_directories(include)
 link_libraries(mtl glog GTest::GTest GTest::Main)
 
 add_compile_definitions(GLOG_LOG_DIR=${CMAKE_BINARY_DIR}/test_mtl/log)
