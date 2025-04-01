@@ -2,7 +2,7 @@
 #define MTL_AVL_TREE_H
 
 #include <mtl/algorithms.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
 #include <memory>
 
 namespace mtl {

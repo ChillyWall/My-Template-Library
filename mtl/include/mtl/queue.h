@@ -2,7 +2,7 @@
 #define MTL_QUEUE_H
 
 #include <mtl/deque.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
 #include <memory>
 
 namespace mtl {

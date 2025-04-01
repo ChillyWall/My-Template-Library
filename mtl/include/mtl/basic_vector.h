@@ -1,7 +1,7 @@
 #ifndef MTL_BASIC_VECTOR_H
 #define MTL_BASIC_VECTOR_H
 
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
 #include <memory>
 
 namespace mtl {

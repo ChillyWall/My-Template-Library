@@ -2,7 +2,7 @@
 #define MTL_LIST_H
 
 #include <mtl/algorithms.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
 #include <initializer_list>
 #include <memory>
 #include <stdexcept>

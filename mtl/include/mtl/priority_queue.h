@@ -2,7 +2,7 @@
 #define MTL_PRIORITY_QUEUE_H
 
 #include <mtl/basic_vector.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
 #include <memory>
 
 namespace mtl {
