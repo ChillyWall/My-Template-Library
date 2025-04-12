@@ -2,6 +2,9 @@
 #define MTL_QUICK_SORT_H
 
 #include <mtl/mtldefs.h>
+#include <mtl/mtlutils.h>
+#include <mtl/pair.h>
+#include <mtl/stack.h>
 
 namespace mtl {
 
@@ -22,8 +25,23 @@ void inplace_quicksort(Iter begin, Iter end) {
     if (begin != end) {
         auto mid = partition(begin, end);
         inplace_quicksort(begin, mid);
-        ++mid;
-        inplace_quicksort(mid, end);
+        inplace_quicksort(++mid, end);
+    }
+}
+
+template <Iterator Iter>
+void inplace_quicksort_iterative(Iter begin, Iter end) {
+    stack<pair<Iter, Iter>> st;
+    st.push(pair<Iter, Iter>(begin, end));
+    while (!st.empty()) {
+        auto cur = st.top();
+        st.pop();
+        if (cur.first == cur.second) {
+            continue;
+        }
+        auto mid = partition(cur.first, cur.second);
+        st.push(pair<Iter, Iter>(cur.first, mid));
+        st.push(pair<Iter, Iter>(++mid, cur.second));
     }
 }
 

@@ -1,7 +1,6 @@
 #ifndef MTL_DEFS_H
 #define MTL_DEFS_H
 
-#include <concepts>
 #include <cstddef>
 #include <exception>
 
@@ -54,14 +53,13 @@ concept is_one_of = std::is_same_v<T, V1> || std::is_same_v<T, V2>;
 
 template <typename T>
 concept Iterator = requires(T a) {
-    { a.operator*() };
-    { a.operator->() };
-    { a++ } -> std::same_as<T>;
-    { a-- } -> std::same_as<T>;
-    { ++a } -> std::same_as<T&>;
-    { --a } -> std::same_as<T&>;
-    { a == a } -> std::same_as<bool>;
-    { a != a } -> std::same_as<bool>;
+    { *a };
+    { a++ };
+    { a-- };
+    { ++a };
+    { --a };
+    { a == a };
+    { a != a };
 };
 
 }  // namespace mtl

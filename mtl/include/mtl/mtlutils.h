@@ -5,13 +5,8 @@
 
 namespace mtl {
 
-/* swap two object, note that it uses std::move */
-template <typename T>
-inline void swap(T& a, T& b) noexcept {
-    auto c = std::move(a);
-    a = std::move(b);
-    b = std::move(c);
-}
+using std::move;
+using std::swap;
 
 template <Iterator Iter>
 inline void iter_swap(Iter itr1, Iter itr2) {
@@ -86,13 +81,13 @@ difference_t distance(Iter first, Iter last) {
     return n;
 }
 
-/* move the sequence [begin2, end2) to [begin1, end1), note that it uses
- * std::move, so you should ensure the length of the two ranges are the same,
- * and it won't be checked */
+/* move the sequence [src_begin, src_end) to dest, note that it uses move, so
+ * you should ensure the length of the two ranges are the same, and it won't be
+ * checked */
 template <Iterator Iter1, Iterator Iter2>
-void move_ranges(Iter1 dest_begin, Iter1 dest_end, Iter2 src) noexcept {
-    while (dest_begin != dest_end) {
-        *(dest_begin++) = std::move(*(src++));
+void move_ranges(Iter1 begin, Iter1 end, Iter2 dest) noexcept {
+    while (begin != end) {
+        *(dest++) = move(*(begin++));
     }
 }
 
