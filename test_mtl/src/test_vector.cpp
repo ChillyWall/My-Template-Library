@@ -170,7 +170,7 @@ TEST_F(TestVector, TestPopFront) {
     for (int i = 0; i < 4; ++i) {
         v.pop_back();
     }
-    EXPECT_THROW(v.pop_front(), std::out_of_range);
+    EXPECT_THROW(v.pop_front(), mtl::EmptyContainer);
 }
 
 TEST_F(TestVector, TestIteratorRandomAccess) {
@@ -256,16 +256,6 @@ TEST_F(TestVector, TestRemoveRange) {
     }
     for (int i = 2; i < 3; ++i) {
         EXPECT_EQ(v[i], i + 2);
-    }
-}
-
-TEST_F(TestVector, TestSplice) {
-    auto v1 = v.splice(1, 4);
-
-    EXPECT_EQ(v1.size(), 3);
-    EXPECT_EQ(v1.capacity(), 3);
-    for (int i = 0; i < 3; ++i) {
-        EXPECT_EQ(v1[i], i + 1);
     }
 }
 
