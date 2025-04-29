@@ -27,10 +27,10 @@ private:
     template <typename Ref, typename Ptr>
     class vector_iterator;
 
+public:
     using const_iterator = vector_iterator<const T&, const T*>;
     using iterator = vector_iterator<T&, T*>;
 
-public:
     // the default constructor
     vector() = default;
 
@@ -345,6 +345,7 @@ class vector<T, Alloc>::vector_iterator {
 private:
     T* elem_;  // pointer to the element
     using self_t = vector_iterator<Ref, Ptr>;
+    friend const_iterator;
 
 public:
     vector_iterator() : elem_(nullptr) {}
@@ -354,10 +355,7 @@ public:
     // construct from pointer
     explicit vector_iterator(T* elem) : elem_(elem) {}
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     vector_iterator(const Iter& rhs) : elem_(rhs.elem_) {}
 
     vector_iterator(const self_t& rhs) : elem_(rhs.elem_) {}
@@ -371,42 +369,36 @@ public:
         return elem_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator>(const self_t& lhs,
-                          const vector_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ > rhs.elem_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator<(const self_t& lhs,
-                          const vector_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ < rhs.elem_;
     }
 
-    template <typename RefR, typename PtrR>
-    friend bool operator<=(const self_t& lhs,
-                           const vector_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator<=(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ <= rhs.elem_;
     }
 
     // compare the pointer
-    template <typename RefR, typename PtrR>
-    friend bool operator>=(const self_t& lhs,
-                           const vector_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator>=(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ >= rhs.elem_;
     }
 
     // compare the pointer
-    template <typename RefR, typename PtrR>
-    friend bool operator==(const self_t& lhs,
-                           const vector_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator==(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ == rhs.elem_;
     }
 
     // compare the pointer
-    template <typename RefR, typename PtrR>
-    friend bool operator!=(const self_t& lhs,
-                           const vector_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator!=(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ != rhs.elem_;
     }
 
@@ -416,10 +408,7 @@ public:
 
     self_t& operator=(const self_t& rhs) = default;
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         elem_ = rhs.elem_;
         return *this;
@@ -445,9 +434,8 @@ public:
         return new_itr;
     }
 
-    template <typename RefR, typename PtrR>
-    friend difference_t operator-(const self_t& lhs,
-                                  const vector_iterator<RefR, PtrR>& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend difference_t operator-(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ - rhs.elem_;
     }
 

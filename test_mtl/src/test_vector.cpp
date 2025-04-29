@@ -269,6 +269,15 @@ TEST_F(TestVector, TestSplice) {
     }
 }
 
+TEST_F(TestVector, TestIteratorNormalAndConst) {
+    auto itr1 = v.begin();
+    auto itr2 = v.cbegin();
+    EXPECT_EQ(*itr1, *itr2);
+    itr1 += 2;
+    itr2 = itr1;
+    EXPECT_EQ(*itr1, *itr2);
+}
+
 int main() {
     ::testing::InitGoogleTest();
     return RUN_ALL_TESTS();

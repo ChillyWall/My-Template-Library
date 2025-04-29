@@ -56,8 +56,8 @@ public:
     basic_vector(self_t&& rhs) noexcept;
     virtual ~basic_vector();
 
-    basic_vector& operator=(const basic_vector& rhs);
-    basic_vector& operator=(basic_vector&& rhs) noexcept;
+    basic_vector& operator=(const self_t& rhs);
+    basic_vector& operator=(self_t&& rhs) noexcept;
 
     /* return the reference to the element at position index
      * it don't check the boundary */

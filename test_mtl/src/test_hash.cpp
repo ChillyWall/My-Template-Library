@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mtl/algorithms.h>
 #include <mtl/hashing.h>
 
 TEST(TestHash, TestDefaultConstructor) {

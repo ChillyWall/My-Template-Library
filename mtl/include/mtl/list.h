@@ -4,10 +4,8 @@
 #include <mtl/algorithms.h>
 #include <mtl/types.h>
 #include <initializer_list>
-#include <list>
 #include <memory>
 #include <stdexcept>
-#include <type_traits>
 
 namespace mtl {
 
@@ -26,9 +24,11 @@ private:
     template <typename Ref, typename Ptr>
     class list_iterator;
 
+public:
     using const_iterator = list_iterator<const T&, const Node*>;
     using iterator = list_iterator<T&, Node*>;
 
+private:
     using NodeAlloc =
         typename std::allocator_traits<Alloc>::template rebind_alloc<Node>;
     NodeAlloc allocator_;
@@ -64,15 +64,14 @@ public:
         init();
     }
 
-    list(const list<T, Alloc>& l) {
+    list(const self_t& l) {
         init();
         for (auto itr = l.begin(); itr != l.end(); ++itr) {
             push_back(*itr);
         }
     }
 
-    list(list<T, Alloc>&& l) noexcept
-        : head_(l.head_), tail_(l.tail_), size_(l.size_) {
+    list(self_t&& l) noexcept : head_(l.head_), tail_(l.tail_), size_(l.size_) {
         l.init();
     }
 
@@ -87,8 +86,8 @@ public:
         destroy_node(head_);
     }
 
-    list<T, Alloc>& operator=(const list<T, Alloc>& l);
-    list<T, Alloc>& operator=(list<T, Alloc>&& l) noexcept;
+    self_t& operator=(const self_t& l);
+    self_t& operator=(self_t&& l) noexcept;
 
     void clear() {
         destroy_node(head_);
@@ -199,7 +198,7 @@ void list<T, Alloc>::init() {
 }
 
 template <typename T, typename Alloc>
-list<T, Alloc>::self_t& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
+list<T, Alloc>::self_t& list<T, Alloc>::operator=(const self_t& l) {
     if (this == &l) {
         return *this;
     }
@@ -213,7 +212,7 @@ list<T, Alloc>::self_t& list<T, Alloc>::operator=(const list<T, Alloc>& l) {
 }
 
 template <typename T, typename Alloc>
-list<T, Alloc>::self_t& list<T, Alloc>::operator=(list<T, Alloc>&& l) noexcept {
+list<T, Alloc>::self_t& list<T, Alloc>::operator=(self_t&& l) noexcept {
     clear();
     head_ = l.head_;
     tail_ = l.tail_;
@@ -299,7 +298,7 @@ typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator start,
     if (start == stop) {
         return stop;
     }
-    size_ -= stop - start;
+    size_ -= distance(start, stop);
     start.node_->prev_->next_ = stop.node_;
     stop.node_->prev_->next_ = nullptr;
     stop.node_->prev_ = start.node_->prev_;
@@ -310,6 +309,9 @@ typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator start,
 
 template <typename T, typename Alloc>
 class list<T, Alloc>::Node {
+public:
+    using self_t = Node;
+
 private:
     T elem_;
     NdPtr prev_;
@@ -318,10 +320,10 @@ private:
 public:
     Node() : elem_(), prev_(nullptr), next_(nullptr) {}
     template <typename V>
-    Node(V&& elem, Node* prev, Node* next) noexcept
+    Node(V&& elem, self_t* prev, self_t* next) noexcept
         : elem_(std::forward<V>(elem)), prev_(prev), next_(next) {}
 
-    Node(const Node& node) = delete;
+    Node(const self_t& node) = delete;
 
     ~Node() noexcept {}
 
@@ -330,7 +332,7 @@ public:
     }
 
     T& elem() {
-        return const_cast<T&>(static_cast<const Node*>(this)->elem());
+        return const_cast<T&>(static_cast<const self_t*>(this)->elem());
     }
 
     [[nodiscard]] bool is_tail() const {
@@ -347,31 +349,29 @@ public:
 template <typename T, typename Alloc>
 template <typename Ref, typename Ptr>
 class list<T, Alloc>::list_iterator {
-protected:
-    NdPtr node_;
+public:
     using self_t = list_iterator<Ref, Ptr>;
+
+private:
+    NdPtr node_;
+    friend class list<T, Alloc>;
+    friend const_iterator;
 
 public:
     list_iterator() : node_(nullptr) {}
     explicit list_iterator(NdPtr node) : node_(node) {}
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     list_iterator(const Iter& rhs) : node_(rhs.node_) {}
 
-    list_iterator(const list_iterator& rhs) : node_(rhs.node_) {}
+    list_iterator(const self_t& rhs) : node_(rhs.node_) {}
     ~list_iterator() noexcept = default;
 
-    self_t& operator=(const list_iterator& rhs) = default;
+    self_t& operator=(const self_t& rhs) = default;
 
-    template <typename Iter,
-              typename = std::enable_if_t<
-                  std::is_same<self_t, const_iterator>::value &&
-                  std::is_same<Iter, iterator>::value>>
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
-        node_ = const_cast<Ptr>(rhs.node_);
+        node_ = rhs.node_;
         return *this;
     }
 
@@ -386,11 +386,13 @@ public:
         return &node_->elem();
     }
 
-    friend bool operator==(const list_iterator& lhs, const list_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator==(const self_t& lhs, const Iter& rhs) {
         return lhs.node_ == rhs.node_;
     }
 
-    friend bool operator!=(const list_iterator& lhs, const list_iterator& rhs) {
+    template <is_one_of<iterator, const_iterator> Iter>
+    friend bool operator!=(const list_iterator& lhs, const Iter& rhs) {
         return lhs.node_ != rhs.node_;
     }
 
@@ -425,44 +427,9 @@ public:
         return old;
     }
 
-    self_t& operator+=(size_t n) {
-        for (size_t i = 0; i < n; ++i)
-            this->operator++();
-        return *this;
-    }
-
-    self_t& operator-=(size_t n) {
-        for (size_t i = 0; i < n; ++i)
-            this->operator--();
-        return *this;
-    }
-
-    self_t operator+(size_t n) const {
-        auto res_itr = *this;
-        res_itr += n;
-        return res_itr;
-    }
-
-    self_t operator-(size_t n) const {
-        auto res_itr = *this;
-        res_itr -= n;
-        return res_itr;
-    }
-
-    difference_t operator-(list_iterator rhs) const {
-        difference_t res = 0;
-        while (*this != rhs) {
-            ++rhs;
-            ++res;
-        }
-        return res;
-    }
-
     explicit operator bool() const {
         return node_;
     }
-
-    friend class list<T, Alloc>;
 };
 }  // namespace mtl
 #endif  // LIST_H
