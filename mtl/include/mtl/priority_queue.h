@@ -1,8 +1,8 @@
 #ifndef MTL_PRIORITY_QUEUE_H
 #define MTL_PRIORITY_QUEUE_H
 
-#include <mtl/basic_vector.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
+#include <mtl/vector.h>
 #include <memory>
 
 namespace mtl {
@@ -12,7 +12,7 @@ template <typename T, typename Alloc = std::allocator<T>>
 class priority_queue {
 public:
     using self_t = priority_queue<T, Alloc>;
-    using container_t = basic_vector<T, Alloc>;
+    using container_t = vector<T, Alloc>;
 
 private:
     /* the number of elements, note that the first element is at index 1 */
@@ -48,7 +48,7 @@ public:
     }
 
     bool empty() const {
-        return size() <= 0;
+        return size() == 0;
     }
 
     self_t& operator=(const self_t& rhs) {
@@ -86,12 +86,11 @@ public:
 };
 
 template <typename T, typename Alloc>
-priority_queue<T, Alloc>::priority_queue() : data_(1) {
-    data_.push_back(T());
-}
+priority_queue<T, Alloc>::priority_queue() : data_(1) {}
 
 template <typename T, typename Alloc>
-priority_queue<T, Alloc>::priority_queue(size_t capacity) : data_(capacity) {
+priority_queue<T, Alloc>::priority_queue(size_t capacity) {
+    data_.reserve(capacity + 1);
     data_.push_back(T());
 }
 

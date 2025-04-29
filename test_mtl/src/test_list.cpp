@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <mtl/list.h>
-#include <test_mtl/myutils.h>
 
 using mtl::list;
 

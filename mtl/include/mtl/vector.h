@@ -1,8 +1,7 @@
 #ifndef MTL_VECTOR_H
 #define MTL_VECTOR_H
 
-#include <mtl/basic_vector.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
 #include <initializer_list>
 #include <stdexcept>
 
@@ -12,17 +11,69 @@ namespace mtl {
 /* The vector ADT, it can expand its data array to double size when space is
  * not enough. */
 template <typename T, typename Alloc = std::allocator<T>>
-class vector : public basic_vector<T, Alloc> {
+class vector {
 public:
     using self_t = vector<T, Alloc>;
 
 private:
-    using base_type = basic_vector<T, Alloc>;
+    // the length of the array
+    size_t capacity_;
+
+    // the array contain the data
+    T* data_;
+
+    Alloc allocator_;
+
+    size_t size_;
+
     void check_empty() const {
         if (empty()) {
             throw EmptyContainer();
         }
     }
+
+    /* allocate a new array with length size and return the pointer to the old
+     * one (the pointer is nodiscard and must be released) */
+    [[nodiscard]] T* allocate(size_t new_capacity) {
+        capacity_ = new_capacity;
+        T* tmp = data_;
+        data_ = allocator_.allocate(new_capacity);
+        return tmp;
+    }
+
+    template <typename... Args>
+    void construct(size_t index, Args&&... args) {
+        std::construct_at(data_ + index, std::forward<Args>(args)...);
+    }
+
+    void construct_all() {
+        for (size_t i = 0; i < capacity_; ++i) {
+            construct(i);
+        }
+    }
+
+    void destroy(size_t index) noexcept {
+        std::destroy_at(data_ + index);
+    }
+
+    void destroy_all() {
+        for (size_t i = 0; i < capacity_; ++i) {
+            destroy(i);
+        }
+    }
+
+    void deallocate() {
+        deallocate(data_, capacity_);
+        data_ = nullptr;
+        capacity_ = 0;
+    }
+
+    void deallocate(T* array, size_t length) {
+        allocator_.deallocate(array, length);
+    }
+
+    void expand(size_t new_size) noexcept;
+    void shrink(size_t new_capacity) noexcept;
 
     template <typename Ref, typename Ptr>
     class vector_iterator;
@@ -32,58 +83,123 @@ public:
     using iterator = vector_iterator<T&, T*>;
 
     // the default constructor
-    vector() = default;
+    vector() : capacity_(0), size_(0), data_(nullptr) {}
 
     // construct the vector with particular size
-    explicit vector(size_t init_size) : base_type(init_size) {
+    explicit vector(size_t init_size) : capacity_(init_size), size_(init_size) {
+        auto old = allocate(capacity_);
         for (int i = 0; i < init_size; ++i) {
-            base_type::construct(i);
+            construct(i);
         }
-        base_type::size_ = init_size;
     }
 
-    vector(size_t init_size, const T& init_val) : base_type(init_size) {
+    vector(size_t init_size, const T& init_val)
+        : capacity_(init_size), size_(init_size) {
+        auto old = allocate(capacity_);
         for (int i = 0; i < init_size; ++i) {
-            base_type::construct(i, init_val);
+            construct(i, init_val);
         }
-        base_type::size_ = init_size;
     }
 
     /* construct from initializer list, the size will be the same with the
      * il. */
-    vector(std::initializer_list<T>&& il) noexcept;
+    vector(std::initializer_list<T>&& il) noexcept
+        : capacity_(il.size()), size_(il.size()) {
+        auto old = allocate(capacity_);
+        auto itr = il.begin();
+        for (int i = 0; i < il.size(); ++i) {
+            construct(i, std::move(*(itr++)));
+        }
+    }
 
     // copy constructor
-    vector(const self_t& rhs) : base_type(rhs) {}
+    vector(const self_t& rhs) : capacity_(rhs.size()), size_(rhs.size()) {
+        auto old = allocate(capacity_);
+        for (size_t i = 0; i < rhs.size(); ++i) {
+            construct(i, rhs[i]);
+        }
+    }
 
-    // moving copy constructor
-    vector(self_t&& rhs) noexcept : base_type(std::move(rhs)) {}
+    // moving constructor
+    vector(self_t&& rhs) noexcept
+        : data_(rhs.data_), capacity_(rhs.capacity_), size_(rhs.size_) {
+        rhs.data_ = nullptr;
+        rhs.capacity_ = 0;
+        rhs.size_ = 0;
+    }
 
     // the destructor
-    ~vector() override = default;
+    ~vector() noexcept {
+        destroy_all();
+        deallocate();
+    }
+
+    /* return the reference to the element at position index
+     * it don't check the boundary */
+    const T& operator[](size_t index) const {
+        return data()[index];
+    }
+
+    // the const version
+    T& operator[](size_t index) {
+        return const_cast<T&>(
+            static_cast<const self_t*>(this)->operator[](index));
+    }
+
+    const T& at(size_t index) const {
+        if (index >= capacity_) {
+            throw std::out_of_range("The index is out of range.");
+        }
+        return data()[index];
+    }
+
+    T& at(size_t index) {
+        return const_cast<T&>(static_cast<const self_t*>(this)->at(index));
+    }
+
+    size_t capacity() const {
+        return capacity_;
+    }
+
+    size_t size() const {
+        return size_;
+    }
+
+    // the interface for derived classes to get data_
+    const T* data() const {
+        return data_;
+    }
+
+    // the interface for derived classes to get data_
+    T* data() {
+        return const_cast<T*>(static_cast<const self_t*>(this)->data());
+    }
 
     // return whether the vector is empty
     bool empty() const {
-        return base_type::size() == 0;
+        return size() == 0;
     }
 
-    void shrink() {
-        base_type::resize(base_type::size());
+    void clear() noexcept {
+        destroy_all();
+        size_ = 0;
+        deallocate();
     }
 
-    void resize(size_t new_size) {}
+    void shrink_to_fit() noexcept;
 
-    // return a vector contains the elements [begin, stop)
-    self_t splice(size_t begin, size_t stop);
+    void reserve(size_t capacity) noexcept;
+
+    void resize(size_t new_size) noexcept;
 
     const T& front() const {
         check_empty();
-        return base_type::data()[0];
+        return data()[0];
     }
 
     const T& back() const {
         check_empty();
-        return base_type::at(base_type::size() - 1);
+        return at(size() - 1);
     }
 
     T& front() {
@@ -102,9 +218,23 @@ public:
 
     // remove the first element.
     void pop_front() {
-        if (!remove(begin())) {
-            throw std::out_of_range("There's no element to be popped out.");
+        check_empty();
+        remove(begin());
+    }
+
+    template <typename V>
+    void push_back(V&& elem) {
+        if (size() + 1 > capacity()) {
+            reserve(capacity() == 0 ? 1 : capacity() * 2);
         }
+        construct(size(), std::forward<V>(elem));
+        ++size_;
+    }
+
+    void pop_back() {
+        check_empty();
+        destroy(size() - 1);
+        --size_;
     }
 
     /* insert an element at position index,
@@ -127,38 +257,55 @@ public:
     /* return whether two vector is the same vector (whether the data_ is
      * equal) */
     bool operator==(const self_t& vec) const {
-        return base_type::data() == vec.data();
+        return data() == vec.data();
     }
 
     // the copy assignment operator
-    self_t& operator=(const self_t& rhs) = default;
+    self_t& operator=(const self_t& rhs) {
+        clear();
+        auto tmp = allocate(rhs.capacity_);
+        size_ = rhs.size_;
+        for (size_t i = 0; i < size_; ++i) {
+            construct(i, rhs[i]);
+        }
+    }
 
     // the moving assignment operator
     self_t& operator=(self_t&& rhs) noexcept {
-        base_type::operator=(std::move(rhs));
+        if (this == &rhs) {
+            return *this;
+        }
+        destroy_all();
+        deallocate();
+
+        // copy the object
+        capacity_ = rhs.capacity_;
+        data_ = rhs.data_;
+
+        rhs.data_ = nullptr;
+        rhs.capacity_ = 0;
         return *this;
     }
 
     // return a vector_iterator pointing to the position 0
     const_iterator cbegin() const {
-        return const_iterator(const_cast<T*>(base_type::data()));
+        return const_iterator(const_cast<T*>(data()));
     }
 
     /* return a vector_iterator pointing to the position after the last
      * element */
     const_iterator cend() const {
-        return const_iterator(const_cast<T*>(base_type::data()) +
-                              base_type::size());
+        return const_iterator(const_cast<T*>(data()) + size());
     }
 
     // return an iterator pointing to the first element
     iterator begin() {
-        return iterator(base_type::data());
+        return iterator(data());
     }
 
     // return an iterator pointing to the element behind the last one
     iterator end() {
-        return iterator(base_type::data() + base_type::size());
+        return iterator(data() + size());
     }
 
     // return a vector_iterator pointing to the position 0
@@ -174,64 +321,39 @@ public:
 };
 
 template <typename T, typename Alloc>
-vector<T, Alloc>::vector(std::initializer_list<T>&& il) noexcept
-    : base_type(il.size()) {
-    base_type::size_ = il.size();
-    auto itr = il.begin();
-    auto data = base_type::data();
-    for (int i = 0; i < il.size(); ++i) {
-        base_type::construct(i, std::move(*(itr++)));
-    }
-}
-
-template <typename T, typename Alloc>
-typename vector<T, Alloc>::self_t vector<T, Alloc>::splice(size_t begin,
-                                                           size_t stop) {
-    size_t size = stop - begin;
-    self_t vec(size);
-    vec.size_ = size;
-    for (size_t i = 0; i < size; ++i) {
-        vec[i] = base_type::data()[begin + i];
-    }
-
-    return vec;
-}
-
-template <typename T, typename Alloc>
 template <typename V>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(iterator index, V&& elem) noexcept {
     if (index > this->end()) {
         return iterator();
     }
-    if (base_type::size() + 1 > base_type::capacity()) {
+    if (size() + 1 > capacity()) {
         size_t len = index - begin();
-        auto old_data = base_type::data();
-        auto old_capacity = base_type::capacity();
+        auto old_capacity = capacity();
+        auto old_data = allocate(old_capacity == 0 ? 1 : old_capacity * 2);
 
-        base_type::allocate(old_capacity == 0 ? 1 : old_capacity * 2);
         for (int i = 0; i < len; ++i) {
-            base_type::construct(i, std::move(old_data[i]));
+            construct(i, std::move(old_data[i]));
             std::destroy_at(old_data + i);
         }
-        base_type::construct(len, std::forward<V>(elem));
-        for (int i = len; i < base_type::size(); ++i) {
-            base_type::construct(i + 1, std::move(old_data[i]));
+        construct(len, std::forward<V>(elem));
+        for (int i = len; i < size(); ++i) {
+            construct(i + 1, std::move(old_data[i]));
             std::destroy_at(old_data + i);
         }
-        base_type::allocator_.deallocate(old_data, old_capacity);
+        deallocate(old_data, old_capacity);
         index = this->begin() + len + 1;
     } else {
         auto itr1 = this->end() - 1;
         auto itr2 = itr1 - 1;
-        base_type::construct(base_type::size(), std::move(*itr1));
+        construct(size(), std::move(*itr1));
         while (itr1 > index) {
             *(itr1--) = std::move(*(itr2--));
         }
         *(index++) = std::forward<V>(elem);
     }
 
-    ++base_type::size_;
+    ++size_;
     return index;
 }
 
@@ -248,38 +370,36 @@ vector<T, Alloc>::insert(iterator index, InputIterator begin,
     size_t len = end - begin;
 
     // check whether the capacity is big enough
-    if (base_type::size() + len > base_type::capacity()) {
+    if (size() + len > capacity()) {
         size_t len2 = index - this->begin();
 
-        auto old_data = base_type::data();
-        auto old_capacity = base_type::capacity();
-
+        auto old_capacity = capacity();
         size_t new_capacity = old_capacity * 2;
         while (new_capacity < old_capacity + len) {
             new_capacity *= 2;
         }
-        base_type::allocate(new_capacity);
+        auto old_data = allocate(new_capacity);
 
         for (int i = 0; i < len2; ++i) {
-            base_type::construct(i, std::move(old_data[i]));
+            construct(i, std::move(old_data[i]));
             std::destroy_at(old_data + i);
         }
         for (int i = 0; i < len; ++i) {
-            base_type::construct(len2 + i, *begin);
+            construct(len2 + i, *begin);
             ++begin;
         }
-        for (int i = len2; i < base_type::size(); ++i) {
-            base_type::construct(i + len, std::move(old_data[i]));
+        for (int i = len2; i < size(); ++i) {
+            construct(i + len, std::move(old_data[i]));
             std::destroy_at(old_data + i);
         }
-        base_type::allocator_.deallocate(old_data, old_capacity);
+        deallocate(old_data, old_capacity);
         index = this->begin() + len2 + len;
     } else {
         // move elements backward
-        size_t old_size = base_type::size();
-        auto data = base_type::data();
+        size_t old_size = size();
+        auto data = this->data();
         for (int i = old_size + len - 1; i >= old_size; --i) {
-            base_type::construct(i, std::move(data[i - len]));
+            construct(i, std::move(data[i - len]));
         }
         auto itr1 = this->end() - 1;
         auto itr2 = itr1 - len;
@@ -291,7 +411,7 @@ vector<T, Alloc>::insert(iterator index, InputIterator begin,
         }
     }
 
-    base_type::size_ += len;
+    size_ += len;
     return index;
 }
 
@@ -309,8 +429,8 @@ vector<T, Alloc>::remove(iterator index) noexcept {
     while (itr2 != this->end()) {
         *(itr1++) = std::move(*(itr2++));
     }
-    base_type::destroy(this->size() - 1);
-    --base_type::size_;
+    destroy(size() - 1);
+    --size_;
 
     return index;
 }
@@ -330,13 +450,66 @@ vector<T, Alloc>::remove(iterator begin, iterator stop) noexcept {
     while (itr2 != this->end()) {
         *(itr1++) = std::move(*(itr2++));
     }
-    size_t size = base_type::size();
+    size_t size = this->size();
     for (int i = size - 1; i >= size - wid; --i) {
-        base_type::destroy(i);
+        destroy(i);
     }
 
-    base_type::size_ -= wid;
+    size_ -= wid;
     return begin;
+}
+
+template <typename T, typename Alloc>
+void vector<T, Alloc>::expand(size_t new_size) noexcept {
+    if (new_size >= capacity()) {
+        reserve(new_size);
+    } else if (new_size <= size_) {
+        return;
+    }
+
+    for (size_t i = size_; i < new_size; ++i) {
+        construct(i);
+    }
+    size_ = new_size;
+}
+
+template <typename T, typename Alloc>
+void vector<T, Alloc>::shrink(size_t new_size) noexcept {
+    if (new_size >= size_) {
+        return;
+    }
+    for (size_t i = new_size; i < size_; ++i) {
+        destroy(i);
+    }
+    size_ = new_size;
+}
+
+template <typename T, typename Alloc>
+void vector<T, Alloc>::reserve(size_t capacity) noexcept {
+    if (capacity <= capacity_) {
+        return;
+    }
+    auto old_capacity = this->capacity();
+    auto old_data = allocate(capacity);
+    for (int i = 0; i < size_; ++i) {
+        construct(i, std::move(old_data[i]));
+        std::destroy_at(old_data + i);
+    }
+    deallocate(old_data, old_capacity);
+}
+
+template <typename T, typename Alloc>
+void vector<T, Alloc>::shrink_to_fit() noexcept {
+    if (size_ == capacity_) {
+        return;
+    }
+    auto old_capacity = capacity_;
+    auto old_data = allocate(size_);
+    for (int i = 0; i < size_; ++i) {
+        construct(i, std::move(old_data[i]));
+        std::destroy_at(old_data + i);
+    }
+    deallocate(old_data, old_capacity);
 }
 
 template <typename T, typename Alloc>
@@ -471,5 +644,29 @@ public:
         return new_itr;
     }
 };
+
+template <typename T>
+vector<T>::const_iterator advance(typename vector<T>::const_iterator iter,
+                                  difference_t n) {
+    return iter + n;
+}
+
+template <typename T>
+vector<T>::const_iterator distance(typename vector<T>::const_iterator first,
+                                   typename vector<T>::const_iterator last) {
+    return last - first;
+}
+
+template <typename T>
+vector<T>::iterator advance(typename vector<T>::iterator iter, difference_t n) {
+    return iter + n;
+}
+
+template <typename T>
+vector<T>::iterator distance(typename vector<T>::iterator first,
+                             typename vector<T>::iterator last) {
+    return last - first;
+}
+
 }  // namespace mtl
 #endif  // MTL_VECTOR_H

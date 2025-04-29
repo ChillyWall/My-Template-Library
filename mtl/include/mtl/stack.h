@@ -2,7 +2,7 @@
 #define MTL_STACK_H
 
 #include <mtl/deque.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
 #include <memory>
 
 namespace mtl {
@@ -22,28 +22,28 @@ public:
     virtual ~stack() = default;
 
     bool empty() const {
-        data_->empty();
+        return data_.empty();
     }
 
     size_t size() const {
-        return data_->size();
+        return data_.size();
     }
 
     template <typename V>
     void push(V&& elem) {
-        data_->push_back(std::forward<V>(elem));
+        data_.push_back(std::forward<V>(elem));
     }
 
     void pop() {
-        data_->pop_back();
+        data_.pop_back();
     }
 
     const T& top() const {
-        data_->back();
+        data_.back();
     }
 
     T& top() {
-        return data_->back();
+        return data_.back();
     }
 };
 

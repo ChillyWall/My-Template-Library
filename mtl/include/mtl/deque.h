@@ -1,14 +1,14 @@
 #ifndef MTL_DEQUE_H
 #define MTL_DEQUE_H
 
-#include <mtl/algorithms.h>
-#include <mtl/types.h>
+#include <mtl/mtldefs.h>
+#include <mtl/mtlutils.h>
 #include <initializer_list>
 #include <memory>
 #include <stdexcept>
-#include <type_traits>
 
 namespace mtl {
+
 /* The deque (double-end queue) ADT.
  * It uses a dynamical array to store pointers to some arrays with fixed length.
  * When push or pop an element from front or back end, it's only needed to add a
@@ -352,7 +352,7 @@ void deque<T, Alloc>::expand(bool backward) noexcept {
         MapPtr ptr2 = front_.node_ - 1;
         MapPtr end_node = back_.node_ + 1;
         while (ptr2 < end_node) {
-            swap(*(ptr1++), *(ptr2++));
+            mtl::iter_swap(ptr1++, ptr2++);
         }
         end_node = ptr1 - 1;
         front_.node_ = start_node;
@@ -365,7 +365,7 @@ void deque<T, Alloc>::expand(bool backward) noexcept {
         MapPtr ptr2 = back_.node_ + 1;
         MapPtr end_node = front_.node_ - 1;
         while (ptr2 > end_node) {
-            swap(*(ptr1--), *(ptr2--));
+            mtl::iter_swap(ptr1--, ptr2--);
         }
 
         end_node = ptr1 + 1;
@@ -567,5 +567,29 @@ public:
 
     friend class deque<T, Alloc>;
 };
+
+template <typename T>
+deque<T>::const_iterator advance(typename deque<T>::const_iterator iter,
+                                 difference_t n) {
+    return iter + n;
+}
+
+template <typename T>
+deque<T>::const_iterator distance(typename deque<T>::const_iterator first,
+                                  typename deque<T>::const_iterator last) {
+    return last - first;
+}
+
+template <typename T>
+deque<T>::iterator advance(typename deque<T>::iterator iter, difference_t n) {
+    return iter + n;
+}
+
+template <typename T>
+deque<T>::iterator distance(typename deque<T>::iterator first,
+                            typename deque<T>::iterator last) {
+    return last - first;
+}
+
 }  // namespace mtl
 #endif
