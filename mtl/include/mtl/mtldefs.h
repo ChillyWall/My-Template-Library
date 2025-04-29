@@ -12,6 +12,10 @@ struct NullIterator : public std::exception {
     const char* msg_;
 
     NullIterator() : msg_("This iterator is null.") {}
+    NullIterator(const NullIterator&) = default;
+    NullIterator(NullIterator&&) = delete;
+    NullIterator& operator=(const NullIterator&) = default;
+    NullIterator& operator=(NullIterator&&) = delete;
     explicit NullIterator(const char* msg) : msg_(msg) {}
     ~NullIterator() noexcept override = default;
     const char* what() {
@@ -23,6 +27,10 @@ struct EmptyContainer : public std::exception {
     const char* msg_;
 
     EmptyContainer() : msg_("This container is empty.") {}
+    EmptyContainer(const EmptyContainer&) = default;
+    EmptyContainer(EmptyContainer&&) = delete;
+    EmptyContainer& operator=(const EmptyContainer&) = default;
+    EmptyContainer& operator=(EmptyContainer&&) = delete;
     explicit EmptyContainer(const char* msg) : msg_(msg) {}
     ~EmptyContainer() noexcept override = default;
     [[nodiscard]] const char* what() {
