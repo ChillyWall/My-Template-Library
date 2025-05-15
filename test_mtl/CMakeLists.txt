@@ -1,9 +1,6 @@
 find_package(GTest REQUIRED)
-find_package(glog REQUIRED)
 
-link_libraries(mtl glog GTest::GTest GTest::Main)
-
-add_compile_definitions(GLOG_LOG_DIR=${CMAKE_BINARY_DIR}/test_mtl/log)
+link_libraries(mtl GTest::GTest GTest::Main)
 
 add_executable(test_mergesort src/test_mergesort.cpp)
 add_executable(test_quicksort src/test_quicksort.cpp)
