@@ -33,12 +33,13 @@ public:
     using const_iterator = hashing_iterator<const T&, const T*>;
 
 private:
-    size_t size_;      // the number of elements in the hash table
-    size_t max_size_;  // the max size of the table
     static constexpr double MAX_LOAD_FACTOR = 0.8;  // the max load factor
     static constexpr size_t DEFAULT_SIZE = 101;     // the default initial size
     // the max distance of a cell to its home
     static constexpr size_t MAX_DIST = 32;
+
+    size_t size_ {0};  // the number of elements in the hash table
+    size_t max_size_ {DEFAULT_SIZE};  // the max size of the table
 
     using CellAlloc =
         typename std::allocator_traits<Alloc>::template rebind_alloc<Cell>;
@@ -251,7 +252,7 @@ hashing<T, hash_func, Alloc>::operator=(const self_t& rhs) {
 
 template <typename T, typename hash_func, typename Alloc>
 size_t hashing<T, hash_func, Alloc>::move_elem(size_t pos) {
-    int start;
+    size_t start = 0;
     if (pos < MAX_DIST - 1) {
         start = max_size_ + pos - MAX_DIST + 1;
     } else {
@@ -358,12 +359,12 @@ public:
     using self_t = Cell;
 
 private:
-    bool occupied_;
+    bool occupied_ {false};
     std::bitset<MAX_DIST> hop_info_;
     T elem_;
 
 public:
-    Cell() : occupied_(false), hop_info_(), elem_() {}
+    Cell() : elem_() {}
     Cell(const self_t& rhs) = default;
     Cell(self_t&& rhs) noexcept = default;
     ~Cell() = default;
@@ -371,7 +372,7 @@ public:
     self_t& operator=(const self_t& rhs) = default;
     self_t& operator=(self_t&& rhs) noexcept = default;
 
-    bool is_occupied() const {
+    [[nodiscard]] bool is_occupied() const {
         return occupied_;
     }
 
@@ -438,6 +439,12 @@ public:
 
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     hashing_iterator(const Iter& rhs)
+        : begin_(rhs.begin_), end_(rhs.end_), cur_(rhs.cell_) {}
+
+    hashing_iterator(self_t&& rhs) noexcept = default;
+
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    hashing_iterator(Iter&& rhs) noexcept
         : begin_(rhs.begin_), end_(rhs.end_), cur_(rhs.cell_) {}
 
     ~hashing_iterator() = default;

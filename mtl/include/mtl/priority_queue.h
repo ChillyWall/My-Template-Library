@@ -33,7 +33,7 @@ private:
 
 public:
     priority_queue();
-    priority_queue(size_t n);
+    explicit priority_queue(size_t capacity);
     priority_queue(const self_t& rhs);
     priority_queue(self_t&& rhs) noexcept;
     virtual ~priority_queue() = default;
@@ -43,15 +43,18 @@ public:
         data_.clear();
     }
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return data_.size() - 1;
     }
 
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return size() == 0;
     }
 
     self_t& operator=(const self_t& rhs) {
+        if (&rhs == this) {
+            return *this;
+        }
         data_ = rhs.data_;
         return *this;
     }

@@ -33,9 +33,9 @@ private:
         typename std::allocator_traits<Alloc>::template rebind_alloc<Node>;
     NodeAlloc allocator_;
 
-    NdPtr head_;
-    NdPtr tail_;
-    size_t size_;
+    NdPtr head_ {nullptr};
+    NdPtr tail_ {nullptr};
+    size_t size_ {0};
 
     void init();
     void check_empty() const {
@@ -64,15 +64,16 @@ public:
         init();
     }
 
-    list(const self_t& l) {
+    list(const self_t& rhs) {
         init();
-        for (auto itr = l.begin(); itr != l.end(); ++itr) {
+        for (auto itr = rhs.begin(); itr != rhs.end(); ++itr) {
             push_back(*itr);
         }
     }
 
-    list(self_t&& l) noexcept : head_(l.head_), tail_(l.tail_), size_(l.size_) {
-        l.init();
+    list(self_t&& rhs) noexcept
+        : head_(rhs.head_), tail_(rhs.tail_), size_(rhs.size_) {
+        rhs.init();
     }
 
     list(std::initializer_list<T>&& il) noexcept {
@@ -86,8 +87,8 @@ public:
         destroy_node(head_);
     }
 
-    self_t& operator=(const self_t& l);
-    self_t& operator=(self_t&& l) noexcept;
+    self_t& operator=(const self_t& rhs);
+    self_t& operator=(self_t&& rhs) noexcept;
 
     void clear() {
         destroy_node(head_);
@@ -198,13 +199,13 @@ void list<T, Alloc>::init() {
 }
 
 template <typename T, typename Alloc>
-list<T, Alloc>::self_t& list<T, Alloc>::operator=(const self_t& l) {
-    if (this == &l) {
+list<T, Alloc>::self_t& list<T, Alloc>::operator=(const self_t& rhs) {
+    if (this == &rhs) {
         return *this;
     }
     clear();
     init();
-    for (auto itr = l.begin(); itr != l.end(); ++itr) {
+    for (auto itr = rhs.begin(); itr != rhs.end(); ++itr) {
         push_back(*itr);
     }
 
@@ -212,12 +213,12 @@ list<T, Alloc>::self_t& list<T, Alloc>::operator=(const self_t& l) {
 }
 
 template <typename T, typename Alloc>
-list<T, Alloc>::self_t& list<T, Alloc>::operator=(self_t&& l) noexcept {
+list<T, Alloc>::self_t& list<T, Alloc>::operator=(self_t&& rhs) noexcept {
     clear();
-    head_ = l.head_;
-    tail_ = l.tail_;
-    size_ = l.size_;
-    l.init();
+    head_ = rhs.head_;
+    tail_ = rhs.tail_;
+    size_ = rhs.size_;
+    rhs.init();
     return *this;
 }
 
@@ -324,8 +325,11 @@ public:
         : elem_(std::forward<V>(elem)), prev_(prev), next_(next) {}
 
     Node(const self_t& node) = delete;
+    Node(self_t&& node) = delete;
+    self_t& operator=(const self_t& node) = delete;
+    self_t& operator=(self_t&& node) = delete;
 
-    ~Node() noexcept {}
+    ~Node() noexcept = default;
 
     const T& elem() const {
         return elem_;
@@ -336,11 +340,11 @@ public:
     }
 
     [[nodiscard]] bool is_tail() const {
-        return !next_;
+        return next_ == nullptr;
     }
 
     [[nodiscard]] bool is_head() const {
-        return !prev_;
+        return prev_ == nullptr;
     }
 
     friend class list<T, Alloc>;
@@ -364,10 +368,13 @@ public:
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     list_iterator(const Iter& rhs) : node_(rhs.node_) {}
 
-    list_iterator(const self_t& rhs) : node_(rhs.node_) {}
+    list_iterator(const self_t& rhs) = default;
+    list_iterator(self_t&& rhs) noexcept = default;
+
     ~list_iterator() noexcept = default;
 
     self_t& operator=(const self_t& rhs) = default;
+    self_t& operator=(self_t&& rhs) noexcept = default;
 
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {

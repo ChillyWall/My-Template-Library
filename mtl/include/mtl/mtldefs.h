@@ -18,7 +18,7 @@ struct NullIterator : public std::exception {
     NullIterator& operator=(NullIterator&&) = delete;
     explicit NullIterator(const char* msg) : msg_(msg) {}
     ~NullIterator() noexcept override = default;
-    const char* what() {
+    virtual const char* what() {
         return msg_;
     }
 };
@@ -33,7 +33,7 @@ struct EmptyContainer : public std::exception {
     EmptyContainer& operator=(EmptyContainer&&) = delete;
     explicit EmptyContainer(const char* msg) : msg_(msg) {}
     ~EmptyContainer() noexcept override = default;
-    [[nodiscard]] const char* what() {
+    virtual const char* what() {
         return msg_;
     }
 };

@@ -29,22 +29,27 @@ template <typename T>
 }
 
 inline bool is_prime(size_t num) {
-    if (num <= 1)
+    if (num <= 1) {
         return false;
-    if (num <= 3)
+    }
+    if (num <= 3) {
         return true;
-    if (num % 2 == 0 || num % 3 == 0)
+    }
+    if (num % 2 == 0 || num % 3 == 0) {
         return false;
+    }
     for (size_t i = 5; i * i <= num; i += 6) {
-        if (num % i == 0 || num % (i + 2) == 0)
+        if (num % i == 0 || num % (i + 2) == 0) {
             return false;
+        }
     }
     return true;
 }
 
 inline size_t next_prime(size_t n) {
-    if (n <= 1)
+    if (n <= 1) {
         return 2;
+    }
     size_t prime = n;
     bool found = false;
 
