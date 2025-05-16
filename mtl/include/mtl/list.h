@@ -382,6 +382,12 @@ public:
         return *this;
     }
 
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    self_t& operator=(Iter&& rhs) noexcept {
+        node_ = rhs.node_;
+        return *this;
+    }
+
     Ref operator*() const {
         if (node_ == nullptr) {
             throw NullIterator();

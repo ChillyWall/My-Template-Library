@@ -683,6 +683,12 @@ public:
         return *this;
     }
 
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    self_t& operator=(Iter&& rhs) noexcept {
+        node_ = rhs.node_;
+        return *this;
+    }
+
     self_t operator+(difference_t n) {
         self_t res(*this);
         res += n;

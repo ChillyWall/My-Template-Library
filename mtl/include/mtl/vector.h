@@ -3,7 +3,6 @@
 
 #include <mtl/mtldefs.h>
 #include <initializer_list>
-#include <iterator>
 #include <stdexcept>
 
 // The namespace where the ADTs are.
@@ -535,27 +534,8 @@ public:
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     vector_iterator(const Iter& rhs) : elem_(rhs.elem_) {}
 
-    vector_iterator(const self_t& rhs) : elem_(rhs.elem_) {}
-    vector_iterator(self_t&& rhs) noexcept : elem_(rhs.elem_) {
-        rhs.elem_ = nullptr;
-    }
-
-    self_t& operator=(const self_t& rhs) = default;
-
-    template <normal_to_const<self_t, iterator, const_iterator> Iter>
-    self_t& operator=(const Iter& rhs) {
-        elem_ = rhs.elem_;
-        return *this;
-    }
-
-    self_t& operator=(self_t&& rhs) noexcept = default;
-
-    template <normal_to_const<self_t, iterator, const_iterator> Iter>
-    self_t& operator=(Iter&& rhs) noexcept {
-        elem_ = rhs.elem_;
-        rhs.elem_ = nullptr;
-        return *this;
-    }
+    vector_iterator(const self_t& rhs) = default;
+    vector_iterator(self_t&& rhs) noexcept = default;
 
     // return a reference to the element
     Ref operator*() const {
@@ -601,6 +581,21 @@ public:
 
     explicit operator bool() const {
         return elem_;
+    }
+
+    self_t& operator=(const self_t& rhs) = default;
+    self_t& operator=(self_t&& rhs) noexcept = default;
+
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    self_t& operator=(const Iter& rhs) {
+        elem_ = rhs.elem_;
+        return *this;
+    }
+
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    self_t& operator=(Iter&& rhs) noexcept {
+        elem_ = rhs.elem_;
+        return *this;
     }
 
     // move n items next, it don't check the boundary
