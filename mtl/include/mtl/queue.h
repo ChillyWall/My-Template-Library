@@ -23,11 +23,11 @@ public:
     queue& operator=(self_t&& rhs) = default;
     ~queue() noexcept = default;
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return data_->size();
     }
 
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return data_->empty();
     }
 

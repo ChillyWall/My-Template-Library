@@ -47,7 +47,7 @@ private:
 
     Cell* data_;
 
-    size_t get_next_size_(size_t old_size) {
+    size_t get_next_size(size_t old_size) {
         return next_prime(old_size * 2);
     }
 
@@ -329,7 +329,7 @@ bool hashing<T, hash_func, Alloc>::contains(const T& elem) const {
 
 template <typename T, typename hash_func, typename Alloc>
 void hashing<T, hash_func, Alloc>::expand() {
-    size_t new_size = get_next_size_(max_size_);
+    size_t new_size = get_next_size(max_size_);
     rehash(new_size);
 }
 
