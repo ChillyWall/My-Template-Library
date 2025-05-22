@@ -73,7 +73,7 @@ private:
     }
 
     void expand(size_t new_size) noexcept;
-    void shrink(size_t new_capacity) noexcept;
+    void shrink(size_t new_size) noexcept;
 
     template <typename Ref, typename Ptr>
     class vector_iterator;
@@ -157,11 +157,11 @@ public:
         return const_cast<T&>(static_cast<const self_t*>(this)->at(index));
     }
 
-    size_t capacity() const {
+    [[nodiscard]] size_t capacity() const {
         return capacity_;
     }
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return size_;
     }
 
@@ -176,7 +176,7 @@ public:
     }
 
     // return whether the vector is empty
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return size() == 0;
     }
 
@@ -262,6 +262,9 @@ public:
 
     // the copy assignment operator
     self_t& operator=(const self_t& rhs) {
+        if (&rhs == this) {
+            return *this;
+        }
         clear();
         auto tmp = allocate(rhs.capacity_);
         size_ = rhs.size_;
@@ -337,7 +340,7 @@ vector<T, Alloc>::insert(iterator index, V&& elem) noexcept {
             std::destroy_at(old_data + i);
         }
         construct(len, std::forward<V>(elem));
-        for (int i = len; i < size(); ++i) {
+        for (size_t i = len; i < size(); ++i) {
             construct(i + 1, std::move(old_data[i]));
             std::destroy_at(old_data + i);
         }
@@ -388,7 +391,7 @@ vector<T, Alloc>::insert(iterator index, InputIterator begin,
             construct(len2 + i, *begin);
             ++begin;
         }
-        for (int i = len2; i < size(); ++i) {
+        for (size_t i = len2; i < size(); ++i) {
             construct(i + len, std::move(old_data[i]));
             std::destroy_at(old_data + i);
         }
@@ -398,7 +401,7 @@ vector<T, Alloc>::insert(iterator index, InputIterator begin,
         // move elements backward
         size_t old_size = size();
         auto data = this->data();
-        for (int i = old_size + len - 1; i >= old_size; --i) {
+        for (size_t i = old_size + len - 1; i >= old_size; --i) {
             construct(i, std::move(data[i - len]));
         }
         auto itr1 = this->end() - 1;
@@ -451,7 +454,7 @@ vector<T, Alloc>::remove(iterator begin, iterator stop) noexcept {
         *(itr1++) = std::move(*(itr2++));
     }
     size_t size = this->size();
-    for (int i = size - 1; i >= size - wid; --i) {
+    for (size_t i = size - 1; i >= size - wid; --i) {
         destroy(i);
     }
 
@@ -531,7 +534,8 @@ public:
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     vector_iterator(const Iter& rhs) : elem_(rhs.elem_) {}
 
-    vector_iterator(const self_t& rhs) : elem_(rhs.elem_) {}
+    vector_iterator(const self_t& rhs) = default;
+    vector_iterator(self_t&& rhs) noexcept = default;
 
     // return a reference to the element
     Ref operator*() const {
@@ -580,9 +584,16 @@ public:
     }
 
     self_t& operator=(const self_t& rhs) = default;
+    self_t& operator=(self_t&& rhs) noexcept = default;
 
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
+        elem_ = rhs.elem_;
+        return *this;
+    }
+
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    self_t& operator=(Iter&& rhs) noexcept {
         elem_ = rhs.elem_;
         return *this;
     }

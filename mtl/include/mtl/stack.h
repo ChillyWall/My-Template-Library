@@ -19,13 +19,16 @@ public:
     stack() = default;
     stack(const self_t& rhs) = default;
     stack(self_t&& rhs) noexcept = default;
-    virtual ~stack() = default;
+    ~stack() noexcept = default;
 
-    bool empty() const {
+    self_t& operator=(const self_t& rhs) = default;
+    self_t& operator=(self_t&& rhs) noexcept = default;
+
+    [[nodiscard]] bool empty() const {
         return data_.empty();
     }
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return data_.size();
     }
 

@@ -36,11 +36,11 @@ public:
     using const_iterator = deque_iterator<const T&, const T*>;
 
 private:
-    MapPtr map_;       // the map of nodes
-    size_t map_size_;  // the size of the map array
-    size_t size_;      // the number of elements
-    iterator front_;   // the front element
-    iterator back_;    // the back element
+    MapPtr map_;           // the map of nodes
+    size_t map_size_ {0};  // the size of the map array
+    size_t size_ {0};      // the number of elements
+    iterator front_;       // the front element
+    iterator back_;        // the back element
 
     using MapAlloc =
         typename std::allocator_traits<Alloc>::template rebind_alloc<EltPtr>;
@@ -79,7 +79,7 @@ private:
     }
 
 public:
-    deque() : map_(nullptr), map_size_(0), size_(0) {}
+    deque() : map_(nullptr) {}
 
     explicit deque(size_t n);
     explicit deque(size_t n, const T& val);
@@ -246,7 +246,7 @@ public:
 
 template <typename T, typename Alloc>
 deque<T, Alloc>::deque(size_t n) {
-    init(n / BUF_LEN + 3);
+    init((n / BUF_LEN) + 3);
     for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
         *ptr = allocate_node();
     }
@@ -261,7 +261,7 @@ deque<T, Alloc>::deque(size_t n) {
 
 template <typename T, typename Alloc>
 deque<T, Alloc>::deque(size_t n, const T& val) {
-    init(n / BUF_LEN + 3);
+    init((n / BUF_LEN) + 3);
     for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
         *ptr = allocate_node();
     }
@@ -276,7 +276,7 @@ deque<T, Alloc>::deque(size_t n, const T& val) {
 
 template <typename T, typename Alloc>
 deque<T, Alloc>::deque(std::initializer_list<T>&& il) noexcept {
-    init(il.size() / BUF_LEN + 3);
+    init((il.size() / BUF_LEN) + 3);
     for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
         *ptr = allocate_node();
     }
@@ -330,11 +330,11 @@ template <typename T, typename Alloc>
 void deque<T, Alloc>::init(size_t map_size) {
     map_size_ = map_size;
     map_ = allocate_map(map_size_);
-    MapPtr first_node_ = map_ + map_size_ / 2;
+    MapPtr first_node_ = map_ + (map_size_ / 2);
     *first_node_ = allocate_node();
     *(first_node_ + 1) = allocate_node();
     *(first_node_ - 1) = allocate_node();
-    back_ = iterator(*first_node_ + BUF_LEN / 2, first_node_);
+    back_ = iterator(*first_node_ + (BUF_LEN / 2), first_node_);
     front_ = back_;
 }
 
@@ -420,11 +420,7 @@ public:
         set_node(node);
     }
 
-    deque_iterator(const self_t& rhs)
-        : first_(rhs.first_),
-          last_(rhs.last_),
-          node_(rhs.node_),
-          cur_(rhs.cur_) {}
+    deque_iterator(const self_t& rhs) = default;
 
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     deque_iterator(const Iter& rhs)
@@ -435,7 +431,21 @@ public:
 
     ~deque_iterator() noexcept = default;
 
-    self_t& operator=(const self_t& rhs) {
+    deque_iterator(self_t&& rhs) noexcept = default;
+
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    deque_iterator(Iter&& rhs) noexcept
+        : first_(rhs.first_),
+          last_(rhs.last_),
+          node_(rhs.node_),
+          cur_(rhs.cur_) {}
+
+    self_t& operator=(const self_t& rhs) = default;
+
+    self_t& operator=(self_t&& rhs) noexcept = default;
+
+    template <normal_to_const<self_t, iterator, const_iterator> Iter>
+    self_t& operator=(const Iter& rhs) {
         first_ = rhs.first_;
         last_ = rhs.last_;
         node_ = rhs.node_;
@@ -444,7 +454,7 @@ public:
     }
 
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
-    self_t& operator=(const Iter& rhs) {
+    self_t& operator=(Iter&& rhs) noexcept {
         first_ = rhs.first_;
         last_ = rhs.last_;
         node_ = rhs.node_;
@@ -526,7 +536,7 @@ public:
     template <is_one_of<iterator, const_iterator> Iter>
     friend difference_t operator-(const self_t& lhs, const Iter& rhs) {
         return (lhs.cur_ - lhs.first_) + (rhs.last_ - rhs.cur_) +
-            (lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) * BUF_LEN;
+            ((lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) * BUF_LEN);
     }
 
     template <is_one_of<iterator, const_iterator> Iter>

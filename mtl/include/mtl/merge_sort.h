@@ -25,22 +25,22 @@ template <Iterator Iter>
 void inplace_mergesort_iterative(Iter begin, Iter end) {
     using itr3 = tuple<Iter, Iter, Iter>;
     using node = pair<itr3, bool>;
-    stack<node> st;
-    st.push(node(itr3(begin, find_mid(begin, end), end), 0));
-    while (!st.empty()) {
-        auto& cur = st.top();
+    stack<node> sta;
+    sta.push(node(itr3(begin, find_mid(begin, end), end), 0));
+    while (!sta.empty()) {
+        auto& cur = sta.top();
         if (cur.second) {
             auto& [begin, mid, end] = cur.first;
             inplace_merge(begin, mid, end);
-            st.pop();
+            sta.pop();
         } else {
             cur.second = 1;
             auto& [begin, mid, end] = cur.first;
             if (begin != end && begin != advance(end, -1)) {
-                st.push(node(itr3(begin, find_mid(begin, mid), mid), 0));
-                st.push(node(itr3(mid, find_mid(mid, end), end), 0));
+                sta.push(node(itr3(begin, find_mid(begin, mid), mid), 0));
+                sta.push(node(itr3(mid, find_mid(mid, end), end), 0));
             } else {
-                st.pop();
+                sta.pop();
             }
         }
     }
