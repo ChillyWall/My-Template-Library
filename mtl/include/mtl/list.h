@@ -76,7 +76,7 @@ public:
         rhs.init();
     }
 
-    list(std::initializer_list<T>&& il) noexcept {
+    list(std::initializer_list<T> il) noexcept {
         init();
         for (auto itr = il.begin(); itr != il.end(); ++itr) {
             push_back(std::move(*itr));

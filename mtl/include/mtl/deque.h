@@ -83,7 +83,7 @@ public:
 
     explicit deque(size_t n);
     explicit deque(size_t n, const T& val);
-    deque(std::initializer_list<T>&& il) noexcept;
+    deque(std::initializer_list<T> il) noexcept;
     deque(const self_t& rhs);
     deque(self_t&& rhs) noexcept
         : map_(rhs.map_),
@@ -275,7 +275,7 @@ deque<T, Alloc>::deque(size_t n, const T& val) {
 }
 
 template <typename T, typename Alloc>
-deque<T, Alloc>::deque(std::initializer_list<T>&& il) noexcept {
+deque<T, Alloc>::deque(std::initializer_list<T> il) noexcept {
     init((il.size() / BUF_LEN) + 3);
     for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
         *ptr = allocate_node();
@@ -551,13 +551,13 @@ public:
 
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<(const self_t& lhs, const Iter& rhs) {
+        bool res = false;
         if (lhs.node_ < rhs.node_) {
-            return true;
+            res = true;
         } else if (lhs.node_ == rhs.node_) {
-            return lhs.cur_ < rhs.cur_;
-        } else {
-            return false;
+            res = lhs.cur_ < rhs.cur_;
         }
+        return res;
     }
 
     template <is_one_of<iterator, const_iterator> Iter>

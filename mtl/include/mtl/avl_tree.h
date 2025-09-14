@@ -3,6 +3,7 @@
 
 #include <mtl/algorithms.h>
 #include <mtl/mtldefs.h>
+#include <cstdint>
 #include <memory>
 
 namespace mtl {
@@ -38,11 +39,11 @@ private:
     // The maximum difference between the heights of left and right children
     static const int ALLOWED_IMBALANCE = 1;
     // If the node is invalid, it's height would be -1
-    static long long height(NdPtr node) {
+    static int64_t height(NdPtr node) {
         return (node == nullptr) ? -1 : node->height_;
     }
 
-    static long long calc_height(NdPtr node) {
+    static int64_t calc_height(NdPtr node) {
         return max(height(node->left_), height(node->right_)) + 1;
     }
 
@@ -165,9 +166,9 @@ public:
     template <typename V>
     iterator insert(V&& elem) noexcept;
 
-    // return iterator to the last node of erased node
-    size_t remove(const T& elem) noexcept;
+    int remove(const T& elem) noexcept;
 
+    // return iterator to the last node of erased node
     iterator remove(iterator itr) noexcept;
 
     // return whether the elem is in the tree
@@ -480,19 +481,19 @@ void avl_tree<T, Alloc>::remove_node(NdPtr node) {
 }
 
 template <typename T, typename Alloc>
-size_t avl_tree<T, Alloc>::remove(const T& elem) noexcept {
+int avl_tree<T, Alloc>::remove(const T& elem) noexcept {
+    int res = 0;
     if (root_ == nullptr) {
-        return 0;
+        return res;
     }
 
     NdPtr node = find_node(elem);
     if (node->element() == elem) {
         remove_node(node);
         --size_;
-        return 1;
-    } else {
-        return 0;
+        res = 1;
     }
+    return res;
 }
 
 template <typename T, typename Alloc>
@@ -547,7 +548,7 @@ private:
     // its right child
     NdPtr right_;
     // its height
-    long long height_ {0};
+    int64_t height_ {0};
 
 public:
     template <typename V>
@@ -564,7 +565,7 @@ public:
 
     ~Node() noexcept = default;
 
-    [[nodiscard]] long long height() const {
+    [[nodiscard]] int64_t height() const {
         return height_;
     }
 
@@ -702,13 +703,15 @@ public:
 
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator==(const self_t& lhs, const Iter& rhs) {
+        bool res = false;
         if (lhs && rhs) {
-            return *lhs == *rhs;
+            res = *lhs == *rhs;
         } else if (lhs || rhs) {
-            return false;
+            res = false;
         } else {
-            return true;
+            res = true;
         }
+        return res;
     }
 
     template <is_one_of<iterator, const_iterator> Iter>
@@ -718,20 +721,24 @@ public:
 
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<(const self_t& lhs, const Iter& rhs) {
+        bool res = false;
         if (lhs && rhs) {
-            return *lhs < *rhs;
+            res = *lhs < *rhs;
         } else {
-            return static_cast<bool>(lhs);
+            res = static_cast<bool>(lhs);
         }
+        return res;
     }
 
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator>(const self_t& lhs, const Iter& rhs) {
+        bool res = false;
         if (lhs && rhs) {
-            return *lhs > *rhs;
+            res = *lhs > *rhs;
         } else {
-            return static_cast<bool>(rhs);
+            res = static_cast<bool>(rhs);
         }
+        return res;
     }
 
     template <is_one_of<iterator, const_iterator> Iter>

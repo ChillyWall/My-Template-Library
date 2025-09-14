@@ -50,17 +50,19 @@ Iter partition(Iter begin, Iter end) noexcept {
     // the pivot
     auto pivot = std::move(*begin);
     while (begin != end) {
-        do {
+        --end;
+        while (begin != end && pivot < *end) {
             --end;
-        } while (begin != end && pivot < *end);
+        };
         if (begin == end) {
             break;
         }
         *begin = std::move(*end);
 
-        do {
+        ++begin;
+        while (begin != end && pivot > *begin) {
             ++begin;
-        } while (begin != end && pivot > *begin);
+        };
 
         if (begin != end) {
             *end = std::move(*begin);

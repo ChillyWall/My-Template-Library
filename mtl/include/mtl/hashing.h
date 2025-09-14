@@ -136,7 +136,7 @@ public:
      * @brief the number of elements in the hash table
      * @return the value
      */
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return size_;
     }
 
@@ -144,7 +144,7 @@ public:
      * @brief the max size of the table
      * @return the value
      */
-    size_t max_size() const {
+    [[nodiscard]] size_t max_size() const {
         return max_size_;
     }
 
@@ -398,7 +398,7 @@ public:
         set_occupied();
     }
 
-    bool get_hop(size_t dist) const {
+    [[nodiscard]] bool get_hop(size_t dist) const {
         return hop_info_[dist];
     }
 
@@ -412,7 +412,7 @@ public:
         occupied_ = false;
     }
 
-    const std::bitset<MAX_DIST>& hop_info() const {
+    [[nodiscard]] const std::bitset<MAX_DIST>& hop_info() const {
         return hop_info_;
     }
 
@@ -450,7 +450,7 @@ public:
     ~hashing_iterator() = default;
 
     self_t& operator=(const self_t& rhs) = default;
-
+    self_t& operator=(self_t&& rhs) noexcept = default;
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         cur_ = rhs.cell_;
@@ -495,9 +495,10 @@ public:
     }
 
     self_t& operator++() {
-        do {
+        ++cur_;
+        while (cur_ < end_ && !cur_->is_occupied()) {
             ++cur_;
-        } while (cur_ < end_ && !cur_->is_occupied());
+        };
         return *this;
     }
 
@@ -508,9 +509,10 @@ public:
     }
 
     self_t& operator--() {
-        do {
+        --cur_;
+        while (cur_ >= begin_ && !cur_->is_occupied()) {
             --cur_;
-        } while (cur_ >= begin_ && !cur_->is_occupied());
+        };
         return *this;
     }
 

@@ -103,7 +103,7 @@ public:
 
     /* construct from initializer list, the size will be the same with the
      * il. */
-    vector(std::initializer_list<T>&& il) noexcept
+    vector(std::initializer_list<T> il) noexcept
         : capacity_(il.size()), size_(il.size()) {
         auto old = allocate(capacity_);
         auto itr = il.begin();
