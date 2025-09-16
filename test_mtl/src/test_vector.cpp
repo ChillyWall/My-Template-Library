@@ -1,5 +1,3 @@
-#define GLOG_USE_GLOG_EXPORT
-
 #include <gtest/gtest.h>
 #include <mtl/vector.h>
 

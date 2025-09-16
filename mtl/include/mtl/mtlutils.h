@@ -19,13 +19,35 @@ inline T abs(const T& x) {
 }
 
 template <typename T>
-[[nodiscard]] constexpr const T& max(const T& a, const T& b) {
-    return (a < b) ? b : a;
+[[nodiscard]] constexpr const T& max(const T& a) {
+    return a;
 }
 
 template <typename T>
-[[nodiscard]] constexpr const T& min(const T& a, const T& b) {
+[[nodiscard]] constexpr const T& min(const T& a) {
+    return a;
+}
+
+template <typename T, typename... Args>
+[[nodiscard]] constexpr const T& max(const T& a, const Args&... args) {
+    const T& b = max(args...);
+    return (a < b) ? b : a;
+}
+
+template <typename T, typename... Args>
+[[nodiscard]] constexpr const T& min(const T& a, const Args&... args) {
+    const T& b = min(args...);
     return (b < a) ? b : a;
+}
+
+template <typename... Args>
+[[nodiscard]] constexpr auto sum(Args... args) {
+    return (... + args);
+}
+
+template <typename... Args>
+[[nodiscard]] constexpr auto prod(Args... args) {
+    return (... * args);
 }
 
 inline bool is_prime(size_t num) {
