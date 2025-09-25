@@ -19,6 +19,13 @@ TEST(TestMTLUtils, TestSumProd) {
     EXPECT_EQ(prod_res, 120);
 }
 
+TEST(TestMTLUtils, TestMaxMinWithConstexpr) {
+    constexpr int constexpr_max = mtl::max(1, 3, 2, 7, 4);
+    EXPECT_EQ(constexpr_max, 7);
+    constexpr int constexpr_min = mtl::min(5, 10, -1, 0, 8);
+    EXPECT_EQ(constexpr_min, -1);
+}
+
 int main() {
     ::testing::InitGoogleTest();
     return RUN_ALL_TESTS();

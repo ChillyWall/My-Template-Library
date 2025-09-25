@@ -43,10 +43,12 @@ public:
         data_.clear();
     }
 
+    /* get the number of elements of the priority queue */
     [[nodiscard]] size_t size() const {
         return data_.size() - 1;
     }
 
+    /* check if the priority queue is empty */
     [[nodiscard]] bool empty() const {
         return size() == 0;
     }
