@@ -1,7 +1,6 @@
 #ifndef MTL_LIST_H
 #define MTL_LIST_H
 
-#include <mtl/algorithms.h>
 #include <mtl/mtldefs.h>
 #include <initializer_list>
 #include <memory>
