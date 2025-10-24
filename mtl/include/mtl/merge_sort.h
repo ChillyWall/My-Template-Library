@@ -1,10 +1,14 @@
 #ifndef MTL_MERGE_SORT_H
 #define MTL_MERGE_SORT_H
 
+#include <mtl/deque.h>
+#include <mtl/list.h>
 #include <mtl/mtldefs.h>
 #include <mtl/mtlutils.h>
 #include <mtl/pair.h>
 #include <mtl/stack.h>
+#include <mtl/vector.h>
+#include <future>
 
 namespace mtl {
 
@@ -42,6 +46,25 @@ void inplace_mergesort_iterative(Iter begin, Iter end) {
             } else {
                 sta.pop();
             }
+        }
+    }
+}
+
+template <Iterator Iter>
+void parallel_inplace_mergesort(Iter begin, Iter end) {
+    if (begin != end && begin != advance(end, -1)) {
+        if (mtl::distance(begin, end) < 1024) {
+            inplace_mergesort(begin, end);
+        } else {
+            auto mid = find_mid(begin, end);
+            auto left =
+                std::async(std::launch::async, parallel_inplace_mergesort<Iter>,
+                           begin, mid);
+            auto right = std::async(std::launch::async,
+                                    parallel_inplace_mergesort<Iter>, mid, end);
+            left.wait();
+            right.wait();
+            inplace_merge(begin, mid, end);
         }
     }
 }

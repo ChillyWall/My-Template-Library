@@ -70,6 +70,12 @@ concept Iterator = requires(T a) {
     { a != a };
 };
 
+template <typename T>
+concept RandomIterator = Iterator<T> && requires(T a, T b) {
+    { b - a };
+    { a + 1 };
+};
+
 }  // namespace mtl
 
 #endif

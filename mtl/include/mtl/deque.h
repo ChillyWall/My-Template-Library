@@ -578,28 +578,5 @@ public:
     friend class deque<T, Alloc>;
 };
 
-template <typename T>
-deque<T>::const_iterator advance(typename deque<T>::const_iterator iter,
-                                 difference_t n) {
-    return iter + n;
-}
-
-template <typename T>
-deque<T>::const_iterator distance(typename deque<T>::const_iterator first,
-                                  typename deque<T>::const_iterator last) {
-    return last - first;
-}
-
-template <typename T>
-deque<T>::iterator advance(typename deque<T>::iterator iter, difference_t n) {
-    return iter + n;
-}
-
-template <typename T>
-deque<T>::iterator distance(typename deque<T>::iterator first,
-                            typename deque<T>::iterator last) {
-    return last - first;
-}
-
 }  // namespace mtl
 #endif

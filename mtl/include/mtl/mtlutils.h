@@ -98,7 +98,31 @@ Iter advance(Iter itr, difference_t n) {
     return itr;
 }
 
+template <RandomIterator Iter>
+Iter advance(Iter itr, difference_t n) {
+    if (n > 0) {
+        while (n-- > 0) {
+            ++itr;
+        }
+    } else {
+        while (n++ < 0) {
+            --itr;
+        }
+    }
+    return itr;
+}
+
 template <Iterator Iter>
+difference_t distance(Iter first, Iter last) {
+    difference_t n = 0;
+    while (first != last) {
+        ++first;
+        ++n;
+    }
+    return n;
+}
+
+template <RandomIterator Iter>
 difference_t distance(Iter first, Iter last) {
     difference_t n = 0;
     while (first != last) {
@@ -134,6 +158,7 @@ template <Iterator Iter>
 Iter find_mid(Iter begin, Iter end) {
     auto fast = begin;
     auto slow = begin;
+
     while (fast != end) {
         ++fast;
         if (fast == end) {
@@ -144,6 +169,13 @@ Iter find_mid(Iter begin, Iter end) {
     }
     return slow;
 }
+
+/* find the middle of a sequence by random access */
+template <RandomIterator Iter>
+Iter find_mid(Iter begin, Iter end) {
+    return begin + ((end - begin) / 2);
+}
+
 }  // namespace mtl
 
 #endif

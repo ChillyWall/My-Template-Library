@@ -2,6 +2,7 @@
 #define MTL_VECTOR_H
 
 #include <mtl/mtldefs.h>
+#include <mtl/mtlutils.h>
 #include <initializer_list>
 #include <stdexcept>
 
@@ -655,29 +656,6 @@ public:
         return new_itr;
     }
 };
-
-template <typename T>
-vector<T>::const_iterator advance(typename vector<T>::const_iterator iter,
-                                  difference_t n) {
-    return iter + n;
-}
-
-template <typename T>
-vector<T>::const_iterator distance(typename vector<T>::const_iterator first,
-                                   typename vector<T>::const_iterator last) {
-    return last - first;
-}
-
-template <typename T>
-vector<T>::iterator advance(typename vector<T>::iterator iter, difference_t n) {
-    return iter + n;
-}
-
-template <typename T>
-vector<T>::iterator distance(typename vector<T>::iterator first,
-                             typename vector<T>::iterator last) {
-    return last - first;
-}
 
 }  // namespace mtl
 #endif  // MTL_VECTOR_H
