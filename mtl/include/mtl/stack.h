@@ -13,7 +13,7 @@ public:
 
 private:
     using container_type = deque<T, Alloc>;
-    deque<T> data_;
+    container_type data_;
 
 public:
     stack() = default;

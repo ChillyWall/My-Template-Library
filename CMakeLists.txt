@@ -4,8 +4,16 @@ set(CMAKE_CXX_STANDARD 20)
 
 enable_testing()
 
-set(CMAKE_SOURCE_DIR .)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(mtl)
-add_subdirectory(test_mtl)
+add_subdirectory(ts_mtl)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/mtl-config.cmake"
+    INSTALL_DESTINATION lib/cmake/mtl
+)
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/mtl-config.cmake"
+    DESTINATION lib/cmake/mtl
+)

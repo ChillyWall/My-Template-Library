@@ -13,7 +13,7 @@ public:
 
 private:
     using container_t = deque<T, Alloc>;
-    deque<T> data_;
+    container_t data_;
 
 public:
     queue() = default;

@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+set(_mtl_supported_components mtl ts_mtl)
+
+foreach(_comp ${mtl_FIND_COMPONENTS})
+  if (NOT _comp IN_LIST _mtl_supported_components)
+    set(mtl_FOUND False)
+    set(mtl_NOT_FOUND_MESSAGE "Unsupported component: ${_comp}")
+  endif()
+  include("${CMAKE_CURRENT_LIST_DIR}/${_comp}-targets.cmake")
+endforeach()
