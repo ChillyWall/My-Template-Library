@@ -2,6 +2,7 @@
 #define MTL_UTILS_H
 
 #include <mtl/mtldefs.h>
+#include <memory>
 
 namespace mtl {
 
@@ -148,7 +149,9 @@ void move_ranges(Iter1 begin, Iter1 end, Iter2 dest) noexcept {
 template <Iterator Iter1, Iterator Iter2>
 void copy(Iter1 begin, Iter1 end, Iter2 output) {
     while (begin != end) {
-        *(output++) = *(begin++);
+        *output = *begin;
+        ++begin;
+        ++output;
     }
 }
 
@@ -174,6 +177,26 @@ Iter find_mid(Iter begin, Iter end) {
 template <RandomIterator Iter>
 Iter find_mid(Iter begin, Iter end) {
     return begin + ((end - begin) / 2);
+}
+
+template <typename T, typename... Args>
+void construct(T* data, size_t index, Args&&... args) {
+    std::construct_at(data + index, std::forward<Args>(args)...);
+}
+
+template <typename T>
+void construct_all(T* data, size_t size) {
+    std::uninitialized_default_construct_n(data, size);
+}
+
+template <typename T>
+void destroy(T* data, size_t index) noexcept {
+    std::destroy_at(data + index);
+}
+
+template <typename T>
+void destroy_all(T* data, size_t size) noexcept {
+    std::destroy_n(data, size);
 }
 
 }  // namespace mtl

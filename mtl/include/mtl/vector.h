@@ -4,7 +4,9 @@
 #include <mtl/mtldefs.h>
 #include <mtl/mtlutils.h>
 #include <initializer_list>
+#include <memory>
 #include <stdexcept>
+#include <utility>
 
 // The namespace where the ADTs are.
 namespace mtl {
@@ -33,48 +35,14 @@ private:
         }
     }
 
-    /* allocate a new array with length size and return the pointer to the old
-     * one (the pointer is nodiscard and must be released) */
+    /* allocate a new array with length size and return the pointer to it */
     [[nodiscard]] T* allocate(size_t new_capacity) {
-        capacity_ = new_capacity;
-        T* tmp = data_;
-        data_ = allocator_.allocate(new_capacity);
-        return tmp;
-    }
-
-    template <typename... Args>
-    void construct(size_t index, Args&&... args) {
-        std::construct_at(data_ + index, std::forward<Args>(args)...);
-    }
-
-    void construct_all() {
-        for (size_t i = 0; i < capacity_; ++i) {
-            construct(i);
-        }
-    }
-
-    void destroy(size_t index) noexcept {
-        std::destroy_at(data_ + index);
-    }
-
-    void destroy_all() {
-        for (size_t i = 0; i < capacity_; ++i) {
-            destroy(i);
-        }
-    }
-
-    void deallocate() {
-        deallocate(data_, capacity_);
-        data_ = nullptr;
-        capacity_ = 0;
+        return allocator_.allocate(new_capacity);
     }
 
     void deallocate(T* array, size_t length) {
         allocator_.deallocate(array, length);
     }
-
-    void expand(size_t new_size) noexcept;
-    void shrink(size_t new_size) noexcept;
 
     template <typename Ref, typename Ptr>
     class vector_iterator;
@@ -87,38 +55,34 @@ public:
     vector() : capacity_(0), size_(0), data_(nullptr) {}
 
     // construct the vector with particular size
-    explicit vector(size_t init_size) : capacity_(init_size), size_(init_size) {
-        auto old = allocate(capacity_);
-        for (int i = 0; i < init_size; ++i) {
-            construct(i);
-        }
+    explicit vector(size_t init_size)
+        : capacity_(init_size), size_(init_size), data_(allocate(init_size)) {
+        construct_all(data_, init_size);
     }
 
     vector(size_t init_size, const T& init_val)
-        : capacity_(init_size), size_(init_size) {
-        auto old = allocate(capacity_);
+        : capacity_(init_size), size_(init_size), data_(allocate(capacity_)) {
         for (int i = 0; i < init_size; ++i) {
-            construct(i, init_val);
+            construct(data_, i, init_val);
         }
     }
 
     /* construct from initializer list, the size will be the same with the
      * il. */
     vector(std::initializer_list<T> il) noexcept
-        : capacity_(il.size()), size_(il.size()) {
-        auto old = allocate(capacity_);
+        : capacity_(il.size()), size_(il.size()), data_(allocate(il.size())) {
         auto itr = il.begin();
-        for (int i = 0; i < il.size(); ++i) {
-            construct(i, std::move(*(itr++)));
+        for (int i = 0; i < il.size(); ++i, ++itr) {
+            construct(data_, i, std::move_if_noexcept(*itr));
         }
     }
 
     // copy constructor
-    vector(const self_t& rhs) : capacity_(rhs.size()), size_(rhs.size()) {
-        auto old = allocate(capacity_);
-        for (size_t i = 0; i < rhs.size(); ++i) {
-            construct(i, rhs[i]);
-        }
+    vector(const self_t& rhs)
+        : capacity_(rhs.size()),
+          size_(rhs.size()),
+          data_(allocate(rhs.size())) {
+        std::uninitialized_copy_n(rhs.data_, rhs.size_, data_);
     }
 
     // moving constructor
@@ -131,8 +95,8 @@ public:
 
     // the destructor
     ~vector() noexcept {
-        destroy_all();
-        deallocate();
+        destroy_all(data_, size_);
+        deallocate(data_, capacity_);
     }
 
     /* return the reference to the element at position index
@@ -182,24 +146,24 @@ public:
     }
 
     void clear() noexcept {
-        destroy_all();
+        destroy_all(data_, size_);
+        deallocate(data_, capacity_);
+        capacity_ = 0;
         size_ = 0;
-        deallocate();
+        data_ = nullptr;
     }
 
     void shrink_to_fit() noexcept;
 
-    void reserve(size_t capacity) noexcept;
+    void reserve(size_t capacity);
 
     void resize(size_t new_size) noexcept;
 
     const T& front() const {
-        check_empty();
-        return data()[0];
+        return at(0);
     }
 
     const T& back() const {
-        check_empty();
         return at(size() - 1);
     }
 
@@ -211,37 +175,35 @@ public:
         return const_cast<T&>(static_cast<const self_t*>(this)->back());
     }
 
-    // push a new element to front, with perfect forwarding
-    template <typename V>
-    void push_front(V&& elem) {
-        insert(begin(), std::forward<V>(elem));
-    }
-
-    // remove the first element.
-    void pop_front() {
-        check_empty();
-        remove(begin());
-    }
-
     template <typename V>
     void push_back(V&& elem) {
+        // emplace_back(std::forward<V>(elem));
         if (size() + 1 > capacity()) {
             reserve(capacity() == 0 ? 1 : capacity() * 2);
         }
-        construct(size(), std::forward<V>(elem));
+        construct(data_, size(), std::forward<V>(elem));
         ++size_;
     }
 
     void pop_back() {
         check_empty();
-        destroy(size() - 1);
+        destroy(data_, size() - 1);
         --size_;
+    }
+
+    template <typename... Args>
+    void emplace_back(Args&&... args) {
+        if (size() + 1 > capacity()) {
+            reserve(capacity() == 0 ? 1 : capacity() * 2);
+        }
+        construct(data_, size(), std::forward<Args>(args)...);
+        ++size_;
     }
 
     /* insert an element at position index,
      * return an iterator pointing to the next cell */
     template <typename V>
-    iterator insert(iterator index, V&& elem) noexcept;
+    iterator insert(iterator index, V&& elem);
 
     /* insert another from another container (deep copy) with iterators
      * which provide ++, --, ==, and != operators */
@@ -267,11 +229,13 @@ public:
             return *this;
         }
         clear();
-        auto tmp = allocate(rhs.capacity_);
-        size_ = rhs.size_;
+        reserve(rhs.size());
+        size_ = rhs.size();
         for (size_t i = 0; i < size_; ++i) {
-            construct(i, rhs[i]);
+            construct(data_, i, rhs[i]);
         }
+
+        return *this;
     }
 
     // the moving assignment operator
@@ -279,15 +243,18 @@ public:
         if (this == &rhs) {
             return *this;
         }
-        destroy_all();
-        deallocate();
+        destroy_all(data_, size_);
+        deallocate(data_, capacity_);
 
         // copy the object
         capacity_ = rhs.capacity_;
         data_ = rhs.data_;
+        size_ = rhs.size_;
 
         rhs.data_ = nullptr;
         rhs.capacity_ = 0;
+        rhs.size_ = 0;
+
         return *this;
     }
 
@@ -299,7 +266,8 @@ public:
     /* return a vector_iterator pointing to the position after the last
      * element */
     const_iterator cend() const {
-        return const_iterator(const_cast<T*>(data()) + size());
+        return const_iterator(
+            data() == nullptr ? nullptr : const_cast<T*>(data()) + size());
     }
 
     // return an iterator pointing to the first element
@@ -309,7 +277,7 @@ public:
 
     // return an iterator pointing to the element behind the last one
     iterator end() {
-        return iterator(data() + size());
+        return iterator(data() == nullptr ? nullptr : data() + size());
     }
 
     // return a vector_iterator pointing to the position 0
@@ -326,35 +294,36 @@ public:
 
 template <typename T, typename Alloc>
 template <typename V>
-typename vector<T, Alloc>::iterator
-vector<T, Alloc>::insert(iterator index, V&& elem) noexcept {
-    if (index > this->end()) {
-        return iterator();
-    }
+typename vector<T, Alloc>::iterator vector<T, Alloc>::insert(iterator index,
+                                                             V&& elem) {
     if (size() + 1 > capacity()) {
-        size_t len = index - begin();
-        auto old_capacity = capacity();
-        auto old_data = allocate(old_capacity == 0 ? 1 : old_capacity * 2);
+        size_t pre_len = index ? index - begin() : size_;
+        size_t new_capacity = capacity_ == 0 ? 1 : capacity_ * 2;
+        auto new_data = allocate(new_capacity);
 
-        for (int i = 0; i < len; ++i) {
-            construct(i, std::move(old_data[i]));
-            std::destroy_at(old_data + i);
-        }
-        construct(len, std::forward<V>(elem));
-        for (size_t i = len; i < size(); ++i) {
-            construct(i + 1, std::move(old_data[i]));
-            std::destroy_at(old_data + i);
-        }
-        deallocate(old_data, old_capacity);
-        index = this->begin() + len + 1;
+        std::uninitialized_move_n(data_, pre_len, new_data);
+        construct(new_data, pre_len, std::forward<V>(elem));
+        std::uninitialized_move_n(data_ + pre_len, size_ - pre_len,
+                                  new_data + pre_len + 1);
+
+        destroy_all(data_, size_);
+        deallocate(data_, capacity_);
+
+        data_ = new_data;
+        capacity_ = new_capacity;
+
+        index = this->begin() + pre_len;
     } else {
-        auto itr1 = this->end() - 1;
+        auto itr1 = this->begin() + size_ - 1;
         auto itr2 = itr1 - 1;
-        construct(size(), std::move(*itr1));
+        // the position of index in data_
+        construct(data_, size(), std::move_if_noexcept(*itr1));
         while (itr1 > index) {
-            *(itr1--) = std::move(*(itr2--));
+            *itr1 = std::move_if_noexcept(*itr2);
+            --itr1;
+            --itr2;
         }
-        *(index++) = std::forward<V>(elem);
+        *index = std::forward<V>(elem);
     }
 
     ++size_;
@@ -366,52 +335,43 @@ template <typename InputIterator>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(iterator index, InputIterator begin,
                          InputIterator end) {
-    // check the validity of index
-    if (index > this->end()) {
-        return iterator();
-    }
-
     size_t len = end - begin;
 
     // check whether the capacity is big enough
-    if (size() + len > capacity()) {
-        size_t len2 = index - this->begin();
+    if (size_ + len > capacity()) {
+        size_t pre_len = index ? index - this->begin() : size_;
 
-        auto old_capacity = capacity();
-        size_t new_capacity = old_capacity * 2;
-        while (new_capacity < old_capacity + len) {
-            new_capacity *= 2;
+        size_t new_capacity = capacity_ == 0 ? len : capacity_ * 2;
+        while (new_capacity < size_ + len) {
+            new_capacity = size_ + len;
         }
-        auto old_data = allocate(new_capacity);
+        auto new_data = allocate(new_capacity);
 
-        for (int i = 0; i < len2; ++i) {
-            construct(i, std::move(old_data[i]));
-            std::destroy_at(old_data + i);
+        std::uninitialized_move_n(data_, pre_len, new_data);
+        for (size_t i = 0; i < len; ++i, ++begin) {
+            construct(new_data, pre_len + i, *begin);
         }
-        for (int i = 0; i < len; ++i) {
-            construct(len2 + i, *begin);
-            ++begin;
-        }
-        for (size_t i = len2; i < size(); ++i) {
-            construct(i + len, std::move(old_data[i]));
-            std::destroy_at(old_data + i);
-        }
-        deallocate(old_data, old_capacity);
-        index = this->begin() + len2 + len;
+        std::uninitialized_move_n(data_ + pre_len, size_ - pre_len,
+                                  new_data + pre_len + len);
+        destroy_all(data_, size_);
+        deallocate(data_, capacity_);
+        data_ = new_data;
+        capacity_ = new_capacity;
+        index = this->begin() + pre_len;
     } else {
         // move elements backward
-        size_t old_size = size();
-        auto data = this->data();
-        for (size_t i = old_size + len - 1; i >= old_size; --i) {
-            construct(i, std::move(data[i - len]));
+        for (size_t i = size_ + len - 1; i >= size_; --i) {
+            construct(data_, i, std::move(data_[i - len]));
         }
-        auto itr1 = this->end() - 1;
+        auto itr1 = this->begin() + size_ - 1;
         auto itr2 = itr1 - len;
         while (itr1 >= index + len) {
-            *(itr1--) = std::move(*(itr2--));
+            *itr1 = std::move(*itr2);
+            --itr1;
+            --itr2;
         }
-        while (begin != end) {
-            *(index++) = *(begin++);
+        for (auto itr = index; begin != end; ++itr, ++begin) {
+            *itr = *begin;
         }
     }
 
@@ -422,18 +382,12 @@ vector<T, Alloc>::insert(iterator index, InputIterator begin,
 template <typename T, typename Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::remove(iterator index) noexcept {
-    // check whether the position is valid
-    if (index >= this->end()) {
-        return iterator();
-    }
-
     // move the following elements
-    auto itr1 = index;
-    auto itr2 = index + 1;
-    while (itr2 != this->end()) {
-        *(itr1++) = std::move(*(itr2++));
+    for (auto itr1 = index, itr2 = index + 1; itr2 != this->end();
+         ++itr1, ++itr2) {
+        *itr1 = std::move_if_noexcept(*itr2);
     }
-    destroy(size() - 1);
+    destroy(data_, size() - 1);
     --size_;
 
     return index;
@@ -442,13 +396,13 @@ vector<T, Alloc>::remove(iterator index) noexcept {
 template <typename T, typename Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::remove(iterator begin, iterator stop) noexcept {
-    // check whether the range is valid
-    if (begin >= stop || begin >= this->end()) {
-        return iterator();
+    if (begin == stop) {
+        return begin;
     }
 
     // move the elements
     difference_t wid = stop - begin;
+
     auto itr1 = begin;
     auto itr2 = stop;
     while (itr2 != this->end()) {
@@ -456,7 +410,7 @@ vector<T, Alloc>::remove(iterator begin, iterator stop) noexcept {
     }
     size_t size = this->size();
     for (size_t i = size - 1; i >= size - wid; --i) {
-        destroy(i);
+        destroy(data_, i);
     }
 
     size_ -= wid;
@@ -464,42 +418,21 @@ vector<T, Alloc>::remove(iterator begin, iterator stop) noexcept {
 }
 
 template <typename T, typename Alloc>
-void vector<T, Alloc>::expand(size_t new_size) noexcept {
-    if (new_size >= capacity()) {
-        reserve(new_size);
-    } else if (new_size <= size_) {
-        return;
-    }
-
-    for (size_t i = size_; i < new_size; ++i) {
-        construct(i);
-    }
-    size_ = new_size;
-}
-
-template <typename T, typename Alloc>
-void vector<T, Alloc>::shrink(size_t new_size) noexcept {
-    if (new_size >= size_) {
-        return;
-    }
-    for (size_t i = new_size; i < size_; ++i) {
-        destroy(i);
-    }
-    size_ = new_size;
-}
-
-template <typename T, typename Alloc>
-void vector<T, Alloc>::reserve(size_t capacity) noexcept {
+void vector<T, Alloc>::reserve(size_t capacity) {
     if (capacity <= capacity_) {
         return;
     }
-    auto old_capacity = this->capacity();
-    auto old_data = allocate(capacity);
-    for (int i = 0; i < size_; ++i) {
-        construct(i, std::move(old_data[i]));
-        std::destroy_at(old_data + i);
+
+    auto new_data = allocate(capacity);
+
+    if (data_ != nullptr) {
+        std::uninitialized_move_n(data_, size_, new_data);
+        destroy_all(data_, size_);
+        deallocate(data_, capacity_);
     }
-    deallocate(old_data, old_capacity);
+
+    data_ = new_data;
+    capacity_ = capacity;
 }
 
 template <typename T, typename Alloc>
@@ -507,13 +440,16 @@ void vector<T, Alloc>::shrink_to_fit() noexcept {
     if (size_ == capacity_) {
         return;
     }
-    auto old_capacity = capacity_;
-    auto old_data = allocate(size_);
-    for (int i = 0; i < size_; ++i) {
-        construct(i, std::move(old_data[i]));
-        std::destroy_at(old_data + i);
-    }
-    deallocate(old_data, old_capacity);
+
+    auto new_data = allocate(size_);
+    capacity_ = size_;
+
+    std::uninitialized_move_n(data_, size_, new_data);
+    destroy_all(data_, size_);
+    deallocate(data_, capacity_);
+
+    data_ = new_data;
+    capacity_ = size_;
 }
 
 template <typename T, typename Alloc>

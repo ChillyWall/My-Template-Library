@@ -50,6 +50,8 @@ public:
 };
 
 TEST_F(TestVector, TestClear) {
+    auto* data = v.data();
+    auto capacity = v.capacity();
     v.clear();
     EXPECT_EQ(v.size(), 0);
     EXPECT_EQ(v.capacity(), 0);
@@ -152,25 +154,6 @@ TEST_F(TestVector, TestPopBack) {
     EXPECT_THROW(v.pop_back(), mtl::EmptyContainer);
 }
 
-TEST_F(TestVector, TestPushFront) {
-    v.push_front(-1);
-    EXPECT_EQ(v.size(), 6);
-    EXPECT_EQ(v.capacity(), 10);
-    EXPECT_EQ(v.front(), -1);
-}
-
-TEST_F(TestVector, TestPopFront) {
-    v.pop_front();
-    EXPECT_EQ(v.size(), 4);
-    EXPECT_EQ(v.capacity(), 5);
-    EXPECT_EQ(v.front(), 1);
-
-    for (int i = 0; i < 4; ++i) {
-        v.pop_back();
-    }
-    EXPECT_THROW(v.pop_front(), mtl::EmptyContainer);
-}
-
 TEST_F(TestVector, TestIteratorRandomAccess) {
     auto itr = v.begin();
     for (int i = 0; i < 5; ++i) {
@@ -208,10 +191,12 @@ TEST_F(TestVector, TestIteratorPostfixIncrement) {
 }
 
 TEST_F(TestVector, TestInsert) {
-    v.insert(v.begin() + 2, 5);
+    int elem = 5;
+    auto res = v.insert(v.begin() + 2, elem);
     EXPECT_EQ(v.size(), 6);
     EXPECT_EQ(v.capacity(), 10);
-    EXPECT_EQ(v[2], 5);
+    EXPECT_EQ(*res, elem);
+    EXPECT_EQ(v[2], elem);
     for (int i = 3; i < 6; ++i) {
         EXPECT_EQ(v[i], i - 1);
     }
@@ -219,9 +204,10 @@ TEST_F(TestVector, TestInsert) {
 
 TEST_F(TestVector, TestInsertRange) {
     vector<int> v1({5, 6, 7});
-    v.insert(v.begin() + 2, v1.begin(), v1.end());
+    auto res = v.insert(v.begin() + 2, v1.begin(), v1.end());
     EXPECT_EQ(v.size(), 8);
     EXPECT_EQ(v.capacity(), 10);
+    EXPECT_EQ(*res, v1[0]);
     for (int i = 0; i < 2; ++i) {
         EXPECT_EQ(v[i], i);
     }
@@ -234,9 +220,10 @@ TEST_F(TestVector, TestInsertRange) {
 }
 
 TEST_F(TestVector, TestRemove) {
-    v.remove(v.begin() + 2);
+    auto res = v.remove(v.begin() + 2);
     EXPECT_EQ(v.size(), 4);
     EXPECT_EQ(v.capacity(), 5);
+    EXPECT_EQ(*res, 3);
     for (int i = 0; i < 2; ++i) {
         EXPECT_EQ(v[i], i);
     }
@@ -246,9 +233,10 @@ TEST_F(TestVector, TestRemove) {
 }
 
 TEST_F(TestVector, TestRemoveRange) {
-    v.remove(v.begin() + 2, v.begin() + 4);
+    auto res = v.remove(v.begin() + 2, v.begin() + 4);
     EXPECT_EQ(v.size(), 3);
     EXPECT_EQ(v.capacity(), 5);
+    EXPECT_EQ(*res, 4);
     for (int i = 0; i < 2; ++i) {
         EXPECT_EQ(v[i], i);
     }
