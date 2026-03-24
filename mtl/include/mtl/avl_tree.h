@@ -1,12 +1,13 @@
 #ifndef MTL_AVL_TREE_H
 #define MTL_AVL_TREE_H
 
-#include <mtl/algorithms.h>
 #include <mtl/mtldefs.h>
+#include <mtl/mtlutils.h>
 #include <cstdint>
 #include <memory>
 
 namespace mtl {
+
 template <typename T, typename Alloc = std::allocator<T>>
 class avl_tree {
 public:
@@ -250,17 +251,17 @@ bool avl_tree<T, Alloc>::contain(const T& elem) const {
     if (this->empty()) {
         return false;
     }
-    auto tmp = root_;
+    NdPtr tmp = root_;
     while (true) {
-        if (elem > tmp->element) {
+        if (elem > tmp->element()) {
             if (tmp->has_right()) {
-                tmp = tmp->right;
+                tmp = tmp->right();
             } else {
                 return false;
             }
-        } else if (elem < tmp->element) {
+        } else if (elem < tmp->element()) {
             if (tmp->has_left()) {
-                tmp = tmp->left;
+                tmp = tmp->left();
             } else {
                 return false;
             }
@@ -437,10 +438,18 @@ void avl_tree<T, Alloc>::remove_node(NdPtr node) {
         node->element() = std::move(sub->element());
         if (sub->has_right()) {
             sub->right_->parent_ = sub->parent_;
-            sub->parent_->left_ = sub->right_;
+            if (sub->is_left()) {
+                sub->parent_->left_ = sub->right_;
+            } else {
+                sub->parent_->right_ = sub->right_;
+            }
             sub->right_ = nullptr;
         } else {
-            sub->parent_->left_ = nullptr;
+            if (sub->is_left()) {
+                sub->parent_->left_ = nullptr;
+            } else {
+                sub->parent_->right_ = nullptr;
+            }
         }
         update(sub->parent_);
         deallocate_node(sub);

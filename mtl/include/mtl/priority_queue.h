@@ -31,9 +31,16 @@ private:
     // to percolate down from position 1, to ensure the heap order after pop
     void percolate_down() noexcept;
 
+    T& data_at(size_t pos) {
+        return const_cast<T&>(static_cast<const self_t*>(this)->data_at(pos));
+    }
+
+    const T& data_at(size_t pos) const {
+        return data_[pos - 1];
+    }
+
 public:
-    priority_queue();
-    explicit priority_queue(size_t capacity);
+    priority_queue() = default;
     priority_queue(const self_t& rhs);
     priority_queue(self_t&& rhs) noexcept;
     virtual ~priority_queue() = default;
@@ -45,7 +52,7 @@ public:
 
     /* get the number of elements of the priority queue */
     [[nodiscard]] size_t size() const {
-        return data_.size() - 1;
+        return data_.size();
     }
 
     /* check if the priority queue is empty */
@@ -73,6 +80,10 @@ public:
         percolate_up();
     }
 
+    void reserve(size_t new_capacity) {
+        data_.reserve(new_capacity);
+    }
+
     // pop the minimum element
     void pop() {
         check_empty();
@@ -82,22 +93,13 @@ public:
     // return the minimum element
     const T& top() const {
         check_empty();
-        return data_[1];
+        return data_at(1);
     }
 
     T& top() {
         return const_cast<T&>(static_cast<const self_t*>(this)->top());
     }
 };
-
-template <typename T, typename Alloc>
-priority_queue<T, Alloc>::priority_queue() : data_(1) {}
-
-template <typename T, typename Alloc>
-priority_queue<T, Alloc>::priority_queue(size_t capacity) {
-    data_.reserve(capacity + 1);
-    data_.push_back(T());
-}
 
 template <typename T, typename Alloc>
 priority_queue<T, Alloc>::priority_queue(const self_t& rhs)
@@ -110,36 +112,36 @@ priority_queue<T, Alloc>::priority_queue(self_t&& rhs) noexcept
 template <typename T, typename Alloc>
 void priority_queue<T, Alloc>::percolate_up() noexcept {
     size_t pos = size();
-    T temp = std::move(data_[pos]);
+    T temp = std::move(data_at(pos));
 
-    while (temp < data_[pos / 2]) {
+    while (temp < data_at(pos / 2)) {
         // move the parent down
-        data_[pos] = std::move(data_[pos / 2]);
+        data_at(pos) = std::move(data_at(pos / 2));
         pos /= 2;
     }
-    data_[pos] = std::move(temp);
+    data_at(pos) = std::move(temp);
 }
 
 template <typename T, typename Alloc>
 void priority_queue<T, Alloc>::percolate_down() noexcept {
-    T temp = std::move(data_[size()]);
+    T temp = std::move(data_at(size()));
     data_.pop_back();
     size_t pos = 1;
     while ((pos * 2) <= size()) {
         size_t child = pos * 2;
         // choose the smaller child
         if (child + 1 <= size()) {
-            child = data_[child] > data_[child + 1] ? child + 1 : child;
+            child = data_at(child) > data_at(child + 1) ? child + 1 : child;
         }
         // move the child up
-        if (data_[child] < temp) {
-            data_[pos] = std::move(data_[child]);
+        if (data_at(child) < temp) {
+            data_at(pos) = std::move(data_at(child));
             pos = child;
         } else {
             break;
         }
     }
-    data_[pos] = std::move(temp);
+    data_at(pos) = std::move(temp);
 }
 }  // namespace mtl
 #endif
