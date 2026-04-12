@@ -1,18 +1,17 @@
-#ifndef MTL_MERGE_SORT_H
-#define MTL_MERGE_SORT_H
+export module mtl.algorithms:merge_sort;
 
-#include <mtl/deque.h>
-#include <mtl/list.h>
-#include <mtl/mtldefs.h>
-#include <mtl/mtlutils.h>
-#include <mtl/pair.h>
-#include <mtl/stack.h>
-#include <mtl/vector.h>
-#include <future>
+import mtl.core;
+import mtl.deque;
+import mtl.pair;
+import mtl.stack;
+import mtl.vector;
+import std;
 
 namespace mtl {
-
 using std::tuple;
+}
+
+export namespace mtl {
 
 /* merge sort the sequence with range [begin, end) in ascending order in place*/
 template <Iterator Iter>
@@ -108,5 +107,3 @@ void inplace_merge(Iter begin, Iter mid, Iter end) noexcept {
 }
 
 }  // namespace mtl
-
-#endif

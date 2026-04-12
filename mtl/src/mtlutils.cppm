@@ -1,10 +1,9 @@
-#ifndef MTL_UTILS_H
-#define MTL_UTILS_H
+export module mtl.core:utils;
 
-#include <mtl/mtldefs.h>
-#include <memory>
+import :defs;
+import std;
 
-namespace mtl {
+export namespace mtl {
 
 using std::move;
 using std::swap;
@@ -200,5 +199,3 @@ void destroy_all(T* data, size_t size) noexcept {
 }
 
 }  // namespace mtl
-
-#endif

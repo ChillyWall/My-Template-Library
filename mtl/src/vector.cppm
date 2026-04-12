@@ -1,15 +1,10 @@
-#ifndef MTL_VECTOR_H
-#define MTL_VECTOR_H
+export module mtl.vector;
 
-#include <mtl/mtldefs.h>
-#include <mtl/mtlutils.h>
-#include <initializer_list>
-#include <memory>
-#include <stdexcept>
-#include <utility>
+export import mtl.core;
 
+import std;
 // The namespace where the ADTs are.
-namespace mtl {
+export namespace mtl {
 
 /* The vector ADT, it can expand its data array to double size when space is
  * not enough. */
@@ -594,4 +589,3 @@ public:
 };
 
 }  // namespace mtl
-#endif  // MTL_VECTOR_H

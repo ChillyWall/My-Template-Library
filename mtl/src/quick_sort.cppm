@@ -1,12 +1,11 @@
-#ifndef MTL_QUICK_SORT_H
-#define MTL_QUICK_SORT_H
+export module mtl.algorithms:quick_sort;
 
-#include <mtl/mtldefs.h>
-#include <mtl/mtlutils.h>
-#include <mtl/pair.h>
-#include <mtl/stack.h>
+import mtl.core;
+import mtl.pair;
+import mtl.stack;
+import std;
 
-namespace mtl {
+export namespace mtl {
 
 /* sort the array in place in ascending order (it will change the array
  * directly) the ranges is [begin, end) */
@@ -73,5 +72,3 @@ Iter partition(Iter begin, Iter end) noexcept {
 }
 
 }  // namespace mtl
-
-#endif

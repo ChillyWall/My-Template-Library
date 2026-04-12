@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
-#include <mtl/algorithms.h>
-#include <mtl/hashing.h>
+
+import mtl.algorithms;
+import mtl.hashing;
 
 TEST(TestHash, TestDefaultConstructor) {
     mtl::hashing<int> set;

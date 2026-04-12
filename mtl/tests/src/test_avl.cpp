@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <mtl/avl_tree.h>
+import mtl.avl_tree;
 
 using namespace mtl;
 
@@ -66,8 +66,9 @@ TEST(AVLTreeTest, BalanceAndRotations) {
 TEST(AVLTreeTest, IteratorTraversal) {
     avl_tree<int> tree;
     std::vector<int> values = {50, 30, 70, 20, 40, 60, 80};
-    for (int v : values)
+    for (int v : values) {
         tree.insert(v);
+    }
 
     std::vector<int> expected = {20, 30, 40, 50, 60, 70, 80};
     std::vector<int> actual;

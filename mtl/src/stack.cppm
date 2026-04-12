@@ -1,11 +1,10 @@
-#ifndef MTL_STACK_H
-#define MTL_STACK_H
+export module mtl.stack;
 
-#include <mtl/deque.h>
-#include <mtl/mtldefs.h>
-#include <memory>
+import mtl.deque;
+export import mtl.core;
+import std;
 
-namespace mtl {
+export namespace mtl {
 template <typename T, typename Alloc = std::allocator<T>>
 class stack {
 public:
@@ -51,4 +50,3 @@ public:
 };
 
 }  // namespace mtl
-#endif

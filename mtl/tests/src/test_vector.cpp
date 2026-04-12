@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include <mtl/vector.h>
+
+import mtl.vector;
 
 using mtl::vector;
 

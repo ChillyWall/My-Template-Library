@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include <mtl/list.h>
-#include <mtl/mtlutils.h>
+
+import mtl.list;
 
 using mtl::list;
 

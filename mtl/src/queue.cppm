@@ -1,9 +1,9 @@
-#ifndef MTL_QUEUE_H
-#define MTL_QUEUE_H
+export module mtl.queue;
 
-#include <mtl/deque.h>
-#include <mtl/mtldefs.h>
-#include <memory>
+export import mtl.core;
+import mtl.deque;
+
+import std;
 
 namespace mtl {
 template <typename T, typename Alloc = std::allocator<T>>
@@ -62,5 +62,3 @@ public:
 };
 
 }  // namespace mtl
-
-#endif

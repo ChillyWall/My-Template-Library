@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include <mtl/mtlutils.h>
-#include <mtl/vector.h>
+
+import mtl.vector;
 
 TEST(TestMTLUtils, TestMinMax) {
     int max_res = mtl::max(1, 2);

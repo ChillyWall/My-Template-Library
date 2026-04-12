@@ -1,13 +1,9 @@
-#ifndef MTL_DEQUE_H
-#define MTL_DEQUE_H
+export module mtl.deque;
 
-#include <mtl/mtldefs.h>
-#include <mtl/mtlutils.h>
-#include <initializer_list>
-#include <memory>
-#include <stdexcept>
+export import mtl.core;
+import std;
 
-namespace mtl {
+export namespace mtl {
 
 /* The deque (double-end queue) ADT.
  * It uses a dynamical array to store pointers to some arrays with fixed length.
@@ -122,7 +118,7 @@ public:
 
     const T& at(size_t index) const {
         if (index >= size_) {
-            return std::out_of_range("deque::at: index out of range");
+            throw std::out_of_range("deque::at: index out of range");
         }
         return operator[](index);
     }
@@ -139,6 +135,7 @@ public:
 
     self_t& operator=(self_t&& rhs) noexcept {
         map_ = rhs.map_;
+        rhs.map_ = nullptr;
         map_size_ = rhs.map_size_;
         size_ = rhs.size_;
         front_ = rhs.front_;
@@ -255,8 +252,9 @@ deque<T, Alloc>::deque(size_t n) {
     front_ -= pre;
     back_ += suf;
     for (auto itr = front_; itr != back_; ++itr) {
-        construct_at(itr.cur_);
+        std::construct_at(itr.cur_);
     }
+    size_ = n;
 }
 
 template <typename T, typename Alloc>
@@ -270,8 +268,10 @@ deque<T, Alloc>::deque(size_t n, const T& val) {
     front_ -= pre;
     back_ += suf;
     for (auto itr = front_; itr != back_; ++itr) {
-        construct_at(itr.cur_, val);
+        std::construct_at(itr.cur_, val);
     }
+
+    size_ = n;
 }
 
 template <typename T, typename Alloc>
@@ -286,34 +286,25 @@ deque<T, Alloc>::deque(std::initializer_list<T> il) noexcept {
     suf += suf;
     auto itr1 = front_;
     for (auto itr2 = il.begin(); itr2 != il.end(); ++itr1, ++itr2) {
-        construct_at(itr1.cur_, std::move(*itr2));
+        std::construct_at(itr1.cur_, std::move(*itr2));
     }
+    size_ = il.size();
 }
 
 template <typename T, typename Alloc>
-deque<T, Alloc>::deque(const self_t& rhs)
-    : map_size_(rhs.map_size_), size_(rhs.size_) {
-    map_ = allocate_map(map_size_);
-    auto first_node = map_ + (rhs.front_.node_ - rhs.map_);
-    auto last_node = map_ + (rhs.back_.node_ - rhs.map_);
-    *(first_node - 1) = allocate_node();
-    *(last_node + 1) = allocate_node();
-
-    // allcoate nodes
-    for (auto pn = first_node; pn <= last_node; ++pn) {
-        *pn = allocate_node();
+deque<T, Alloc>::deque(const self_t& rhs) {
+    init((rhs.size_ / BUF_LEN) + 3);
+    for (auto ptr = map_; ptr != map_ + map_size_; ++ptr) {
+        *ptr = allocate_node();
     }
-
-    // construct front_ and back_ iterators
-    auto front_cur = *first_node + (rhs.front_.cur_ - rhs.front_.first_);
-    front_ = iterator(front_cur, first_node);
-    auto last_cur = *last_node + (rhs.back_.cur_ - rhs.back_.first_);
-    back_ = iterator(last_cur, last_node);
-
-    // copy elements
+    size_t pre = rhs.size() / 2;
+    size_t suf = rhs.size() - pre;
+    front_ -= pre;
+    back_ += suf;
     for (auto itr1 = front_, itr2 = rhs.front_; itr1 != back_; ++itr1, ++itr2) {
-        construct_at(itr1.cur_, *itr2);
+        std::construct_at(itr1.cur_, *itr2);
     }
+    size_ = rhs.size_;
 }
 
 template <typename T, typename Alloc>
@@ -579,4 +570,3 @@ public:
 };
 
 }  // namespace mtl
-#endif

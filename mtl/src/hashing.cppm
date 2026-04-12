@@ -1,13 +1,10 @@
-#ifndef MTL_HASH_H
-#define MTL_HASH_H
+export module mtl.hashing;
 
-#include <mtl/algorithms.h>
-#include <mtl/mtldefs.h>
-#include <bitset>
-#include <memory>
-#include <utility>
+export import mtl.core;
+import mtl.algorithms;
+import std;
 
-namespace mtl {
+export namespace mtl {
 
 /**
  * @brief an implementation of Hopscotch Hashing
@@ -523,5 +520,3 @@ public:
     }
 };
 }  // namespace mtl
-
-#endif

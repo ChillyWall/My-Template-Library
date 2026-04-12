@@ -1,10 +1,8 @@
-#ifndef MTL_DEFS_H
-#define MTL_DEFS_H
+export module mtl.core:defs;
 
-#include <cstddef>
-#include <exception>
+import std;
 
-namespace mtl {
+export namespace mtl {
 using std::size_t;
 using difference_t = std::ptrdiff_t;
 
@@ -77,5 +75,3 @@ concept RandomIterator = Iterator<T> && requires(T a, T b) {
 };
 
 }  // namespace mtl
-
-#endif

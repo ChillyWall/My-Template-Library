@@ -1,0 +1,3 @@
+CompileFlags:
+  Compiler: "/usr/bin/clang++-22"
+  BuiltinHeaders: QueryDriver

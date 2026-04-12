@@ -1,9 +1,8 @@
 #include <gtest/gtest.h>
-#include <mtl/quick_sort.h>
-#include <mtl/vector.h>
-#include <algorithm>
-#include <random>
-#include <vector>
+
+import mtl.algorithms;
+import mtl.vector;
+import std;
 
 TEST(TestQuickSort, TestQuickSortRecursive) {
     mtl::size_t size = 1000000;

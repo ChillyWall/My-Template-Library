@@ -1,9 +1,8 @@
-#ifndef MTL_PAIR_H
-#define MTL_PAIR_H
+export module mtl.pair;
 
-#include <mtl/mtldefs.h>
+import std;
 
-namespace mtl {
+export namespace mtl {
 
 template <typename T, typename V>
 struct pair {
@@ -28,5 +27,3 @@ struct pair {
 };
 
 }  // namespace mtl
-
-#endif

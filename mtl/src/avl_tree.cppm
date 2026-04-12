@@ -1,12 +1,13 @@
-#ifndef MTL_AVL_TREE_H
-#define MTL_AVL_TREE_H
+export module mtl.avl_tree;
 
-#include <mtl/mtldefs.h>
-#include <mtl/mtlutils.h>
-#include <cstdint>
-#include <memory>
+export import mtl.core;
+import std;
 
 namespace mtl {
+using std::int64_t;
+}
+
+export namespace mtl {
 
 template <typename T, typename Alloc = std::allocator<T>>
 class avl_tree {
@@ -801,5 +802,3 @@ avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator--() {
     return *this;
 }
 }  // namespace mtl
-
-#endif

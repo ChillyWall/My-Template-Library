@@ -1,11 +1,10 @@
-#ifndef MTL_PRIORITY_QUEUE_H
-#define MTL_PRIORITY_QUEUE_H
+export module mtl.priority_queue;
 
-#include <mtl/mtldefs.h>
-#include <mtl/vector.h>
-#include <memory>
+export import mtl.core;
+import mtl.vector;
+import std;
 
-namespace mtl {
+export namespace mtl {
 /* The priority queue ADT, implemented by basic_vector so that it could
  * dynamicly expand its capacity. */
 template <typename T, typename Alloc = std::allocator<T>>
@@ -144,4 +143,3 @@ void priority_queue<T, Alloc>::percolate_down() noexcept {
     data_at(pos) = std::move(temp);
 }
 }  // namespace mtl
-#endif

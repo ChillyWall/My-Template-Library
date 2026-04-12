@@ -1,10 +1,8 @@
 #include <gtest/gtest.h>
-#include <mtl/merge_sort.h>
-#include <mtl/vector.h>
-#include <algorithm>
-#include <chrono>
-#include <iostream>
-#include <random>
+
+import std;
+import mtl.algorithms;
+import mtl.vector;
 
 TEST(TestMergeSort, TestMergeSortRecursive) {
     mtl::size_t size = 1000000;

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include <mtl/priority_queue.h>
+
+import mtl.priority_queue;
 
 TEST(TestPriorityQueue, TestDefaultConstructor) {
     mtl::priority_queue<int> pq;

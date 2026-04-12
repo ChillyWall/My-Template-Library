@@ -1,12 +1,9 @@
-#ifndef MTL_LIST_H
-#define MTL_LIST_H
+export module mtl.list;
 
-#include <mtl/mtldefs.h>
-#include <initializer_list>
-#include <memory>
-#include <stdexcept>
+export import mtl.core;
+import std;
 
-namespace mtl {
+export namespace mtl {
 
 /* the list ADT, it's a double linked list. */
 template <typename T, typename Alloc = std::allocator<T>>
@@ -444,5 +441,3 @@ public:
     }
 };
 }  // namespace mtl
-#endif  // LIST_H
-//
