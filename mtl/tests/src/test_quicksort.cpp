@@ -6,8 +6,10 @@ import std;
 
 TEST(TestQuickSort, TestQuickSortRecursive) {
     mtl::size_t size = 1000000;
-    mtl::vector<int> v(size);
-    std::vector<int> vec(size);
+    mtl::vector<int> v;
+    std::vector<int> vec;
+    v.reserve(size);
+    vec.reserve(size);
 
     std::random_device rd;
     std::default_random_engine e(rd());
@@ -35,8 +37,10 @@ TEST(TestQuickSort, TestQuickSortRecursive) {
 
 TEST(TestQuickSort, TestQuickSortIterative) {
     mtl::size_t size = 1000000;
-    mtl::vector<int> v(size);
-    std::vector<int> vec(size);
+    mtl::vector<int> v;
+    std::vector<int> vec;
+    v.reserve(size);
+    vec.reserve(size);
 
     std::random_device rd;
     std::default_random_engine e(rd());

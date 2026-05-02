@@ -6,8 +6,10 @@ import mtl.vector;
 
 TEST(TestMergeSort, TestMergeSortRecursive) {
     mtl::size_t size = 1000000;
-    mtl::vector<int> v(size);
-    std::vector<int> vec(size);
+    mtl::vector<int> v;
+    std::vector<int> vec;
+    v.reserve(size);
+    vec.reserve(size);
 
     std::random_device rd;
     std::default_random_engine e(rd());
@@ -35,8 +37,10 @@ TEST(TestMergeSort, TestMergeSortRecursive) {
 
 TEST(TestMergeSort, TestMergeSortIterative) {
     mtl::size_t size = 1000000;
-    mtl::vector<int> v(size);
-    std::vector<int> vec(size);
+    mtl::vector<int> v;
+    std::vector<int> vec;
+    v.reserve(size);
+    vec.reserve(size);
 
     std::random_device rd;
     std::default_random_engine e(rd());
@@ -64,8 +68,10 @@ TEST(TestMergeSort, TestMergeSortIterative) {
 
 TEST(TestMergeSort, TestParallelMergeSort) {
     mtl::size_t size = 1000000;
-    mtl::vector<int> v(size);
-    std::vector<int> vec(size);
+    mtl::vector<int> v;
+    std::vector<int> vec;
+    v.reserve(size);
+    vec.reserve(size);
 
     std::random_device rd;
     std::default_random_engine e(rd());
