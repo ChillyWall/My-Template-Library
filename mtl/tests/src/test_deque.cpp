@@ -127,4 +127,68 @@ TEST(DequeTest, HeavyExpansion) {
     EXPECT_EQ(dq.back(), 499);
 }
 
+// 测试 clear 和重复复用
+TEST(DequeTest, ClearAndReuse) {
+    deque<int> dq = {1, 2, 3, 4};
+    dq.clear();
+    EXPECT_TRUE(dq.empty());
+    EXPECT_EQ(dq.size(), 0);
+
+    dq.push_back(10);
+    dq.push_front(5);
+    EXPECT_EQ(dq.size(), 2);
+    EXPECT_EQ(dq.front(), 5);
+    EXPECT_EQ(dq.back(), 10);
+}
+
+// 测试迭代器自增自减边界
+TEST(DequeTest, IteratorIncrementDecrement) {
+    deque<int> dq;
+    for (int i = 0; i < 32; ++i) {
+        dq.push_back(i);
+    }
+
+    auto it = dq.begin();
+    EXPECT_EQ(*it, 0);
+    ++it;
+    EXPECT_EQ(*it, 1);
+    it += 10;
+    EXPECT_EQ(*it, 11);
+    --it;
+    EXPECT_EQ(*it, 10);
+    it -= 5;
+    EXPECT_EQ(*it, 5);
+}
+
+// 测试混合 push/pop 维持顺序
+TEST(DequeTest, MixedPushPopOrder) {
+    deque<int> dq;
+    for (int i = 0; i < 10; ++i) {
+        dq.push_back(i);
+    }
+    for (int i = 10; i < 20; ++i) {
+        dq.push_front(i);
+    }
+
+    EXPECT_EQ(dq.size(), 20);
+    EXPECT_EQ(dq.front(), 19);
+    EXPECT_EQ(dq.back(), 9);
+
+    for (int i = 19; i >= 10; --i) {
+        EXPECT_EQ(dq.front(), i);
+        dq.pop_front();
+    }
+    for (int i = 9; i >= 0; --i) {
+        EXPECT_EQ(dq.back(), i);
+        dq.pop_back();
+    }
+    EXPECT_TRUE(dq.empty());
+}
+
+// 测试 at() 在空容器上的异常
+TEST(DequeTest, AtOnEmpty) {
+    deque<int> dq;
+    EXPECT_THROW(dq.at(0), std::out_of_range);
+}
+
 }  // namespace

@@ -87,6 +87,66 @@ TEST(TestHash, TestInsertExpand) {
     }
 }
 
+TEST(TestHash, TestDuplicateInsert) {
+    mtl::hashing<int> set;
+    EXPECT_TRUE(set.insert(42));
+    EXPECT_FALSE(set.insert(42));
+    EXPECT_EQ(set.size(), 1);
+}
+
+TEST(TestHash, TestRemove) {
+    mtl::hashing<int> set;
+    for (int i = 0; i < 50; ++i) {
+        set.insert(i * 3);
+    }
+
+    EXPECT_TRUE(set.remove(0));
+    EXPECT_TRUE(set.remove(6));
+    EXPECT_FALSE(set.contains(0));
+    EXPECT_FALSE(set.contains(6));
+    EXPECT_FALSE(set.remove(6));
+    EXPECT_EQ(set.size(), 48);
+}
+
+TEST(TestHash, TestClear) {
+    mtl::hashing<int> set;
+    for (int i = 0; i < 80; ++i) {
+        set.insert(i + 1);
+    }
+    EXPECT_EQ(set.size(), 80);
+    set.clear();
+    EXPECT_EQ(set.size(), 0);
+    EXPECT_EQ(set.max_size(), 101);
+    EXPECT_FALSE(set.contains(1));
+}
+
+TEST(TestHash, TestCopyAssignment) {
+    mtl::hashing<int> set1;
+    for (int i = 0; i < 20; ++i) {
+        set1.insert(i * 5);
+    }
+
+    mtl::hashing<int> set2;
+    set2 = set1;
+    EXPECT_EQ(set2.size(), set1.size());
+    EXPECT_TRUE(set2.contains(0));
+    EXPECT_TRUE(set2.contains(95));
+}
+
+TEST(TestHash, TestIteratorSkipsEmpty) {
+    mtl::hashing<int> set;
+    set.insert(0);
+    set.insert(100);
+    set.insert(201);
+    set.insert(305);
+
+    int count = 0;
+    for (auto itr = set.begin(); itr < set.end(); ++itr) {
+        ++count;
+    }
+    EXPECT_EQ(count, 4);
+}
+
 int main() {
     ::testing::InitGoogleTest();
     return RUN_ALL_TESTS();

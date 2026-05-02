@@ -47,6 +47,51 @@ TEST(TestPriorityQueue, TestMoveConstructor) {
     }
 }
 
+TEST(TestPriorityQueue, TestDuplicateValues) {
+    mtl::priority_queue<int> pq;
+    pq.push(5);
+    pq.push(1);
+    pq.push(3);
+    pq.push(3);
+    pq.push(2);
+
+    EXPECT_EQ(pq.size(), 5);
+    EXPECT_EQ(pq.top(), 1);
+    pq.pop();
+    EXPECT_EQ(pq.top(), 2);
+    pq.pop();
+    EXPECT_EQ(pq.top(), 3);
+    pq.pop();
+    EXPECT_EQ(pq.top(), 3);
+    pq.pop();
+    EXPECT_EQ(pq.top(), 5);
+}
+
+TEST(TestPriorityQueue, TestReserveAndPush) {
+    mtl::priority_queue<int> pq;
+    pq.reserve(64);
+    for (int i = 50; i >= 1; --i) {
+        pq.push(i);
+    }
+    EXPECT_EQ(pq.size(), 50);
+    EXPECT_EQ(pq.top(), 1);
+}
+
+TEST(TestPriorityQueue, TestCopyAssignment) {
+    mtl::priority_queue<int> pq1;
+    pq1.push(4);
+    pq1.push(1);
+    pq1.push(9);
+
+    mtl::priority_queue<int> pq2;
+    pq2 = pq1;
+    EXPECT_EQ(pq2.size(), pq1.size());
+    EXPECT_EQ(pq2.top(), 1);
+
+    pq1.pop();
+    EXPECT_EQ(pq2.top(), 1);
+}
+
 int main() {
     ::testing::InitGoogleTest();
     return RUN_ALL_TESTS();

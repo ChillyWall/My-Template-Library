@@ -180,9 +180,7 @@ public:
     const_iterator find(const T& elem) const;
 
     // return iterator to the node containing element
-    iterator find(const T& elem) {
-        return const_cast<const self_t*>(this)->find(elem);
-    }
+    iterator find(const T& elem);
 
     // return iterator to the minimum element
     const_iterator find_min() const {
@@ -510,8 +508,10 @@ template <typename T, typename Alloc>
 typename avl_tree<T, Alloc>::iterator
 avl_tree<T, Alloc>::remove(iterator itr) noexcept {
     auto res = itr++;
-    remove(res->node_);
-    --size_;
+    if (res.node_) {
+        remove_node(res.node_);
+        --size_;
+    }
     return itr;
 }
 
@@ -538,13 +538,20 @@ avl_tree<T, Alloc>::find_node(const T& elem) const {
 template <typename T, typename Alloc>
 typename avl_tree<T, Alloc>::const_iterator
 avl_tree<T, Alloc>::find(const T& elem) const {
-    NdPtr res = nullptr;
-    res = find_node(elem);
-    if (res->element() == elem) {
-        return const_iterator(res);
-    } else {
+    NdPtr res = find_node(elem);
+    if (!res || res->element() != elem) {
         return const_iterator();
     }
+    return const_iterator(res);
+}
+
+template <typename T, typename Alloc>
+typename avl_tree<T, Alloc>::iterator avl_tree<T, Alloc>::find(const T& elem) {
+    NdPtr res = find_node(elem);
+    if (!res || res->element() != elem) {
+        return iterator();
+    }
+    return iterator(res);
 }
 
 template <typename T, typename Alloc>

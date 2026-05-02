@@ -138,6 +138,63 @@ TEST(AVLTreeTest, RemoveRoot) {
     EXPECT_TRUE(tree.contain(15));
 }
 
+TEST(AVLTreeTest, FindAndFindMinMax) {
+    avl_tree<int> tree;
+    for (int v : {40, 20, 10, 30, 60, 50, 70}) {
+        tree.insert(v);
+    }
+
+    EXPECT_TRUE(tree.find(30));
+    EXPECT_FALSE(tree.find(99));
+    EXPECT_EQ(*tree.find_min(), 10);
+    EXPECT_EQ(*tree.find_max(), 70);
+}
+
+TEST(AVLTreeTest, RemoveByIterator) {
+    avl_tree<int> tree;
+    for (int v : {10, 5, 15, 3, 7, 12, 18}) {
+        tree.insert(v);
+    }
+
+    auto it = tree.find(7);
+    EXPECT_TRUE(it);
+    auto next = tree.remove(it);
+    EXPECT_EQ(tree.size(), 6);
+    EXPECT_FALSE(tree.contain(7));
+    if (next) {
+        EXPECT_TRUE(tree.contain(*next));
+    }
+}
+
+TEST(AVLTreeTest, RemoveLeafAndSingleChild) {
+    avl_tree<int> tree;
+    for (int v : {20, 10, 30, 5, 15, 25}) {
+        tree.insert(v);
+    }
+
+    EXPECT_EQ(tree.remove(5), 1);
+    EXPECT_FALSE(tree.contain(5));
+    EXPECT_EQ(tree.size(), 5);
+
+    EXPECT_EQ(tree.remove(30), 1);
+    EXPECT_FALSE(tree.contain(30));
+    EXPECT_EQ(tree.size(), 4);
+}
+
+TEST(AVLTreeTest, IteratorDecrement) {
+    avl_tree<int> tree;
+    for (int v : {1, 2, 3, 4, 5}) {
+        tree.insert(v);
+    }
+
+    auto it = tree.find_max();
+    EXPECT_EQ(*it, 5);
+    --it;
+    EXPECT_EQ(*it, 4);
+    --it;
+    EXPECT_EQ(*it, 3);
+}
+
 int main() {
     ::testing::InitGoogleTest();
     return RUN_ALL_TESTS();
