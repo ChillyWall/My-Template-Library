@@ -256,7 +256,8 @@ size_t hashing<T, hash_func, Alloc>::move_elem(size_t pos) {
         start = pos + 1 - MAX_DIST;
     }
     for (int i = 0; i < MAX_DIST - 1; ++i) {
-        auto cell = data_[start + i];
+        size_t home = (start + i) % max_size_;
+        auto& cell = data_[home];
         for (int j = 0; j < MAX_DIST - i - 1; ++j) {
             if (cell.get_hop(j)) {
                 size_t new_pos = (start + i + j) % max_size_;
@@ -291,8 +292,10 @@ bool hashing<T, hash_func, Alloc>::insert(const T& elem) {
         }
     }
 
-    data_[pos].element() = elem;
-    data_[pos].set_hop(pos - hash_val);
+    data_[pos].set_element(elem);
+    size_t offset =
+        pos >= hash_val ? pos - hash_val : max_size_ - hash_val + pos;
+    data_[hash_val].set_hop(offset);
     ++size_;
     return true;
 }
@@ -300,11 +303,12 @@ bool hashing<T, hash_func, Alloc>::insert(const T& elem) {
 template <typename T, typename hash_func, typename Alloc>
 bool hashing<T, hash_func, Alloc>::remove(const T& elem) {
     size_t hash_val = hash_value(elem);
-    auto cell = data_[hash_val];
+    auto& cell = data_[hash_val];
     for (int i = 0; i < MAX_DIST; ++i) {
-        if (cell.get_hop(i) && cell.element() == elem) {
+        size_t idx = (hash_val + i) % max_size_;
+        if (cell.get_hop(i) && data_[idx].element() == elem) {
             cell.clear_hop(i);
-            data_[hash_val + i].set_unoccupied();
+            data_[idx].set_unoccupied();
             --size_;
             return true;
         }
@@ -315,9 +319,10 @@ bool hashing<T, hash_func, Alloc>::remove(const T& elem) {
 template <typename T, typename hash_func, typename Alloc>
 bool hashing<T, hash_func, Alloc>::contains(const T& elem) const {
     size_t hash_val = hash_value(elem);
-    auto cell = data_[hash_val];
+    const auto& cell = data_[hash_val];
     for (int i = 0; i < MAX_DIST; ++i) {
-        if (cell.get_hop(i) && cell.element() == elem) {
+        size_t idx = (hash_val + i) % max_size_;
+        if (cell.get_hop(i) && data_[idx].element() == elem) {
             return true;
         }
     }
@@ -401,12 +406,10 @@ public:
 
     void set_hop(size_t dist) {
         hop_info_.set(dist);
-        occupied_ = true;
     }
 
     void clear_hop(size_t dist) {
         hop_info_.reset(dist);
-        occupied_ = false;
     }
 
     [[nodiscard]] const std::bitset<MAX_DIST>& hop_info() const {

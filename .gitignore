@@ -7,3 +7,4 @@ CMakePresets.json
 compile_commands.json
 Testing/
 .idea/
+/.agent-shell/
