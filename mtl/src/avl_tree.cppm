@@ -218,6 +218,7 @@ avl_tree<T, Alloc>::self_t& avl_tree<T, Alloc>::operator=(const self_t& rhs) {
     deallocate_node(root_);
     root_ = copy_node(rhs.root_);
     size_ = rhs.size_;
+    return *this;
 }
 
 template <typename T, typename Alloc>
@@ -231,6 +232,7 @@ avl_tree<T, Alloc>::operator=(self_t&& rhs) noexcept {
     rhs.root_ = nullptr;
     size_ = rhs.size_;
     rhs.size_ = 0;
+    return *this;
 }
 
 template <typename T, typename Alloc>
@@ -286,6 +288,7 @@ typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::copy_node(NdPtr node) {
     }
     res->left_ = lf_tree;
     res->right_ = rg_tree;
+    res->height_ = calc_height(res);
 
     return res;
 }
@@ -478,10 +481,16 @@ void avl_tree<T, Alloc>::remove_node(NdPtr node) {
         } else {
             if (node->is_root()) {
                 root_ = nullptr;
-            } else if (node->is_left()) {
-                node->parent_->left_ = nullptr;
             } else {
-                node->parent_->right_ = nullptr;
+                NdPtr par = node->parent_;
+                if (node->is_left()) {
+                    node->parent_->left_ = nullptr;
+                } else {
+                    node->parent_->right_ = nullptr;
+                }
+                deallocate_node(node);
+                update(par);
+                return;
             }
         }
         deallocate_node(node);
@@ -508,8 +517,8 @@ template <typename T, typename Alloc>
 typename avl_tree<T, Alloc>::iterator
 avl_tree<T, Alloc>::remove(iterator itr) noexcept {
     auto res = itr++;
-    if (res.node_) {
-        remove_node(res.node_);
+    if (res.node()) {
+        remove_node(res.node());
         --size_;
     }
     return itr;
@@ -648,6 +657,8 @@ private:
 
 public:
     using self_t = avl_iterator<Ref, Ptr>;
+
+    NdPtr node() const { return node_; }
 
     avl_iterator() : node_(nullptr) {}
     explicit avl_iterator(NdPtr node) : node_(node) {}
