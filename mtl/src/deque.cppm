@@ -5,11 +5,16 @@ import std;
 
 export namespace mtl {
 
-/* The deque (double-end queue) ADT.
- * It uses a dynamical array to store pointers to some arrays with fixed length.
- * When push or pop an element from front or back end, it's only needed to add a
- * new node, which ensure that the push and pop operations will take only O(1)
- * time. */
+/**
+ * @brief The deque (double-ended queue) ADT.
+ *
+ * The implementation stores pointers to fixed-length node buffers in a map
+ * and grows the map as needed. Push/pop at either end allocate or free node
+ * buffers and provide amortized O(1) end operations.
+ *
+ * @tparam T Type of elements stored in the deque.
+ * @tparam Alloc Allocator type used for element allocation.
+ */
 template <typename T, typename Alloc = std::allocator<T>>
 class deque {
 public:
@@ -44,30 +49,75 @@ private:
     Alloc node_allocator_;
     MapAlloc map_allocator_;
 
+    /**
+     * @brief Allocate a new map array capable of holding map_size node pointers.
+     *
+     * @param map_size Number of entries to allocate in the map.
+     * @return Pointer to the newly allocated map (uninitialized entries
+     * are set to nullptr).
+     */
     MapPtr allocate_map(size_t map_size);
 
+    /**
+     * @brief Allocate a new element buffer node.
+     *
+     * @return Pointer to the newly allocated buffer.
+     */
     EltPtr allocate_node() {
         return node_allocator_.allocate(BUF_LEN);
     }
 
+    /**
+     * @brief Deallocate a map array.
+     *
+     * @param map Map pointer to deallocate.
+     * @param map_size Number of entries in the map.
+     */
     void deallocate_map(MapPtr map, size_t map_size) {
         map_allocator_.deallocate(map, map_size);
     }
 
+    /**
+     * @brief Deallocate an element buffer node.
+     *
+     * @param node Node buffer to deallocate.
+     */
     void deallocate_node(EltPtr node) {
         node_allocator_.deallocate(node, BUF_LEN);
     }
 
+    /**
+     * @brief Destroy all constructed elements in the deque range.
+     *
+     * Iterates from front_ to back_ and calls destructor for each element.
+     */
     void destroy_all() {
         for (auto itr = front_; itr != back_; ++itr) {
             std::destroy_at(itr.cur_);
         }
     }
 
+    /**
+     * @brief Initialize internal map and allocate initial nodes.
+     *
+     * @param map_size Initial map size (number of node pointers).
+     */
     void init(size_t map_size);
 
+    /**
+     * @brief Expand the internal map to accommodate more nodes.
+     *
+     * Moves existing node pointers into a newly allocated larger map. If
+     * backward is true the content is copied toward the front of the new map,
+     * otherwise toward the back.
+     *
+     * @param backward Direction to expand the map into.
+     */
     void expand(bool backward) noexcept;
 
+    /**
+     * @brief Throw EmptyContainer if the deque is empty.
+     */
     void check_empty() const {
         if (empty()) {
             throw EmptyContainer();
@@ -75,12 +125,44 @@ private:
     }
 
 public:
+    /**
+     * @brief Construct an empty deque with no allocated map.
+     */
     deque() : map_(nullptr) {}
 
+    /**
+     * @brief Construct a deque with n default-inserted elements.
+     *
+     * @param n Number of elements to create.
+     */
     explicit deque(size_t n);
+
+    /**
+     * @brief Construct a deque with n copies of val.
+     *
+     * @param n Number of elements to create.
+     * @param val Value to copy into each element.
+     */
     explicit deque(size_t n, const T& val);
+
+    /**
+     * @brief Construct a deque from an initializer list by moving elements.
+     *
+     * @param il Initializer list of values.
+     */
     deque(std::initializer_list<T> il) noexcept;
+    /**
+     * @brief Copy-construct a deque from another deque.
+     *
+     * @param rhs Deque to copy from.
+     */
     deque(const self_t& rhs);
+
+    /**
+     * @brief Move-construct a deque from another deque.
+     *
+     * @param rhs Deque to move from.
+     */
     deque(self_t&& rhs) noexcept
         : map_(rhs.map_),
           map_size_(rhs.map_size_),
@@ -93,29 +175,63 @@ public:
         rhs.front_ = rhs.back_ = iterator();
     }
 
+    /**
+     * @brief Destroy the deque and release resources.
+     */
     ~deque() {
         clear();
     }
 
+    /**
+     * @brief Get the number of elements.
+     *
+     * @return Number of elements in the deque.
+     */
     [[nodiscard]] size_t size() const {
         return size_;
     }
 
+    /**
+     * @brief Check whether the deque is empty.
+     *
+     * @return True if empty, false otherwise.
+     */
     [[nodiscard]] bool empty() const {
         return size_ == 0;
     }
 
+    /**
+     * @brief Destroy all elements and free all allocated nodes and map.
+     */
     void clear();
 
+    /**
+     * @brief Access element at the given index without bounds checking.
+     *
+     * @param index Zero-based element index.
+     * @return Reference to the element.
+     */
     const T& operator[](size_t index) const {
         return *(front_ + index);
     }
 
+    /**
+     * @brief Access element at the given index without bounds checking.
+     *
+     * @param index Zero-based element index.
+     * @return Reference to the element.
+     */
     T& operator[](size_t index) {
         return const_cast<T&>(
             static_cast<const self_t*>(this)->operator[](index));
     }
 
+    /**
+     * @brief Access element at the given index with bounds checking.
+     *
+     * @param index Zero-based element index.
+     * @return Reference to the element.
+     */
     const T& at(size_t index) const {
         if (index >= size_) {
             throw std::out_of_range("deque::at: index out of range");
@@ -123,16 +239,33 @@ public:
         return operator[](index);
     }
 
+    /**
+     * @brief Access element at the given index with bounds checking.
+     *
+     * @param index Zero-based element index.
+     * @return Reference to the element.     */
     T& at(size_t index) {
         return const_cast<T&>(static_cast<const self_t*>(this)->at(index));
     }
 
+    /**
+     * @brief Copy-assign from another deque.
+     *
+     * @param rhs Deque to copy from.
+     * @return Reference to this deque.
+     */
     self_t& operator=(const self_t& rhs) {
         deque<T, Alloc> tmp(rhs);
         operator=(std::move(tmp));
         return *this;
     }
 
+    /**
+     * @brief Move-assign from another deque.
+     *
+     * @param rhs Deque to move from.
+     * @return Reference to this deque.
+     */
     self_t& operator=(self_t&& rhs) noexcept {
         map_ = rhs.map_;
         rhs.map_ = nullptr;
@@ -144,6 +277,12 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Insert an element at the back of the deque.
+     *
+     * @tparam V Type of the element (deduced). Accepts lvalue or rvalue.
+     * @param elem Element to insert (forwarded to the constructor).
+     */
     template <typename V>
     void push_back(V&& elem) {
         if (map_ == nullptr) {
@@ -160,6 +299,12 @@ public:
         }
     }
 
+    /**
+     * @brief Insert an element at the front of the deque.
+     *
+     * @tparam V Type of the element (deduced). Accepts lvalue or rvalue.
+     * @param elem Element to insert (forwarded to the constructor).
+     */
     template <typename V>
     void push_front(V&& elem) {
         if (map_ == nullptr) {
@@ -176,6 +321,11 @@ public:
         }
     }
 
+    /**
+     * @brief Remove the last element of the deque.
+     *
+     * Throws EmptyContainer if the deque is empty.
+     */
     void pop_back() {
         check_empty();
         if (back_.cur_ == back_.first_) {
@@ -187,6 +337,11 @@ public:
         --size_;
     }
 
+    /**
+     * @brief Remove the first element of the deque.
+     *
+     * Throws EmptyContainer if the deque is empty.
+     */
     void pop_front() {
         check_empty();
         if (front_.cur_ == front_.last_ - 1) {
@@ -198,44 +353,84 @@ public:
         --size_;
     }
 
+    /**
+     * @brief Access the first element.
+     *
+     * @return Reference to the first element.     */
     const T& front() const {
         check_empty();
         return *front_;
     }
 
+    /**
+     * @brief Access the last element.
+     *
+     * @return Reference to the last element.     */
     const T& back() const {
         check_empty();
         return *(back_ - 1);
     }
 
+    /**
+     * @brief Access the first element.
+     *
+     * @return Reference to the first element.     */
     T& front() {
         return const_cast<T&>(static_cast<const self_t*>(this)->front());
     }
 
+    /**
+     * @brief Access the last element.
+     *
+     * @return Reference to the last element.     */
     T& back() {
         return const_cast<T&>(static_cast<const self_t*>(this)->back());
     }
 
+    /**
+     * @brief Get an iterator to the first element (const).
+     *
+     * @return Iterator to the first element.     */
     const_iterator begin() const {
         return front_;
     }
 
+    /**
+     * @brief Get an iterator past the last element (const).
+     *
+     * @return Iterator past the last element.     */
     const_iterator end() const {
         return back_;
     }
 
+    /**
+     * @brief Get a const iterator to the first element.
+     *
+     * @return Iterator to the first element.     */
     const_iterator cbegin() const {
         return front_;
     }
 
+    /**
+     * @brief Get a const iterator past the last element.
+     *
+     * @return Iterator past the last element.     */
     const_iterator cend() const {
         return back_;
     }
 
+    /**
+     * @brief Get an iterator to the first element.
+     *
+     * @return Iterator to the first element.     */
     iterator begin() {
         return front_;
     }
 
+    /**
+     * @brief Get an iterator past the last element.
+     *
+     * @return Iterator past the last element.     */
     iterator end() {
         return back_;
     }
@@ -382,6 +577,12 @@ void deque<T, Alloc>::clear() {
     front_ = back_ = iterator();
 }
 
+/**
+ * @brief Random access iterator for deque.
+ *
+ * @tparam Ref Reference type returned by dereference.
+ * @tparam Ptr Pointer type returned by arrow operator.
+ */
 template <typename T, typename Alloc>
 template <typename Ref, typename Ptr>
 class deque<T, Alloc>::deque_iterator {
@@ -394,7 +595,11 @@ private:
     MapPtr node_;   // the current node
     EltPtr cur_;    // the current element
 
-    // set the iterator's node as new_node
+    /**
+     * @brief Set the iterator to point to a new node.
+     *
+     * @param new_node Node pointer to set.
+     */
     void set_node(MapPtr new_node) {
         node_ = new_node;
         first_ = *node_;
@@ -404,15 +609,35 @@ private:
     friend const_iterator;
 
 public:
+    /**
+     * @brief Construct a default iterator.
+     */
     deque_iterator()
         : first_(nullptr), last_(nullptr), node_(nullptr), cur_(nullptr) {}
 
+    /**
+     * @brief Construct an iterator from a current element and node.
+     *
+     * @param cur Pointer to the current element.
+     * @param node Pointer to the current node in the map.
+     */
     deque_iterator(EltPtr cur, MapPtr node) : node_(node), cur_(cur) {
         set_node(node);
     }
 
+    /**
+     * @brief Copy-construct an iterator.
+     *
+     * @param rhs Iterator to copy from.
+     */
     deque_iterator(const self_t& rhs) = default;
 
+    /**
+     * @brief Construct from compatible iterator type.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Iterator to copy from.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     deque_iterator(const Iter& rhs)
         : first_(rhs.first_),
@@ -420,10 +645,24 @@ public:
           node_(rhs.node_),
           cur_(rhs.cur_) {}
 
+    /**
+     * @brief Destroy the iterator.
+     */
     ~deque_iterator() noexcept = default;
 
+    /**
+     * @brief Move-construct an iterator.
+     *
+     * @param rhs Iterator to move from.
+     */
     deque_iterator(self_t&& rhs) noexcept = default;
 
+    /**
+     * @brief Move-construct from compatible iterator type.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Iterator to move from.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     deque_iterator(Iter&& rhs) noexcept
         : first_(rhs.first_),
@@ -431,10 +670,26 @@ public:
           node_(rhs.node_),
           cur_(rhs.cur_) {}
 
+    /**
+     * @brief Copy-assign from another iterator.
+     *
+     * @param rhs Iterator to copy from.
+     * @return Reference to this iterator.     */
     self_t& operator=(const self_t& rhs) = default;
 
+    /**
+     * @brief Move-assign from another iterator.
+     *
+     * @param rhs Iterator to move from.
+     * @return Reference to this iterator.     */
     self_t& operator=(self_t&& rhs) noexcept = default;
 
+    /**
+     * @brief Assign from compatible iterator type.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Iterator to copy from.
+     * @return Reference to this iterator.     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         first_ = rhs.first_;
@@ -444,6 +699,12 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Move-assign from compatible iterator type.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Iterator to move from.
+     * @return Reference to this iterator.     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(Iter&& rhs) noexcept {
         first_ = rhs.first_;
@@ -453,14 +714,26 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Dereference the iterator.
+     *
+     * @return Reference to the current element.     */
     Ref operator*() const {
         return *cur_;
     }
 
+    /**
+     * @brief Access the current element.
+     *
+     * @return Pointer to the current element.     */
     Ptr operator->() const {
         return cur_;
     }
 
+    /**
+     * @brief Pre-increment the iterator.
+     *
+     * @return Reference to this iterator.     */
     self_t& operator++() {
         ++cur_;
         if (cur_ == last_) {
@@ -470,6 +743,10 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Pre-decrement the iterator.
+     *
+     * @return Reference to this iterator.     */
     self_t& operator--() {
         if (cur_ == first_) {
             set_node(node_ - 1);
@@ -479,20 +756,31 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Post-increment the iterator.
+     *
+     * @return Copy of the iterator before increment.     */
     self_t operator++(int) {
         auto old = *this;
         this->operator++();
         return old;
     }
 
+    /**
+     * @brief Post-decrement the iterator.
+     *
+     * @return Copy of the iterator before decrement.     */
     self_t operator--(int) {
         auto old = *this;
         this->operator--();
         return old;
     }
 
-    /* to implement the support of random access
-     * n could be positive or negative */
+    /**
+     * @brief Advance the iterator by n positions.
+     *
+     * @param n Offset to add (can be negative).
+     * @return Reference to this iterator.     */
     self_t& operator+=(difference_t n) {
         const difference_t offset = n + (cur_ - first_);
         if (offset >= 0 && offset < BUF_LEN) {
@@ -508,38 +796,81 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Move the iterator backward by n positions.
+     *
+     * @param n Offset to subtract.
+     * @return Reference to this iterator.     */
     self_t& operator-=(difference_t n) {
         return *this += -n;
     }
 
+    /**
+     * @brief Return a new iterator advanced by n positions.
+     *
+     * @param n Offset to add.
+     * @return New iterator advanced by n.     */
     self_t operator+(difference_t n) const {
         auto new_itr = *this;
         new_itr += n;
         return new_itr;
     }
 
+    /**
+     * @brief Return a new iterator moved backward by n positions.
+     *
+     * @param n Offset to subtract.
+     * @return New iterator moved backward by n.     */
     self_t operator-(difference_t n) const {
         auto new_itr = *this;
         new_itr -= n;
         return new_itr;
     }
 
+    /**
+     * @brief Compute distance between iterators.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left-hand iterator.
+     * @param rhs Right-hand iterator.
+     * @return Distance between iterators.     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend difference_t operator-(const self_t& lhs, const Iter& rhs) {
         return (lhs.cur_ - lhs.first_) + (rhs.last_ - rhs.cur_) +
             ((lhs.node_ - rhs.node_ - static_cast<bool>(lhs.node_)) * BUF_LEN);
     }
 
+    /**
+     * @brief Equality comparison.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left-hand iterator.
+     * @param rhs Right-hand iterator.
+     * @return True if iterators refer to the same element.     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator==(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ == rhs.cur_;
     }
 
+    /**
+     * @brief Inequality comparison.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left-hand iterator.
+     * @param rhs Right-hand iterator.
+     * @return True if iterators refer to different elements.     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator!=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ != rhs.cur_;
     }
 
+    /**
+     * @brief Less-than comparison.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left-hand iterator.
+     * @param rhs Right-hand iterator.
+     * @return True if lhs precedes rhs.     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<(const self_t& lhs, const Iter& rhs) {
         bool res = false;
@@ -551,16 +882,37 @@ public:
         return res;
     }
 
+    /**
+     * @brief Less-than-or-equal comparison.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left-hand iterator.
+     * @param rhs Right-hand iterator.
+     * @return True if lhs does not follow rhs.     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<=(const self_t& lhs, const Iter& rhs) {
         return lhs < rhs || lhs == rhs;
     }
 
+    /**
+     * @brief Greater-than comparison.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left-hand iterator.
+     * @param rhs Right-hand iterator.
+     * @return True if lhs follows rhs.     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator>(const self_t& lhs, const Iter& rhs) {
         return !(lhs <= rhs);
     }
 
+    /**
+     * @brief Greater-than-or-equal comparison.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left-hand iterator.
+     * @param rhs Right-hand iterator.
+     * @return True if lhs does not precede rhs.     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator>=(const self_t& lhs, const Iter& rhs) {
         return !(lhs < rhs);

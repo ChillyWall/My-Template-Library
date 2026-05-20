@@ -9,6 +9,12 @@ using std::int64_t;
 
 export namespace mtl {
 
+/**
+ * @brief Self-balancing binary search tree (AVL) container.
+ *
+ * @tparam T Type of elements stored in the tree.
+ * @tparam Alloc Allocator type used to allocate nodes.
+ */
 template <typename T, typename Alloc = std::allocator<T>>
 class avl_tree {
 public:
@@ -16,6 +22,12 @@ public:
 
 private:
     // The iterator class
+    /**
+     * @brief Iterator implementation for avl_tree.
+     *
+     * @tparam Ref Reference type returned by operator*.
+     * @tparam Ptr Pointer type returned by operator->.
+     */
     template <typename Ref, typename Ptr>
     class avl_iterator;
 
@@ -24,7 +36,9 @@ public:
     using iterator = avl_iterator<T&, T*>;
 
 private:
-    // The node class
+    /**
+     * @brief Internal node type for avl_tree.
+     */
     class Node;
     // the pointer to Node
     using NdPtr = Node*;
@@ -40,15 +54,32 @@ private:
     size_t size_ {};
     // The maximum difference between the heights of left and right children
     static const int ALLOWED_IMBALANCE = 1;
-    // If the node is invalid, it's height would be -1
+
+    /**
+     * @brief Return the height of a node or -1 for null.
+     *
+     * @param node Pointer to node.
+     * @return Height or -1 if node is null.
+     */
     static int64_t height(NdPtr node) {
         return (node == nullptr) ? -1 : node->height_;
     }
 
+    /**
+     * @brief Compute node height from child heights.
+     * @param node Pointer to node.
+     * @return Computed height value.
+     */
     static int64_t calc_height(NdPtr node) {
         return max(height(node->left_), height(node->right_)) + 1;
     }
 
+    /**
+     * @brief Allocate and construct a node with forwarded arguments.
+     * @tparam Args Constructor argument types.
+     * @param args Forwarded constructor arguments.
+     * @return Pointer to constructed node.
+     */
     template <typename... Args>
     NdPtr allocate_node(Args&&... args) {
         NdPtr ptr = allocator_.allocate(1);
@@ -56,6 +87,10 @@ private:
         return ptr;
     }
 
+    /**
+     * @brief Recursively destroy and deallocate a subtree rooted at node.
+     * @param node Root node to deallocate.
+     */
     void deallocate_node(NdPtr node) {
         if (node == nullptr) {
             return;
@@ -71,133 +106,257 @@ private:
         allocator_.deallocate(node, 1);
     }
 
-    // To update and balance the tree
+    /**
+     * @brief Update heights and rebalance the tree starting from node.
+     *
+     * @param node Node to start update from
+     */
     void update(NdPtr node);
 
-    // To remove the node
+    /**
+     * @brief Remove a node from the tree and adjust links.
+     *
+     * @param node Node to remove
+     */
     void remove_node(NdPtr node);
 
-    /* To find the node whose element_ is equal to elem.
-     * If the node doesn't exist, return the last node in the path. */
+    /**
+     * @brief Find node with element equal to elem or last visited node.
+     *
+     * @param elem Element to search for
+     * @return Found node or last node where search ended
+     */
     NdPtr find_node(const T& elem) const;
 
-    // perform single rotation
+    /**
+     * @brief Perform single left rotation on given node.
+     *
+     * @param node Node to rotate
+     */
     void rotate_left(NdPtr node);
 
-    // perform single rotation
+    /**
+     * @brief Perform single right rotation on given node.
+     *
+     * @param node Node to rotate
+     */
     void rotate_right(NdPtr node);
 
-    // perform double rotation
+    /**
+     * @brief Perform double left rotation on given node.
+     * @param node Node to rotate.
+     */
     void double_rotate_left(NdPtr node) {
         rotate_right(node->left_);
         rotate_left(node);
     }
 
-    // perform double rotation
+    /**
+     * @brief Perform double right rotation on given node.
+     * @param node Node to rotate.
+     */
     void double_rotate_right(NdPtr node) {
         rotate_left(node->right_);
         rotate_right(node);
     }
 
-    // find the node containing the minimum in the tree with node as root
+    /**
+     * @brief Find the minimum node in the subtree rooted at node.
+     * @param node Subtree root.
+     * @return Pointer to minimum node or nullptr.
+     */
     static NdPtr find_min(NdPtr node);
-    // find the node containing the maximum int the tree with node as root
+    /**
+     * @brief Find the maximum node in the subtree rooted at node.
+     * @param node Subtree root.
+     * @return Pointer to maximum node or nullptr.
+     */
     static NdPtr find_max(NdPtr node);
-    // Copy the nodes recursively.
+    /**
+     * @brief Recursively copy a subtree rooted at node.
+     * @param node Subtree root.
+     * @return Pointer to copied subtree root or nullptr.
+     */
     NdPtr copy_node(NdPtr node);
 
 public:
+    /**
+     * @brief Construct an empty AVL tree.
+     */
     avl_tree();
+    /**
+     * @brief Copy-construct from another tree.
+     * @param rhs Source tree.
+     */
     avl_tree(const self_t& rhs);
+    /**
+     * @brief Move-construct from another tree.
+     * @param rhs Source tree.
+     */
     avl_tree(self_t&& rhs) noexcept;
+    /**
+     * @brief Destroy the tree and deallocate all nodes.
+     */
     ~avl_tree() noexcept;
 
+    /**
+     * @brief Copy-assign from another tree.
+     * @param rhs Source tree.
+     * @return Reference to this tree.
+     */
     self_t& operator=(const self_t& rhs);
+    /**
+     * @brief Move-assign from another tree.
+     * @param rhs Source tree.
+     * @return Reference to this tree.
+     */
     self_t& operator=(self_t&& rhs) noexcept;
 
+    /**
+     * @brief Check whether the tree is empty.
+     * @return True if empty.
+     */
     [[nodiscard]] bool empty() const {
         return size_ == 0;
     }
 
-    // clear all the items.
+    /**
+     * @brief Remove all elements from the tree.
+     */
     void clear() {
         size_ = 0;
         deallocate_node(root_);
         root_ = nullptr;
     }
 
-    // return the number of items.
+    /**
+     * @brief Get number of elements in the tree.
+     * @return Element count.
+     */
     [[nodiscard]] size_t size() const {
         return size_;
     }
 
-    // return an iterator containing the minimum
+    /**
+     * @brief Get iterator to the minimum element.
+     * @return Iterator to minimum element.
+     */
     iterator begin() {
         return find_min();
     }
 
-    /* return an iterator containing a nullptr,
-     * so it doesn't support operator++ and operator-- */
+    /**
+     * @brief Get iterator to past-the-end.
+     * @return Iterator representing end.
+     */
     iterator end() {
         return iterator(nullptr);
     }
 
-    // return an iterator containing a the minimum
+    /**
+     * @brief Get const iterator to the minimum element.
+     * @return Const iterator to minimum element.
+     */
     const_iterator begin() const {
         return find_min();
     }
 
-    /* return an iterator containing a nullptr,
-     * so it doesn't support operator++ and operator-- */
+    /**
+     * @brief Get const iterator to past-the-end.
+     * @return Const iterator representing end.
+     */
     const_iterator end() const {
         return const_iterator(nullptr);
     }
 
-    // return an const_iterator containing a the minimum
+    /**
+     * @brief Get const iterator to the minimum element.
+     * @return Const iterator to minimum element.
+     */
     const_iterator cbegin() const {
         return begin();
     }
 
-    /* return an const_iterator containing a nullptr,
-     * so it doesn't support operator++ and operator-- */
+    /**
+     * @brief Get const iterator to past-the-end.
+     * @return Const iterator representing end.
+     */
     const_iterator cend() const {
         return end();
     }
 
-    // return iterator to the inserted node
+    /**
+     * @brief Insert an element into the tree.
+     * @tparam V Forwarded element type.
+     * @param elem Element to insert.
+     * @return Iterator to inserted or existing element.
+     */
     template <typename V>
     iterator insert(V&& elem) noexcept;
 
+    /**
+     * @brief Remove element equal to elem if present.
+     * @param elem Element to remove.
+     * @return 1 if removed, 0 otherwise.
+     */
     int remove(const T& elem) noexcept;
 
-    // return iterator to the last node of erased node
+    /**
+     * @brief Remove element at iterator and return iterator to next.
+     * @param itr Iterator to element to remove.
+     * @return Iterator to next element.
+     */
     iterator remove(iterator itr) noexcept;
 
-    // return whether the elem is in the tree
+    /**
+     * @brief Check whether elem exists in the tree.
+     * @param elem Element to search for.
+     * @return True if contained.
+     */
     bool contain(const T& elem) const;
 
-    // return iterator to the node containing element
+    /**
+     * @brief Find const iterator to element equal to elem.
+     * @param elem Element to find.
+     * @return Const iterator to element or end().
+     */
     const_iterator find(const T& elem) const;
 
-    // return iterator to the node containing element
+    /**
+     * @brief Find iterator to element equal to elem.
+     * @param elem Element to find.
+     * @return Iterator to element or end().
+     */
     iterator find(const T& elem);
 
-    // return iterator to the minimum element
+    /**
+     * @brief Get const iterator to the minimum element.
+     * @return Const iterator to minimum element.
+     */
     const_iterator find_min() const {
         return const_iterator(find_min(root_));
     }
 
-    // return iterator to the minimum element
+    /**
+     * @brief Get const iterator to the maximum element.
+     * @return Const iterator to maximum element.
+     */
     const_iterator find_max() const {
         return const_iterator(find_max(root_));
     }
 
-    // find the minimum element
+    /**
+     * @brief Get iterator to the minimum element.
+     * @return Iterator to minimum element.
+     */
     iterator find_min() {
         return iterator(find_min(root_));
     }
 
-    // find the maximum element
+    /**
+     * @brief Get iterator to the maximum element.
+     * @return Iterator to maximum element.
+     */
     iterator find_max() {
         return iterator(find_max(root_));
     }
@@ -391,13 +550,12 @@ void avl_tree<T, Alloc>::update(NdPtr node) {
                 }
             }
             break;
+        }
+        node->height_ = calc_height(node);
+        if (node->parent_) {
+            node = node->parent_;
         } else {
-            node->height_ = calc_height(node);
-            if (node->parent_) {
-                node = node->parent_;
-            } else {
-                break;
-            }
+            break;
         }
     }
 }
@@ -417,17 +575,16 @@ avl_tree<T, Alloc>::insert(V&& elem) noexcept {
 
     if (elem == node->element()) {
         return iterator(node);
-    } else {
-        res = allocate_node(std::forward<V>(elem), node, nullptr, nullptr);
-        if (elem > node->element()) {
-            node->right_ = res;
-        } else {
-            node->left_ = res;
-        }
-        update(node);
-        ++size_;
-        return iterator(res);
     }
+    res = allocate_node(std::forward<V>(elem), node, nullptr, nullptr);
+    if (elem > node->element()) {
+        node->right_ = res;
+    } else {
+        node->left_ = res;
+    }
+    update(node);
+    ++size_;
+    return iterator(res);
 }
 
 template <typename T, typename Alloc>
@@ -563,6 +720,12 @@ typename avl_tree<T, Alloc>::iterator avl_tree<T, Alloc>::find(const T& elem) {
     return iterator(res);
 }
 
+/**
+ * @brief Internal node type storing element and links.
+ *
+ * @tparam T element type
+ * @tparam Alloc allocator type
+ */
 template <typename T, typename Alloc>
 class avl_tree<T, Alloc>::Node {
 private:
@@ -577,6 +740,15 @@ private:
     int64_t height_ {0};
 
 public:
+    /**
+     * @brief Construct a node with element and child/parent pointers.
+     *
+     * @tparam V forwarding type for element
+     * @param elem element value
+     * @param par parent pointer
+     * @param lf_child left child pointer
+     * @param rg_child right child pointer
+     */
     template <typename V>
     Node(V&& elem, NdPtr par, NdPtr lf_child, NdPtr rg_child) noexcept
         : element_(std::forward<V>(elem)),
@@ -584,34 +756,66 @@ public:
           left_(lf_child),
           right_(rg_child) {}
 
+    /**
+     * @brief Deleted copy constructor.
+     */
     Node(const Node& rhs) = delete;
+    /**
+     * @brief Deleted move constructor.
+     */
     Node(Node&& rhs) noexcept = delete;
+    /**
+     * @brief Deleted copy assignment.
+     */
     Node& operator=(const Node& rhs) = delete;
+    /**
+     * @brief Deleted move assignment.
+     */
     Node& operator=(Node&& rhs) noexcept = delete;
 
+    /**
+     * @brief Default destructor.
+     */
     ~Node() noexcept = default;
 
+    /**
+     * @brief Return node height.
+     */
     [[nodiscard]] int64_t height() const {
         return height_;
     }
 
+    /**
+     * @brief Mutable access to stored element.
+     */
     T& element() {
         return element_;
     }
 
+    /**
+     * @brief Const access to stored element.
+     */
     const T& element() const {
         return element_;
     }
 
+    /**
+     * @brief Get left child pointer.
+     */
     NdPtr left() const {
         return left_;
     }
 
+    /**
+     * @brief Get right child pointer.
+     */
     NdPtr right() const {
         return right_;
     }
 
-    // return if this node is a left child
+    /**
+     * @brief True if this node is a left child of its parent.
+     */
     [[nodiscard]] bool is_left() const {
         if (parent_ == nullptr) {
             return false;
@@ -619,7 +823,9 @@ public:
         return parent_->left_ == this;
     }
 
-    // return if this node is a right child
+    /**
+     * @brief True if this node is a right child of its parent.
+     */
     [[nodiscard]] bool is_right() const {
         if (parent_ == nullptr) {
             return false;
@@ -627,17 +833,23 @@ public:
         return parent_->right_ == this;
     }
 
-    // return if this node is a left child
+    /**
+     * @brief True if this node is root (no parent).
+     */
     [[nodiscard]] bool is_root() const {
         return parent_ == nullptr;
     }
 
-    // return if this node has a left child
+    /**
+     * @brief True if left child exists.
+     */
     [[nodiscard]] bool has_left() const {
         return bool(left_);
     }
 
-    // return is this node has a right child
+    /**
+     * @brief True if right child exists.
+     */
     [[nodiscard]] bool has_right() const {
         return bool(right_);
     }
@@ -658,77 +870,203 @@ private:
 public:
     using self_t = avl_iterator<Ref, Ptr>;
 
-    NdPtr node() const { return node_; }
+    /**
+     * @brief Get the underlying node pointer.
+     *
+     * @return Pointer to the current node or nullptr.
+     */
+    NdPtr node() const {
+        return node_;
+    }
 
+    /**
+     * @brief Construct a null iterator.
+     */
     avl_iterator() : node_(nullptr) {}
+
+    /**
+     * @brief Construct from a node pointer.
+     *
+     * @param node Node pointer to wrap.
+     */
     explicit avl_iterator(NdPtr node) : node_(node) {}
+
+    /**
+     * @brief Copy-construct from another iterator.
+     *
+     * @param rhs Source iterator.
+     */
     avl_iterator(const self_t& rhs) : node_(rhs.node_) {}
+
+    /**
+     * @brief Move-construct from another iterator.
+     *
+     * @param rhs Source iterator.
+     */
     avl_iterator(self_t&& rhs) noexcept : node_(rhs.node_) {}
+
+    /**
+     * @brief Destroy the iterator.
+     */
     ~avl_iterator() noexcept = default;
 
+    /**
+     * @brief Construct from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     avl_iterator(const Iter& rhs) : node_(rhs.node_) {}
 
+    /**
+     * @brief Move-construct from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     avl_iterator(Iter&& rhs) noexcept : node_(rhs.node_) {}
 
-    /* it don't check whether the iterator is valid
-     * so a segmentation fault is possible to be thrown out */
+    /**
+     * @brief Dereference the iterator.
+     *
+     * @return Reference to the element.
+     */
     Ref operator*() const {
         return node_->element();
     }
 
+    /**
+     * @brief Access the element through a pointer-like interface.
+     *
+     * @return Pointer to the element.
+     */
     Ptr operator->() const {
         return &node_->element();
     }
 
-    // checkk whether the iterator refers to a valid node
+    /**
+     * @brief Check whether the iterator refers to a valid node.
+     *
+     * @return True if the iterator is not null.
+     */
     explicit operator bool() const {
         return bool(node_);
     }
 
+    /**
+     * @brief Advance to the next node in order.
+     *
+     * @return Reference to this iterator.
+     */
     self_t& operator++();
+
+    /**
+     * @brief Move to the previous node in order.
+     *
+     * @return Reference to this iterator.
+     */
     self_t& operator--();
 
+    /**
+     * @brief Post-increment to the next node in order.
+     *
+     * @param unused Placeholder parameter for postfix form.
+     * @return Iterator value before increment.
+     */
     self_t operator++(int) {
         self_t old(*this);
         this->operator++();
         return old;
     }
 
+    /**
+     * @brief Post-decrement to the previous node in order.
+     *
+     * @param unused Placeholder parameter for postfix form.
+     * @return Iterator value before decrement.
+     */
     self_t operator--(int) {
         self_t old(*this);
         this->operator--();
         return old;
     }
 
+    /**
+     * @brief Copy-assign from another iterator.
+     *
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     self_t& operator=(const self_t& rhs) = default;
+
+    /**
+     * @brief Move-assign from another iterator.
+     *
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     self_t& operator=(self_t&& rhs) = default;
 
+    /**
+     * @brief Assign from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         node_ = rhs.node_;
         return *this;
     }
 
+    /**
+     * @brief Move-assign from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(Iter&& rhs) noexcept {
         node_ = rhs.node_;
         return *this;
     }
 
+    /**
+     * @brief Return an iterator advanced by n steps.
+     *
+     * @param n Number of steps to advance.
+     * @return Advanced iterator.
+     */
     self_t operator+(difference_t n) {
         self_t res(*this);
         res += n;
         return res;
     }
 
+    /**
+     * @brief Return an iterator moved backward by n steps.
+     *
+     * @param n Number of steps to move backward.
+     * @return Moved iterator.
+     */
     self_t operator-(difference_t n) {
         self_t res(*this);
         res -= n;
         return res;
     }
 
+    /**
+     * @brief Compare two iterators for equality.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if both iterators compare equal.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator==(const self_t& lhs, const Iter& rhs) {
         bool res = false;
@@ -742,11 +1080,27 @@ public:
         return res;
     }
 
+    /**
+     * @brief Compare two iterators for inequality.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if the iterators are not equal.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator!=(const self_t& lhs, const Iter& rhs) {
         return !(lhs == rhs);
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is ordered before rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<(const self_t& lhs, const Iter& rhs) {
         bool res = false;
@@ -758,6 +1112,14 @@ public:
         return res;
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is ordered after rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator>(const self_t& lhs, const Iter& rhs) {
         bool res = false;
@@ -769,11 +1131,27 @@ public:
         return res;
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is not ordered before rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator>=(const self_t& lhs, const Iter& rhs) {
         return !(lhs < rhs);
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is not ordered after rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<=(const self_t& lhs, const Iter& rhs) {
         return !(lhs > rhs);

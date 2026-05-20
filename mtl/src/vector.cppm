@@ -6,8 +6,15 @@ import std;
 // The namespace where the ADTs are.
 export namespace mtl {
 
-/* The vector ADT, it can expand its data array to double size when space is
- * not enough. */
+/**
+ * @brief Dynamic array container that grows as elements are added.
+ *
+ * The vector ADT expands its internal storage (typically doubling) when
+ * additional capacity is required.
+ *
+ * @tparam T Type of elements stored.
+ * @tparam Alloc Allocator type used for memory management.
+ */
 template <typename T, typename Alloc = std::allocator<T>>
 class vector {
 public:
@@ -24,37 +31,83 @@ private:
 
     size_t size_;
 
+    /**
+     * @brief Throw if container is empty.
+     *
+     * Helper used to validate that the container is not empty before
+     * operations that require at least one element.
+     */
     void check_empty() const {
         if (empty()) {
             throw EmptyContainer();
         }
     }
 
-    /* allocate a new array with length size and return the pointer to it */
+    /**
+     * @brief Allocate raw storage for elements.
+     *
+     * @param new_capacity Number of elements to allocate storage for.
+     * @return Pointer to uninitialized storage for T objects.
+     */
     [[nodiscard]] T* allocate(size_t new_capacity) {
         return allocator_.allocate(new_capacity);
     }
 
+    /**
+     * @brief Deallocate previously allocated storage.
+     *
+     * @param array Pointer returned from allocate.
+     * @param length Number of elements the storage was allocated for.
+     */
     void deallocate(T* array, size_t length) {
         allocator_.deallocate(array, length);
     }
 
+    /**
+     * @brief Forward declaration for iterator implementation.
+     *
+     * @tparam Ref Reference type returned by operator*().
+     * @tparam Ptr Pointer type returned by operator->().
+     */
     template <typename Ref, typename Ptr>
     class vector_iterator;
 
 public:
+    /**
+     * @brief Iterator type that yields const references.
+     *
+     * @tparam See vector_iterator documentation for template params.
+     */
     using const_iterator = vector_iterator<const T&, const T*>;
+
+    /**
+     * @brief Iterator type that yields mutable references.
+     *
+     * @tparam See vector_iterator documentation for template params.
+     */
     using iterator = vector_iterator<T&, T*>;
 
-    // the default constructor
+    /**
+     * @brief Default-construct an empty vector.
+     */
     vector() : capacity_(0), size_(0), data_(nullptr) {}
 
-    // construct the vector with particular size
+    /**
+     * @brief Construct a vector with given size value-initialized.
+     *
+     * @param init_size Number of elements to create.
+     */
     explicit vector(size_t init_size)
         : capacity_(init_size), size_(init_size), data_(allocate(init_size)) {
         construct_all(data_, init_size);
     }
 
+    /**
+     * @brief Construct a vector with given size and initialize elements.
+     *
+     * @param init_size Number of elements to create.
+     * @param init_val Value to copy-construct each element from.
+     */
     vector(size_t init_size, const T& init_val)
         : capacity_(init_size), size_(init_size), data_(allocate(capacity_)) {
         for (int i = 0; i < init_size; ++i) {
@@ -62,8 +115,12 @@ public:
         }
     }
 
-    /* construct from initializer list, the size will be the same with the
-     * il. */
+    /**
+     * @brief Construct from initializer list.
+     *
+     * @param il Initializer list whose elements are copied/moved into the
+     *           vector.
+     */
     vector(std::initializer_list<T> il) noexcept
         : capacity_(il.size()), size_(il.size()), data_(allocate(il.size())) {
         auto itr = il.begin();
@@ -72,7 +129,11 @@ public:
         }
     }
 
-    // copy constructor
+    /**
+     * @brief Copy-construct from another vector (deep copy of elements).
+     *
+     * @param rhs Source vector to copy from.
+     */
     vector(const self_t& rhs)
         : capacity_(rhs.size()),
           size_(rhs.size()),
@@ -80,7 +141,11 @@ public:
         std::uninitialized_copy_n(rhs.data_, rhs.size_, data_);
     }
 
-    // moving constructor
+    /**
+     * @brief Move-construct by taking ownership of another vector's storage.
+     *
+     * @param rhs Rvalue source to move from.
+     */
     vector(self_t&& rhs) noexcept
         : data_(rhs.data_), capacity_(rhs.capacity_), size_(rhs.size_) {
         rhs.data_ = nullptr;
@@ -88,24 +153,42 @@ public:
         rhs.size_ = 0;
     }
 
-    // the destructor
+    /**
+     * @brief Destructor destroys elements and frees storage.
+     */
     ~vector() noexcept {
         destroy_all(data_, size_);
         deallocate(data_, capacity_);
     }
 
-    /* return the reference to the element at position index
-     * it don't check the boundary */
+    /**
+     * @brief Access element without bounds checking (const).
+     *
+     * @param index Index of element to access.
+     * @return const reference to element at index.
+     */
     const T& operator[](size_t index) const {
         return data()[index];
     }
 
-    // the const version
+    /**
+     * @brief Access element without bounds checking (mutable).
+     *
+     * @param index Index of element to access.
+     * @return reference to element at index.
+     */
     T& operator[](size_t index) {
         return const_cast<T&>(
             static_cast<const self_t*>(this)->operator[](index));
     }
 
+    /**
+     * @brief Access element with bounds checking (const).
+     *
+     * @param index Index of element to access.
+     * @return const reference to element at index.
+     * @throws std::out_of_range if index >= capacity().
+     */
     const T& at(size_t index) const {
         if (index >= capacity_) {
             throw std::out_of_range("The index is out of range.");
@@ -113,33 +196,64 @@ public:
         return data()[index];
     }
 
+    /**
+     * @brief Access element with bounds checking (mutable).
+     *
+     * @param index Index of element to access.
+     * @return reference to element at index.
+     */
     T& at(size_t index) {
         return const_cast<T&>(static_cast<const self_t*>(this)->at(index));
     }
 
+    /**
+     * @brief Return current storage capacity.
+     *
+     * @return Number of elements the vector can hold without reallocating.
+     */
     [[nodiscard]] size_t capacity() const {
         return capacity_;
     }
 
+    /**
+     * @brief Return current number of elements.
+     *
+     * @return Number of constructed elements in the vector.
+     */
     [[nodiscard]] size_t size() const {
         return size_;
     }
 
-    // the interface for derived classes to get data_
+    /**
+     * @brief Get pointer to underlying data (const).
+     *
+     * @return Pointer to first element or nullptr if empty.
+     */
     const T* data() const {
         return data_;
     }
 
-    // the interface for derived classes to get data_
+    /**
+     * @brief Get pointer to underlying data (mutable).
+     *
+     * @return Pointer to first element or nullptr if empty.
+     */
     T* data() {
         return const_cast<T*>(static_cast<const self_t*>(this)->data());
     }
 
-    // return whether the vector is empty
+    /**
+     * @brief Check whether vector contains no elements.
+     *
+     * @return true if size() == 0.
+     */
     [[nodiscard]] bool empty() const {
         return size() == 0;
     }
 
+    /**
+     * @brief Destroy all elements and release storage.
+     */
     void clear() noexcept {
         destroy_all(data_, size_);
         deallocate(data_, capacity_);
@@ -148,28 +262,70 @@ public:
         data_ = nullptr;
     }
 
+    /**
+     * @brief Reduce capacity to match size, freeing unused storage.
+     */
     void shrink_to_fit() noexcept;
 
+    /**
+     * @brief Ensure at least the given capacity is available.
+     *
+     * @param capacity Minimum capacity to reserve.
+     */
     void reserve(size_t capacity);
 
+    /**
+     * @brief Resize container to contain new_size elements.
+     *
+     * If new_size > size(), default-construct additional elements. If
+     * new_size < size(), destroy trailing elements.
+     *
+     * @param new_size Desired number of elements.
+     */
     void resize(size_t new_size) noexcept;
 
+    /**
+     * @brief Access first element (const).
+     *
+     * @return const reference to first element.
+     */
     const T& front() const {
         return at(0);
     }
 
+    /**
+     * @brief Access last element (const).
+     *
+     * @return const reference to last element.
+     */
     const T& back() const {
         return at(size() - 1);
     }
 
+    /**
+     * @brief Access first element (mutable).
+     *
+     * @return reference to first element.
+     */
     T& front() {
         return const_cast<T&>(static_cast<const self_t*>(this)->front());
     }
 
+    /**
+     * @brief Access last element (mutable).
+     *
+     * @return reference to last element.
+     */
     T& back() {
         return const_cast<T&>(static_cast<const self_t*>(this)->back());
     }
 
+    /**
+     * @brief Append element to the end (perfect-forwarding overload).
+     *
+     * @tparam V Value type deduced for forwarding.
+     * @param elem Element value to append.
+     */
     template <typename V>
     void push_back(V&& elem) {
         // emplace_back(std::forward<V>(elem));
@@ -180,12 +336,23 @@ public:
         ++size_;
     }
 
+    /**
+     * @brief Remove the last element.
+     *
+     * @throws EmptyContainer if the container is empty.
+     */
     void pop_back() {
         check_empty();
         destroy(data_, size() - 1);
         --size_;
     }
 
+    /**
+     * @brief Construct element in-place at the end.
+     *
+     * @tparam Args Parameter pack forwarded to element constructor.
+     * @param args Arguments used to construct the new element.
+     */
     template <typename... Args>
     void emplace_back(Args&&... args) {
         if (size() + 1 > capacity()) {
@@ -195,30 +362,62 @@ public:
         ++size_;
     }
 
-    /* insert an element at position index,
-     * return an iterator pointing to the next cell */
+    /**
+     * @brief Insert a single element before position index.
+     *
+     * @tparam V Value type deduced for forwarding.
+     * @param index Iterator pointing to insertion position.
+     * @param elem Element to insert (forwarded).
+     * @return Iterator pointing to the inserted element.
+     */
     template <typename V>
     iterator insert(iterator index, V&& elem);
 
-    /* insert another from another container (deep copy) with iterators
-     * which provide ++, --, ==, and != operators */
+    /**
+     * @brief Insert a range of elements before position index.
+     *
+     * @tparam InputIterator Iterator type for the input range.
+     * @param index Insertion position.
+     * @param begin Begin of input range.
+     * @param end End of input range (one-past-last).
+     * @return Iterator pointing to the first of the newly inserted elements.
+     */
     template <typename InputIterator>
     iterator insert(iterator index, InputIterator begin, InputIterator end);
 
-    /* remove the elements at position index,
-     * return iterator to the next position */
+    /**
+     * @brief Remove element at iterator index.
+     *
+     * @param index Iterator pointing to element to remove.
+     * @return Iterator pointing to the element that followed the erased one.
+     */
     iterator remove(iterator index) noexcept;
 
-    // remove the range [begin, stop)
+    /**
+     * @brief Remove a range of elements [begin, stop).
+     *
+     * @param begin Iterator to first element to remove.
+     * @param stop Iterator one past the last element to remove.
+     * @return Iterator pointing to the position of first removed element.
+     */
     iterator remove(iterator begin, iterator stop) noexcept;
 
-    /* return whether two vector is the same vector (whether the data_ is
-     * equal) */
+    /**
+     * @brief Compare whether two vectors share the same underlying storage.
+     *
+     * @param vec Other vector to compare with.
+     * @return true if both vectors refer to the same data pointer.
+     */
     bool operator==(const self_t& vec) const {
         return data() == vec.data();
     }
 
-    // the copy assignment operator
+    /**
+     * @brief Copy-assign from another vector (deep copy).
+     *
+     * @param rhs Source vector to copy from.
+     * @return Reference to *this.
+     */
     self_t& operator=(const self_t& rhs) {
         if (&rhs == this) {
             return *this;
@@ -233,7 +432,12 @@ public:
         return *this;
     }
 
-    // the moving assignment operator
+    /**
+     * @brief Move-assign by taking ownership of rhs storage.
+     *
+     * @param rhs Rvalue source to move from.
+     * @return Reference to *this.
+     */
     self_t& operator=(self_t&& rhs) noexcept {
         if (this == &rhs) {
             return *this;
@@ -253,35 +457,55 @@ public:
         return *this;
     }
 
-    // return a vector_iterator pointing to the position 0
+    /**
+     * @brief Return const iterator to first element.
+     *
+     * @return const_iterator pointing to element 0.
+     */
     const_iterator cbegin() const {
         return const_iterator(const_cast<T*>(data()));
     }
 
-    /* return a vector_iterator pointing to the position after the last
-     * element */
+    /**
+     * @brief Return const iterator one past the last element.
+     *
+     * @return const_iterator pointing to end.
+     */
     const_iterator cend() const {
         return const_iterator(
             data() == nullptr ? nullptr : const_cast<T*>(data()) + size());
     }
 
-    // return an iterator pointing to the first element
+    /**
+     * @brief Return mutable iterator to first element.
+     *
+     * @return iterator pointing to element 0.
+     */
     iterator begin() {
         return iterator(data());
     }
 
-    // return an iterator pointing to the element behind the last one
+    /**
+     * @brief Return mutable iterator one past the last element.
+     *
+     * @return iterator pointing to end.
+     */
     iterator end() {
         return iterator(data() == nullptr ? nullptr : data() + size());
     }
 
-    // return a vector_iterator pointing to the position 0
+    /**
+     * @brief Const overload of begin().
+     * @return const_iterator to first element.
+     */
     const_iterator begin() const {
         return cbegin();
     }
 
-    /* return a vector_iterator pointing to the position after the last
-     * element */
+    /**
+     * @brief Const overload of end().
+     * @return const_iterator to one past last element.
+     */
     const_iterator end() const {
         return cend();
     }
@@ -447,6 +671,14 @@ void vector<T, Alloc>::shrink_to_fit() noexcept {
     capacity_ = size_;
 }
 
+/**
+ * @brief Iterator implementation for vector exposing pointer-like semantics.
+ *
+ * Instances behave like contiguous iterators over the vector's storage.
+ *
+ * @tparam Ref Reference type returned by operator*().
+ * @tparam Ptr Pointer type returned by operator->().
+ */
 template <typename T, typename Alloc>
 template <typename Ref, typename Ptr>
 class vector<T, Alloc>::vector_iterator {
@@ -456,24 +688,60 @@ private:
     friend const_iterator;
 
 public:
+    /**
+     * @brief Default-construct an invalid iterator.
+     */
     vector_iterator() : elem_(nullptr) {}
 
+    /**
+     * @brief Default destructor.
+     */
     ~vector_iterator() = default;
 
-    // construct from pointer
+    /**
+     * @brief Construct iterator from raw element pointer.
+     *
+     * @param elem Pointer to element within the vector storage.
+     */
     explicit vector_iterator(T* elem) : elem_(elem) {}
 
+    /**
+     * @brief Construct from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     vector_iterator(const Iter& rhs) : elem_(rhs.elem_) {}
 
+    /**
+     * @brief Copy-construct from another iterator.
+     *
+     * @param rhs Source iterator.
+     */
     vector_iterator(const self_t& rhs) = default;
+
+    /**
+     * @brief Move-construct from another iterator.
+     *
+     * @param rhs Source iterator.
+     */
     vector_iterator(self_t&& rhs) noexcept = default;
 
-    // return a reference to the element
+    /**
+     * @brief Dereference to access referenced element.
+     *
+     * @return Reference to the element the iterator points to.
+     */
     Ref operator*() const {
         return *elem_;
     }
 
+    /**
+     * @brief Pointer-like access to element members.
+     *
+     * @return Pointer to the element the iterator points to.
+     */
     Ptr operator->() const {
         return elem_;
     }
@@ -511,39 +779,87 @@ public:
         return lhs.elem_ != rhs.elem_;
     }
 
+    /**
+     * @brief Test whether iterator is pointing to a valid element.
+     *
+     * @return true if iterator contains a non-null pointer.
+     */
     explicit operator bool() const {
         return elem_;
     }
 
+    /**
+     * @brief Copy-assign from another iterator.
+     *
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     self_t& operator=(const self_t& rhs) = default;
+
+    /**
+     * @brief Move-assign from another iterator.
+     *
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     self_t& operator=(self_t&& rhs) noexcept = default;
 
+    /**
+     * @brief Assign from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         elem_ = rhs.elem_;
         return *this;
     }
 
+    /**
+     * @brief Move-assign from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(Iter&& rhs) noexcept {
         elem_ = rhs.elem_;
         return *this;
     }
 
-    // move n items next, it don't check the boundary
+    /**
+     * @brief Return an iterator advanced by n positions (no bounds check).
+     *
+     * @param n Number of positions to advance.
+     * @return New iterator advanced by n.
+     */
     self_t operator+(difference_t n) const {
         auto new_itr = *this;
         new_itr += n;
         return new_itr;
     }
 
-    // move n items next, it don't check the boundary
+    /**
+     * @brief Advance iterator by n positions (no bounds check).
+     *
+     * @param n Number of positions to advance.
+     * @return Reference to *this after advancement.
+     */
     self_t& operator+=(difference_t n) {
         elem_ += n;
         return *this;
     }
 
-    // move n items previous, it don't check the boundary
+    /**
+     * @brief Return an iterator moved backward by n positions (no bounds
+     * check).
+     *
+     * @param n Number of positions to move backward.
+     * @return New iterator moved backward by n.
+     */
     self_t operator-(difference_t n) const {
         auto new_itr = *this;
         new_itr -= n;
@@ -551,36 +867,65 @@ public:
     }
 
     template <is_one_of<iterator, const_iterator> Iter>
+    /**
+     * @brief Compute distance between two iterators.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return Difference between iterators.
+     */
     friend difference_t operator-(const self_t& lhs, const Iter& rhs) {
         return lhs.elem_ - rhs.elem_;
     }
 
-    // move n items previous, it don't check the boundary
+    /**
+     * @brief Move iterator backward by n positions (no bounds check).
+     *
+     * @param n Number of positions to move backward.
+     * @return Reference to *this after movement.
+     */
     self_t& operator-=(difference_t n) {
         elem_ -= n;
         return *this;
     }
 
-    // prefix increment
+    /**
+     * @brief Prefix increment: advance to next element.
+     *
+     * @return Reference to advanced iterator.
+     */
     self_t& operator++() {
         ++elem_;
         return *this;
     }
 
-    // postfix increment
+    /**
+     * @brief Postfix increment: advance to next element, returning previous.
+     *
+     * @return Iterator prior to increment.
+     */
     self_t operator++(int) {
         auto new_itr = *this;
         ++elem_;
         return new_itr;
     }
 
-    // prefix decrement
+    /**
+     * @brief Prefix decrement: move to previous element.
+     *
+     * @return Reference to decremented iterator.
+     */
     self_t& operator--() {
         --elem_;
         return *this;
     }
 
-    // postfix decrement
+    /**
+     * @brief Postfix decrement: move to previous element, returning previous.
+     *
+     * @return Iterator prior to decrement.
+     */
     self_t operator--(int) {
         auto new_itr = *this;
         --elem_;

@@ -20,8 +20,17 @@ public:
     using self_t = hashing<T, hash_func, Alloc>;
 
 private:
+    /**
+     * @brief storage cell used by the hashing table
+     */
     class Cell;
 
+    /**
+     * @brief iterator for traversing occupied cells
+     *
+     * @tparam Ref reference type returned by operator*
+     * @tparam Ptr pointer type returned by operator->
+     */
     template <typename Ref, typename Ptr>
     class hashing_iterator;
 
@@ -44,18 +53,37 @@ private:
 
     Cell* data_;
 
+    /**
+     * @brief Compute the next capacity size (next prime of double).
+     * @param old_size Current size.
+     * @return Next size to use.
+     */
     size_t get_next_size(size_t old_size) {
         return next_prime(old_size * 2);
     }
 
+    /**
+     * @brief Allocate memory for given number of cells.
+     * @param size Number of cells.
+     * @return Pointer to allocated memory.
+     */
     Cell* allocate_memory(size_t size) {
         return allocator_.allocate(size);
     }
 
+    /**
+     * @brief Deallocate previously allocated cell memory.
+     * @param ptr Pointer returned by allocate_memory.
+     * @param size Number of cells.
+     */
     void deallocate_memory(Cell* ptr, size_t size) {
         allocator_.deallocate(ptr, size);
     }
 
+    /**
+     * @brief Initialize internal storage to given capacity.
+     * @param size Number of cells to initialize.
+     */
     void init(size_t size) {
         data_ = allocate_memory(size);
         size_ = 0;
@@ -65,6 +93,9 @@ private:
         }
     }
 
+    /**
+     * @brief Destroy all cells and free storage.
+     */
     void clear_all() {
         for (size_t i = 0; i < max_size_; ++i) {
             destruct_cell(i);
@@ -75,122 +106,206 @@ private:
         max_size_ = 0;
     }
 
+    /**
+     * @brief Grow the table to the next capacity.
+     */
     void expand();
 
+    /**
+     * @brief Rehash all elements into new capacity.
+     * @param new_capacity New table capacity.
+     */
     void rehash(size_t new_capacity);
 
+    /**
+     * @brief Construct a cell in place.
+     * @tparam Args Constructor argument types.
+     * @param index Cell index.
+     * @param args Forwarded constructor arguments.
+     */
     template <typename... Args>
     void construct_cell(size_t index, Args&&... args) {
         std::construct_at(data_ + index, std::forward<Args>(args)...);
     }
 
+    /**
+     * @brief Destroy a cell.
+     * @param index Cell index.
+     */
     void destruct_cell(size_t index) {
         std::destroy_at(data_ + index);
     }
 
+    /**
+     * @brief Find the first free or matching position starting from hash.
+     * @param elem Element to locate.
+     * @return Index where element is or can be placed.
+     */
     size_t find_pos(const T& elem) const;
 
+    /**
+     * @brief Attempt to move elements to make room at pos.
+     * @param pos Desired index to free.
+     * @return Index moved-from on success, max_size_ on failure.
+     */
     size_t move_elem(size_t pos);
 
 protected:
+    /**
+     * @brief Compute hash value modulo table size.
+     * @param elem Element to hash.
+     * @return Hash index in [0, max_size_).
+     */
     virtual size_t hash_value(const T& elem) const {
         hash_func hsh_fun;
         return hsh_fun(elem) % max_size_;
     }
 
 public:
-    hashing();
     /**
-     * @brief ensure the hash table's max_size is bigger than init_max_size and
-     * no smaller than DEFAULT_SIZE
-     * @param init_max_size the initial max size
+     * @brief Default-construct hash table.
+     */
+    hashing();
+
+    /**
+     * @brief Construct with initial capacity (rounded to prime).
+     * @param init_max_size Initial max size.
      */
     explicit hashing(size_t init_max_size);
 
+    /**
+     * @brief Copy-construct hashing from another instance.
+     * @param rhs Source instance.
+     */
     hashing(const self_t& rhs);
 
+    /**
+     * @brief Move-construct hashing from another instance.
+     * @param rhs Source instance.
+     */
     hashing(self_t&& rhs) noexcept
         : data_(rhs.data_), size_(rhs.size_), max_size_(rhs.max_size_) {
         rhs.data_ = nullptr;
         rhs.clear();
     }
 
+    /**
+     * @brief Destroy the hash table and free resources.
+     */
     ~hashing() {
         clear_all();
     }
 
+    /**
+     * @brief Copy-assign from another hashing.
+     * @param rhs Source instance.
+     * @return Reference to this instance.
+     */
     self_t& operator=(const self_t& rhs);
 
+    /**
+     * @brief Move-assign from another hashing.
+     * @param rhs Source rvalue.
+     * @return Reference to this instance.
+     */
     self_t& operator=(self_t&& rhs) noexcept {
         data_ = rhs.data_;
         size_ = rhs.size_;
         max_size_ = rhs.max_size_;
         rhs.data_ = nullptr;
         rhs.size_ = rhs.max_size_ = 0;
+        return *this;
     }
 
     /**
-     * @brief the number of elements in the hash table
-     * @return the value
+     * @brief Get number of stored elements.
+     * @return Element count.
      */
     [[nodiscard]] size_t size() const {
         return size_;
     }
 
     /**
-     * @brief the max size of the table
-     * @return the value
+     * @brief Get current capacity of the table.
+     * @return Capacity.
      */
     [[nodiscard]] size_t max_size() const {
         return max_size_;
     }
 
     /**
-     * @brief to insert a element into the hash table, return true if success,
-     * too many elements with the same hash value would cause insertion to fail.
-     * @param elem the element to be inserted
-     * @return if the element is inserted successfully
+     * @brief Insert an element into the table.
+     * @param elem Element to insert.
+     * @return True if inserted, false if already present or cannot insert.
      */
     bool insert(const T& elem);
 
     /**
-     * @brief remove an element from the hash table, return true if success, if
-     * the element doesn't exist, return false
-     * @param elem the element to be removed
-     * @return if the element is removed successfully
+     * @brief Remove an element from the table.
+     * @param elem Element to remove.
+     * @return True if removed, false if not found.
      */
     bool remove(const T& elem);
 
     /**
-     * @brief if elem is contained in the hash table
-     * @param elem the element
-     * @return if contained
+     * @brief Test membership of an element.
+     * @param elem Element to test.
+     * @return True if present.
      */
     bool contains(const T& elem) const;
 
     /**
-     * @brief clear all elements
+     * @brief Clear all elements and reset to default capacity.
      */
     void clear() {
         clear_all();
         init(DEFAULT_SIZE);
     }
 
+    /**
+     * @brief Get iterator to first occupied cell (const).
+     * @return Const iterator to first occupied element.
+     */
     const_iterator begin() const {
         return const_iterator(data_, data_ + max_size_, data_);
     }
+
+    /**
+     * @brief Get iterator to past-the-end (const).
+     * @return Const iterator to past-the-end.
+     */
     const_iterator end() const {
         return const_iterator(data_, data_ + max_size_, data_ + max_size_);
     }
+
+    /**
+     * @brief Get iterator to first occupied cell (const).
+     * @return Const iterator to first occupied element.
+     */
     const_iterator cbegin() const {
         return begin();
     }
+
+    /**
+     * @brief Get iterator to past-the-end (const).
+     * @return Const iterator to past-the-end.
+     */
     const_iterator cend() const {
         return end();
     }
+
+    /**
+     * @brief Get iterator to first occupied cell.
+     * @return Iterator to first occupied element.
+     */
     iterator begin() {
         return iterator(data_, data_ + max_size_, data_);
     }
+
+    /**
+     * @brief Get iterator to past-the-end.
+     * @return Iterator to past-the-end.
+     */
     iterator end() {
         return iterator(data_, data_ + max_size_, data_ + max_size_);
     }
@@ -355,6 +470,9 @@ void hashing<T, hash_func, Alloc>::rehash(size_t new_capacity) {
     deallocate_memory(old_data, old_max_size);
 }
 
+/**
+ * @brief Storage cell used by the hashing table
+ */
 template <typename T, typename hash_func, typename Alloc>
 class hashing<T, hash_func, Alloc>::Cell {
 public:
@@ -366,6 +484,9 @@ private:
     T elem_;
 
 public:
+    /**
+     * @brief Default-construct a Cell
+     */
     Cell() : elem_() {}
     Cell(const self_t& rhs) = default;
     Cell(self_t&& rhs) noexcept = default;
@@ -374,54 +495,103 @@ public:
     self_t& operator=(const self_t& rhs) = default;
     self_t& operator=(self_t&& rhs) noexcept = default;
 
+    /**
+     * @brief Test whether the cell currently holds an element
+     * @return True if occupied, false otherwise
+     */
     [[nodiscard]] bool is_occupied() const {
         return occupied_;
     }
 
+    /**
+     * @brief Mark the cell as occupied
+     */
     void set_occupied() {
         occupied_ = true;
     }
 
+    /**
+     * @brief Mark the cell as unoccupied
+     */
     void set_unoccupied() {
         occupied_ = false;
     }
 
+    /**
+     * @brief Access the stored element (const)
+     * @return Reference to the stored element
+     */
     const T& element() const {
         return elem_;
     }
 
+    /**
+     * @brief Access the stored element (mutable)
+     * @return Mutable reference to the stored element
+     */
     T& element() {
         return const_cast<T&>(static_cast<const self_t*>(this)->element());
     }
 
+    /**
+     * @brief Set the stored element and mark cell occupied
+     * @tparam V Type of value to store
+     * @param elem Value to store (forwarded)
+     */
     template <typename V>
     void set_element(V&& elem) {
         elem_ = std::forward<V>(elem);
         set_occupied();
     }
 
+    /**
+     * @brief Query hop information at given distance
+     * @param dist Distance from home
+     * @return True if hop bit is set
+     */
     [[nodiscard]] bool get_hop(size_t dist) const {
         return hop_info_[dist];
     }
 
+    /**
+     * @brief Set hop bit at given distance
+     * @param dist Distance from home
+     */
     void set_hop(size_t dist) {
         hop_info_.set(dist);
     }
 
+    /**
+     * @brief Clear hop bit at given distance
+     * @param dist Distance from home
+     */
     void clear_hop(size_t dist) {
         hop_info_.reset(dist);
     }
 
+    /**
+     * @brief Get const reference to hop info bitset
+     * @return Const reference to internal hop bitset
+     */
     [[nodiscard]] const std::bitset<MAX_DIST>& hop_info() const {
         return hop_info_;
     }
 
+    /**
+     * @brief Get mutable reference to hop info bitset
+     * @return Mutable reference to internal hop bitset
+     */
     std::bitset<MAX_DIST>& hop_info() {
         return const_cast<std::bitset<MAX_DIST>&>(
             static_cast<const self_t*>(this)->hop_info());
     }
 };
 
+/**
+ * @brief Iterator for traversing occupied cells
+ * @tparam Ref reference type returned by operator*
+ * @tparam Ptr pointer type returned by operator->
+ */
 template <typename T, typename hash_func, typename Alloc>
 template <typename Ref, typename Ptr>
 class hashing<T, hash_func, Alloc>::hashing_iterator {
@@ -432,68 +602,190 @@ private:
     using self_t = hashing_iterator<Ref, Ptr>;
 
 public:
+    /**
+     * @brief Construct a null iterator.
+     */
     hashing_iterator() : begin_(nullptr), end_(nullptr), cur_(nullptr) {}
+
+    /**
+     * @brief Construct from a range and current cell.
+     *
+     * @param begin Pointer to the first cell in the table.
+     * @param end Pointer one past the last cell in the table.
+     * @param cur Pointer to the current cell.
+     */
     explicit hashing_iterator(Cell* begin, Cell* end, Cell* cur)
         : begin_(begin), end_(end), cur_(cur) {}
+
+    /**
+     * @brief Copy-construct from another iterator.
+     *
+     * @param rhs Source iterator.
+     */
     hashing_iterator(const self_t& rhs) = default;
 
+    /**
+     * @brief Construct from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     hashing_iterator(const Iter& rhs)
         : begin_(rhs.begin_), end_(rhs.end_), cur_(rhs.cell_) {}
 
+    /**
+     * @brief Move-construct from another iterator.
+     *
+     * @param rhs Source iterator.
+     */
     hashing_iterator(self_t&& rhs) noexcept = default;
 
+    /**
+     * @brief Move-construct from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     hashing_iterator(Iter&& rhs) noexcept
         : begin_(rhs.begin_), end_(rhs.end_), cur_(rhs.cell_) {}
 
+    /**
+     * @brief Destroy the iterator.
+     */
     ~hashing_iterator() = default;
 
+    /**
+     * @brief Copy-assign from another iterator.
+     *
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     self_t& operator=(const self_t& rhs) = default;
+
+    /**
+     * @brief Move-assign from another iterator.
+     *
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     self_t& operator=(self_t&& rhs) noexcept = default;
+
+    /**
+     * @brief Assign from a compatible iterator.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param rhs Source iterator.
+     * @return Reference to this iterator.
+     */
     template <normal_to_const<self_t, iterator, const_iterator> Iter>
     self_t& operator=(const Iter& rhs) {
         cur_ = rhs.cell_;
+        return *this;
     }
 
+    /**
+     * @brief Dereference the iterator.
+     *
+     * @return Reference to the element.
+     */
     Ref operator*() const {
         return cur_->element();
     }
 
+    /**
+     * @brief Access the element through a pointer-like interface.
+     *
+     * @return Pointer to the element.
+     */
     Ptr operator->() const {
         return &cur_->element();
     }
 
+    /**
+     * @brief Compare two iterators for equality.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if the iterators are equal.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator==(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ == rhs.cur_;
     }
 
+    /**
+     * @brief Compare two iterators for inequality.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if the iterators are not equal.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator!=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ != rhs.cur_;
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is ordered after rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator>(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ > rhs.cur_;
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is ordered before rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ < rhs.cur_;
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is not ordered before rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator>=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ >= rhs.cur_;
     }
 
+    /**
+     * @brief Compare two iterators for ordering.
+     *
+     * @tparam Iter Compatible iterator type.
+     * @param lhs Left iterator.
+     * @param rhs Right iterator.
+     * @return True if lhs is not ordered after rhs.
+     */
     template <is_one_of<iterator, const_iterator> Iter>
     friend bool operator<=(const self_t& lhs, const Iter& rhs) {
         return lhs.cur_ <= rhs.cur_;
     }
 
+    /**
+     * @brief Advance to the next occupied cell.
+     *
+     * @return Reference to this iterator.
+     */
     self_t& operator++() {
         ++cur_;
         while (cur_ < end_ && !cur_->is_occupied()) {
@@ -502,12 +794,23 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Post-increment to the next occupied cell.
+     *
+     * @param unused Placeholder parameter for postfix form.
+     * @return Iterator value before increment.
+     */
     self_t operator++(int) {
         self_t tmp(*this);
         ++(*this);
         return tmp;
     }
 
+    /**
+     * @brief Move to the previous occupied cell.
+     *
+     * @return Reference to this iterator.
+     */
     self_t& operator--() {
         --cur_;
         while (cur_ >= begin_ && !cur_->is_occupied()) {
@@ -516,6 +819,12 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Post-decrement to the previous occupied cell.
+     *
+     * @param unused Placeholder parameter for postfix form.
+     * @return Iterator value before decrement.
+     */
     self_t operator--(int) {
         self_t tmp(*this);
         --(*this);

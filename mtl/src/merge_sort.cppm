@@ -13,7 +13,12 @@ using std::tuple;
 
 export namespace mtl {
 
-/* merge sort the sequence with range [begin, end) in ascending order in place*/
+/**
+ * @brief Sort the range [begin, end) in ascending order in place.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ */
 template <Iterator Iter>
 void inplace_mergesort(Iter begin, Iter end) {
     if (begin != end && begin != advance(end, -1)) {
@@ -24,6 +29,12 @@ void inplace_mergesort(Iter begin, Iter end) {
     }
 }
 
+/**
+ * @brief Sort the range [begin, end) in ascending order using iterative merge sort.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ */
 template <Iterator Iter>
 void inplace_mergesort_iterative(Iter begin, Iter end) {
     using itr3 = tuple<Iter, Iter, Iter>;
@@ -49,6 +60,12 @@ void inplace_mergesort_iterative(Iter begin, Iter end) {
     }
 }
 
+/**
+ * @brief Sort the range [begin, end) in ascending order using parallel merge sort.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ */
 template <Iterator Iter>
 void parallel_inplace_mergesort(Iter begin, Iter end) {
     if (begin != end && begin != advance(end, -1)) {
@@ -68,8 +85,13 @@ void parallel_inplace_mergesort(Iter begin, Iter end) {
     }
 }
 
-/* merge two sorted sequences [begin, mid) and [mid, end) in place in ascending
- * order. a temporary buffer will be requested by new. */
+/**
+ * @brief Merge sorted ranges [begin, mid) and [mid, end) in place.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param mid Middle iterator separating the two ranges.
+ * @param end Range end iterator.
+ */
 template <Iterator Iter>
 void inplace_merge(Iter begin, Iter mid, Iter end) noexcept {
     using T = typename std::remove_reference_t<decltype(*begin)>;

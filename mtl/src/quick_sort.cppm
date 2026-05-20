@@ -7,18 +7,31 @@ import std;
 
 export namespace mtl {
 
-/* sort the array in place in ascending order (it will change the array
- * directly) the ranges is [begin, end) */
+/**
+ * @brief Sort the range [begin, end) in ascending order in place.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ */
 template <Iterator Iter>
 void inplace_quicksort(Iter begin, Iter end);
 
-/* perform partition for the sequence in range [begin, end)
- * all the elements smaller than the pivot are on the left side and thus the
- * ones greater on the right side. return the iterator to the first element of
- * the second group (the pivot) */
+/**
+ * @brief Partition the range [begin, end) around a pivot.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ * @return Iterator to the pivot position after partitioning.
+ */
 template <Iterator Iter>
 Iter partition(Iter begin, Iter end) noexcept;
 
+/**
+ * @brief Sort the range [begin, end) using recursive quicksort.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ */
 template <Iterator Iter>
 void inplace_quicksort(Iter begin, Iter end) {
     if (begin != end) {
@@ -28,6 +41,12 @@ void inplace_quicksort(Iter begin, Iter end) {
     }
 }
 
+/**
+ * @brief Sort the range [begin, end) using iterative quicksort.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ */
 template <Iterator Iter>
 void inplace_quicksort_iterative(Iter begin, Iter end) {
     stack<pair<Iter, Iter>> st;
@@ -44,6 +63,13 @@ void inplace_quicksort_iterative(Iter begin, Iter end) {
     }
 }
 
+/**
+ * @brief Partition the range [begin, end) by moving elements around a pivot.
+ * @tparam Iter Iterator type.
+ * @param begin Range start iterator.
+ * @param end Range end iterator.
+ * @return Iterator to the pivot position after partitioning.
+ */
 template <Iterator Iter>
 Iter partition(Iter begin, Iter end) noexcept {
     // the pivot
