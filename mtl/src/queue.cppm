@@ -5,7 +5,7 @@ import mtl.deque;
 
 import std;
 
-namespace mtl {
+export namespace mtl {
 /**
  * @brief FIFO queue adapter built on deque.
  * @tparam T Element type.

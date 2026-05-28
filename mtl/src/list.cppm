@@ -6,6 +6,50 @@ import std;
 export namespace mtl {
 
 /**
+ * @brief A node in a doubly-linked list exposing element and pointers.
+ *
+ * This type is used by both mtl::list and the thread-safe queue to
+ * build linked data structures.
+ *
+ * @tparam T Element type stored in the node.
+ */
+template <typename T>
+struct list_node {
+    T elem_;
+    list_node* prev_;
+    list_node* next_;
+
+    list_node() : elem_(), prev_(nullptr), next_(nullptr) {}
+
+    template <typename V>
+    list_node(V&& elem, list_node* prev, list_node* next) noexcept
+        : elem_(std::forward<V>(elem)), prev_(prev), next_(next) {}
+
+    list_node(const list_node&) = delete;
+    list_node(list_node&&) = delete;
+    list_node& operator=(const list_node&) = delete;
+    list_node& operator=(list_node&&) = delete;
+
+    ~list_node() noexcept = default;
+
+    [[nodiscard]] const T& elem() const {
+        return elem_;
+    }
+
+    T& elem() {
+        return const_cast<T&>(static_cast<const list_node*>(this)->elem());
+    }
+
+    [[nodiscard]] bool is_tail() const {
+        return next_ == nullptr;
+    }
+
+    [[nodiscard]] bool is_head() const {
+        return prev_ == nullptr;
+    }
+};
+
+/**
  * @brief The list ADT: a doubly-linked list container.
  *
  * @tparam T     Element type stored in the list.
@@ -17,21 +61,14 @@ public:
     using self_t = list<T, Alloc>;
 
 private:
-    /**
-     * @brief Forward-declaration of internal Node type representing list nodes.
-     *
-     * The full definition appears later. This forward declaration is used for
-     * pointers and iterator implementations.
-     */
-    class Node;
-    using NdPtr = Node*;
+    using NdPtr = list_node<T>*;
 
     /**
      * @brief Forward-declaration of the nested iterator template.
      *
      * @tparam Ref Reference type returned by dereference (e.g. T& or const T&).
-     * @tparam Ptr  Pointer type returned by operator-> (e.g. Node* or const
-     * Node*).
+     * @tparam Ptr  Pointer type returned by operator-> (e.g. list_node<T>* or
+     * const list_node<T>*).
      */
     template <typename Ref, typename Ptr>
     class list_iterator;
@@ -40,16 +77,16 @@ public:
     /**
      * @brief Const iterator type for the list.
      */
-    using const_iterator = list_iterator<const T&, const Node*>;
+    using const_iterator = list_iterator<const T&, const list_node<T>*>;
 
     /**
      * @brief Mutable iterator type for the list.
      */
-    using iterator = list_iterator<T&, Node*>;
+    using iterator = list_iterator<T&, list_node<T>*>;
 
 private:
     using NodeAlloc =
-        typename std::allocator_traits<Alloc>::template rebind_alloc<Node>;
+        typename std::allocator_traits<Alloc>::template rebind_alloc<list_node<T>>;
     NodeAlloc allocator_;
 
     NdPtr head_ {nullptr};
@@ -475,114 +512,6 @@ typename list<T, Alloc>::iterator list<T, Alloc>::remove(iterator start,
     destroy_node(start.node_);
     return stop;
 }
-
-/**
- * @brief Internal node type for list storing element and links.
- *
- * Represents one node in the doubly-linked list. Holds the element and
- * pointers to previous and next nodes. This type is private to the list
- * implementation.
- */
-template <typename T, typename Alloc>
-class list<T, Alloc>::Node {
-public:
-    /**
-     * @brief Self type alias for Node.
-     */
-    using self_t = Node;
-
-private:
-    T elem_;
-    NdPtr prev_;
-    NdPtr next_;
-
-public:
-    /**
-     * @brief Construct a default node with empty element and null links.
-     */
-    Node() : elem_(), prev_(nullptr), next_(nullptr) {}
-
-    /**
-     * @brief Construct a node with element and link pointers.
-     *
-     * @tparam V Value type forwarded to element construction.
-     * @param elem Element value to store.
-     * @param prev Pointer to previous node.
-     * @param next Pointer to next node.
-     */
-    template <typename V>
-    Node(V&& elem, self_t* prev, self_t* next) noexcept
-        : elem_(std::forward<V>(elem)), prev_(prev), next_(next) {}
-
-    /**
-     * @brief Copy construction is disabled.
-     */
-    Node(const self_t& node) = delete;
-
-    /**
-     * @brief Move construction is disabled.
-     */
-    Node(self_t&& node) = delete;
-
-    /**
-     * @brief Copy assignment is disabled.
-     *
-     * @param node Source node.
-     * @return Reference to this node.
-     */
-    self_t& operator=(const self_t& node) = delete;
-
-    /**
-     * @brief Move assignment is disabled.
-     *
-     * @param node Source node.
-     * @return Reference to this node.
-     */
-    self_t& operator=(self_t&& node) = delete;
-
-    /**
-     * @brief Destroy the node.
-     */
-    ~Node() noexcept = default;
-
-    /**
-     * @brief Access the stored element (const).
-     *
-     * @return Const reference to the element.
-     */
-    const T& elem() const {
-        return elem_;
-    }
-
-    /**
-     * @brief Access the stored element (mutable).
-     *
-     * @return Reference to the element.
-     */
-    T& elem() {
-        return const_cast<T&>(static_cast<const self_t*>(this)->elem());
-    }
-
-    /**
-     * @brief Check whether this node is the tail sentinel.
-     *
-     * @return True if this node is the tail.
-     */
-    [[nodiscard]] bool is_tail() const {
-        return next_ == nullptr;
-    }
-
-    /**
-     * @brief Check whether this node is the head sentinel.
-     *
-     * @return True if this node is the head.
-     */
-    [[nodiscard]] bool is_head() const {
-        return prev_ == nullptr;
-    }
-
-    friend class list<T, Alloc>;
-};
 
 /**
  * @brief Iterator for the list container.
