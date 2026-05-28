@@ -9,15 +9,17 @@ export namespace mtl {
 /**
  * @brief an implementation of Hopscotch Hashing
  *
- * @tparam T the value type
+ * @tparam T         the value type
  * @tparam hash_func the functor to hash the value
- * @tparam Alloc the allocator type
+ * @tparam KeyEqual  the functor to compare keys for equality
+ * @tparam Alloc     the allocator type
  */
 template <typename T, typename hash_func = std::hash<T>,
+          typename KeyEqual = std::equal_to<T>,
           typename Alloc = std::allocator<T>>
 class hashing {
 public:
-    using self_t = hashing<T, hash_func, Alloc>;
+    using self_t = hashing<T, hash_func, KeyEqual, Alloc>;
 
 private:
     /**
@@ -50,6 +52,8 @@ private:
     using CellAlloc =
         typename std::allocator_traits<Alloc>::template rebind_alloc<Cell>;
     CellAlloc allocator_;
+
+    KeyEqual key_equal_;
 
     Cell* data_;
 
@@ -186,7 +190,9 @@ public:
     hashing(self_t&& rhs) noexcept
         : data_(rhs.data_), size_(rhs.size_), max_size_(rhs.max_size_) {
         rhs.data_ = nullptr;
-        rhs.clear();
+        rhs.size_ = 0;
+        rhs.max_size_ = 0;
+        rhs.init(hashing::DEFAULT_SIZE);
     }
 
     /**
@@ -255,6 +261,14 @@ public:
     bool contains(const T& elem) const;
 
     /**
+     * @brief Find an element in the table.
+     * @param elem Element to find.
+     * @return Iterator to element or end() if not found.
+     */
+    iterator find(const T& elem);
+    const_iterator find(const T& elem) const;
+
+    /**
      * @brief Clear all elements and reset to default capacity.
      */
     void clear() {
@@ -267,7 +281,11 @@ public:
      * @return Const iterator to first occupied element.
      */
     const_iterator begin() const {
-        return const_iterator(data_, data_ + max_size_, data_);
+        const_iterator it(data_, data_ + max_size_, data_);
+        if (it != end() && !data_->is_occupied()) {
+            ++it;
+        }
+        return it;
     }
 
     /**
@@ -299,7 +317,11 @@ public:
      * @return Iterator to first occupied element.
      */
     iterator begin() {
-        return iterator(data_, data_ + max_size_, data_);
+        iterator it(data_, data_ + max_size_, data_);
+        if (it != end() && !data_->is_occupied()) {
+            ++it;
+        }
+        return it;
     }
 
     /**
@@ -311,23 +333,23 @@ public:
     }
 };
 
-template <typename T, typename hash_func, typename Alloc>
-hashing<T, hash_func, Alloc>::hashing() {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+hashing<T, hash_func, KeyEqual, Alloc>::hashing() {
     init(DEFAULT_SIZE);
 }
 
-template <typename T, typename hash_func, typename Alloc>
-hashing<T, hash_func, Alloc>::hashing(size_t init_max_size) {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+hashing<T, hash_func, KeyEqual, Alloc>::hashing(size_t init_max_size) {
     if (!is_prime(init_max_size)) {
         init_max_size = next_prime(init_max_size);
     }
     init(init_max_size > DEFAULT_SIZE ? init_max_size : DEFAULT_SIZE);
 }
 
-template <typename T, typename hash_func, typename Alloc>
-size_t hashing<T, hash_func, Alloc>::find_pos(const T& elem) const {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+size_t hashing<T, hash_func, KeyEqual, Alloc>::find_pos(const T& elem) const {
     size_t pos = hash_value(elem);
-    while (data_[pos].is_occupied() && data_[pos].element() != elem) {
+    while (data_[pos].is_occupied() && !key_equal_(data_[pos].element(), elem)) {
         ++pos;
         if (pos == max_size_) {
             pos = 0;
@@ -336,8 +358,8 @@ size_t hashing<T, hash_func, Alloc>::find_pos(const T& elem) const {
     return pos;
 }
 
-template <typename T, typename hash_func, typename Alloc>
-hashing<T, hash_func, Alloc>::hashing(const self_t& rhs) {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+hashing<T, hash_func, KeyEqual, Alloc>::hashing(const self_t& rhs) {
     init(rhs.max_size_);
     for (size_t i = 0; i < rhs.max_size_; ++i) {
         if (rhs.data_[i].is_occupied()) {
@@ -346,9 +368,9 @@ hashing<T, hash_func, Alloc>::hashing(const self_t& rhs) {
     }
 }
 
-template <typename T, typename hash_func, typename Alloc>
-hashing<T, hash_func, Alloc>&
-hashing<T, hash_func, Alloc>::operator=(const self_t& rhs) {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+hashing<T, hash_func, KeyEqual, Alloc>&
+hashing<T, hash_func, KeyEqual, Alloc>::operator=(const self_t& rhs) {
     if (this == &rhs) {
         return *this;
     }
@@ -362,8 +384,8 @@ hashing<T, hash_func, Alloc>::operator=(const self_t& rhs) {
     return *this;
 }
 
-template <typename T, typename hash_func, typename Alloc>
-size_t hashing<T, hash_func, Alloc>::move_elem(size_t pos) {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+size_t hashing<T, hash_func, KeyEqual, Alloc>::move_elem(size_t pos) {
     size_t start = 0;
     if (pos < MAX_DIST - 1) {
         start = max_size_ + pos - MAX_DIST + 1;
@@ -387,8 +409,8 @@ size_t hashing<T, hash_func, Alloc>::move_elem(size_t pos) {
     return max_size_;
 }
 
-template <typename T, typename hash_func, typename Alloc>
-bool hashing<T, hash_func, Alloc>::insert(const T& elem) {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+bool hashing<T, hash_func, KeyEqual, Alloc>::insert(const T& elem) {
     if (contains(elem)) {
         return false;
     }
@@ -415,13 +437,13 @@ bool hashing<T, hash_func, Alloc>::insert(const T& elem) {
     return true;
 }
 
-template <typename T, typename hash_func, typename Alloc>
-bool hashing<T, hash_func, Alloc>::remove(const T& elem) {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+bool hashing<T, hash_func, KeyEqual, Alloc>::remove(const T& elem) {
     size_t hash_val = hash_value(elem);
     auto& cell = data_[hash_val];
     for (int i = 0; i < MAX_DIST; ++i) {
         size_t idx = (hash_val + i) % max_size_;
-        if (cell.get_hop(i) && data_[idx].element() == elem) {
+        if (cell.get_hop(i) && key_equal_(data_[idx].element(), elem)) {
             cell.clear_hop(i);
             data_[idx].set_unoccupied();
             --size_;
@@ -431,27 +453,55 @@ bool hashing<T, hash_func, Alloc>::remove(const T& elem) {
     return false;
 }
 
-template <typename T, typename hash_func, typename Alloc>
-bool hashing<T, hash_func, Alloc>::contains(const T& elem) const {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+bool hashing<T, hash_func, KeyEqual, Alloc>::contains(const T& elem) const {
     size_t hash_val = hash_value(elem);
     const auto& cell = data_[hash_val];
     for (int i = 0; i < MAX_DIST; ++i) {
         size_t idx = (hash_val + i) % max_size_;
-        if (cell.get_hop(i) && data_[idx].element() == elem) {
+        if (cell.get_hop(i) && key_equal_(data_[idx].element(), elem)) {
             return true;
         }
     }
     return false;
 }
 
-template <typename T, typename hash_func, typename Alloc>
-void hashing<T, hash_func, Alloc>::expand() {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+typename hashing<T, hash_func, KeyEqual, Alloc>::iterator
+hashing<T, hash_func, KeyEqual, Alloc>::find(const T& elem) {
+    size_t hash_val = hash_value(elem);
+    auto& cell = data_[hash_val];
+    for (int i = 0; i < MAX_DIST; ++i) {
+        size_t idx = (hash_val + i) % max_size_;
+        if (cell.get_hop(i) && key_equal_(data_[idx].element(), elem)) {
+            return iterator(data_, data_ + max_size_, data_ + idx);
+        }
+    }
+    return end();
+}
+
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+typename hashing<T, hash_func, KeyEqual, Alloc>::const_iterator
+hashing<T, hash_func, KeyEqual, Alloc>::find(const T& elem) const {
+    size_t hash_val = hash_value(elem);
+    const auto& cell = data_[hash_val];
+    for (int i = 0; i < MAX_DIST; ++i) {
+        size_t idx = (hash_val + i) % max_size_;
+        if (cell.get_hop(i) && key_equal_(data_[idx].element(), elem)) {
+            return const_iterator(data_, data_ + max_size_, data_ + idx);
+        }
+    }
+    return end();
+}
+
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+void hashing<T, hash_func, KeyEqual, Alloc>::expand() {
     size_t new_size = get_next_size(max_size_);
     rehash(new_size);
 }
 
-template <typename T, typename hash_func, typename Alloc>
-void hashing<T, hash_func, Alloc>::rehash(size_t new_capacity) {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+void hashing<T, hash_func, KeyEqual, Alloc>::rehash(size_t new_capacity) {
     auto old_data = data_;
     size_t old_max_size = max_size_;
     data_ = allocate_memory(new_capacity);
@@ -473,8 +523,8 @@ void hashing<T, hash_func, Alloc>::rehash(size_t new_capacity) {
 /**
  * @brief Storage cell used by the hashing table
  */
-template <typename T, typename hash_func, typename Alloc>
-class hashing<T, hash_func, Alloc>::Cell {
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
+class hashing<T, hash_func, KeyEqual, Alloc>::Cell {
 public:
     using self_t = Cell;
 
@@ -592,9 +642,9 @@ public:
  * @tparam Ref reference type returned by operator*
  * @tparam Ptr pointer type returned by operator->
  */
-template <typename T, typename hash_func, typename Alloc>
+template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
 template <typename Ref, typename Ptr>
-class hashing<T, hash_func, Alloc>::hashing_iterator {
+class hashing<T, hash_func, KeyEqual, Alloc>::hashing_iterator {
 private:
     Cell* begin_;
     Cell* end_;

@@ -12,13 +12,16 @@ export namespace mtl {
 /**
  * @brief Self-balancing binary search tree (AVL) container.
  *
- * @tparam T Type of elements stored in the tree.
- * @tparam Alloc Allocator type used to allocate nodes.
+ * @tparam T       Type of elements stored in the tree.
+ * @tparam Compare Comparator type (strict weak ordering). Defaults to std::less<T>.
+ *                 Must be default-constructible and stateless is recommended.
+ * @tparam Alloc   Allocator type used to allocate nodes.
  */
-template <typename T, typename Alloc = std::allocator<T>>
+template <typename T, typename Compare = std::less<T>,
+          typename Alloc = std::allocator<T>>
 class avl_tree {
 public:
-    using self_t = avl_tree<T, Alloc>;
+    using self_t = avl_tree<T, Compare, Alloc>;
 
 private:
     // The iterator class
@@ -54,6 +57,7 @@ private:
     size_t size_ {};
     // The maximum difference between the heights of left and right children
     static const int ALLOWED_IMBALANCE = 1;
+    Compare compare_;
 
     /**
      * @brief Return the height of a node or -1 for null.
@@ -362,15 +366,15 @@ public:
     }
 };
 
-template <typename T, typename Alloc>
-avl_tree<T, Alloc>::avl_tree() : root_(nullptr) {}
+template <typename T, typename Compare, typename Alloc>
+avl_tree<T, Compare, Alloc>::avl_tree() : root_(nullptr) {}
 
-template <typename T, typename Alloc>
-avl_tree<T, Alloc>::avl_tree(const self_t& rhs)
+template <typename T, typename Compare, typename Alloc>
+avl_tree<T, Compare, Alloc>::avl_tree(const self_t& rhs)
     : root_(copy_node(rhs.root_)), size_(rhs.size_) {}
 
-template <typename T, typename Alloc>
-avl_tree<T, Alloc>::self_t& avl_tree<T, Alloc>::operator=(const self_t& rhs) {
+template <typename T, typename Compare, typename Alloc>
+avl_tree<T, Compare, Alloc>::self_t& avl_tree<T, Compare, Alloc>::operator=(const self_t& rhs) {
     if (&rhs == this) {
         return *this;
     }
@@ -380,9 +384,9 @@ avl_tree<T, Alloc>::self_t& avl_tree<T, Alloc>::operator=(const self_t& rhs) {
     return *this;
 }
 
-template <typename T, typename Alloc>
-avl_tree<T, Alloc>::self_t&
-avl_tree<T, Alloc>::operator=(self_t&& rhs) noexcept {
+template <typename T, typename Compare, typename Alloc>
+avl_tree<T, Compare, Alloc>::self_t&
+avl_tree<T, Compare, Alloc>::operator=(self_t&& rhs) noexcept {
     if (&rhs == this) {
         return *this;
     }
@@ -394,32 +398,32 @@ avl_tree<T, Alloc>::operator=(self_t&& rhs) noexcept {
     return *this;
 }
 
-template <typename T, typename Alloc>
-avl_tree<T, Alloc>::avl_tree(self_t&& rhs) noexcept
+template <typename T, typename Compare, typename Alloc>
+avl_tree<T, Compare, Alloc>::avl_tree(self_t&& rhs) noexcept
     : root_(rhs.root_), size_(rhs.size_) {
     rhs.root_ = nullptr;
     rhs.size_ = 0;
 }
 
-template <typename T, typename Alloc>
-avl_tree<T, Alloc>::~avl_tree() noexcept {
+template <typename T, typename Compare, typename Alloc>
+avl_tree<T, Compare, Alloc>::~avl_tree() noexcept {
     deallocate_node(root_);
 }
 
-template <typename T, typename Alloc>
-bool avl_tree<T, Alloc>::contain(const T& elem) const {
+template <typename T, typename Compare, typename Alloc>
+bool avl_tree<T, Compare, Alloc>::contain(const T& elem) const {
     if (this->empty()) {
         return false;
     }
     NdPtr tmp = root_;
     while (true) {
-        if (elem > tmp->element()) {
+        if (compare_(tmp->element(), elem)) {
             if (tmp->has_right()) {
                 tmp = tmp->right();
             } else {
                 return false;
             }
-        } else if (elem < tmp->element()) {
+        } else if (compare_(elem, tmp->element())) {
             if (tmp->has_left()) {
                 tmp = tmp->left();
             } else {
@@ -431,8 +435,8 @@ bool avl_tree<T, Alloc>::contain(const T& elem) const {
     }
 }
 
-template <typename T, typename Alloc>
-typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::copy_node(NdPtr node) {
+template <typename T, typename Compare, typename Alloc>
+typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::copy_node(NdPtr node) {
     if (node == nullptr) {
         return nullptr;
     }
@@ -452,8 +456,8 @@ typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::copy_node(NdPtr node) {
     return res;
 }
 
-template <typename T, typename Alloc>
-typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_max(NdPtr node) {
+template <typename T, typename Compare, typename Alloc>
+typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::find_max(NdPtr node) {
     if (node == nullptr) {
         return node;
     }
@@ -464,8 +468,8 @@ typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_max(NdPtr node) {
     return node;
 }
 
-template <typename T, typename Alloc>
-typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_min(NdPtr node) {
+template <typename T, typename Compare, typename Alloc>
+typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::find_min(NdPtr node) {
     if (node == nullptr) {
         return node;
     }
@@ -476,8 +480,8 @@ typename avl_tree<T, Alloc>::NdPtr avl_tree<T, Alloc>::find_min(NdPtr node) {
     return node;
 }
 
-template <typename T, typename Alloc>
-void avl_tree<T, Alloc>::rotate_left(NdPtr node) {
+template <typename T, typename Compare, typename Alloc>
+void avl_tree<T, Compare, Alloc>::rotate_left(NdPtr node) {
     NdPtr left = node->left_;
     NdPtr left_rg = left->right_;
     NdPtr par = node->parent_;
@@ -503,8 +507,8 @@ void avl_tree<T, Alloc>::rotate_left(NdPtr node) {
     left->height_ = calc_height(left);
 }
 
-template <typename T, typename Alloc>
-void avl_tree<T, Alloc>::rotate_right(NdPtr node) {
+template <typename T, typename Compare, typename Alloc>
+void avl_tree<T, Compare, Alloc>::rotate_right(NdPtr node) {
     NdPtr right = node->right_;
     NdPtr right_lf = right->left_;
     NdPtr par = node->parent_;
@@ -530,8 +534,8 @@ void avl_tree<T, Alloc>::rotate_right(NdPtr node) {
     right->height_ = calc_height(right);
 }
 
-template <typename T, typename Alloc>
-void avl_tree<T, Alloc>::update(NdPtr node) {
+template <typename T, typename Compare, typename Alloc>
+void avl_tree<T, Compare, Alloc>::update(NdPtr node) {
     while (true) {
         if (abs(height(node->left_) - height(node->right_)) >
             ALLOWED_IMBALANCE) {
@@ -560,10 +564,10 @@ void avl_tree<T, Alloc>::update(NdPtr node) {
     }
 }
 
-template <typename T, typename Alloc>
+template <typename T, typename Compare, typename Alloc>
 template <typename V>
-typename avl_tree<T, Alloc>::iterator
-avl_tree<T, Alloc>::insert(V&& elem) noexcept {
+typename avl_tree<T, Compare, Alloc>::iterator
+avl_tree<T, Compare, Alloc>::insert(V&& elem) noexcept {
     if (!root_) {
         root_ = allocate_node(std::forward<V>(elem), nullptr, nullptr, nullptr);
         ++size_;
@@ -573,11 +577,11 @@ avl_tree<T, Alloc>::insert(V&& elem) noexcept {
     NdPtr node = find_node(elem);
     NdPtr res = nullptr;
 
-    if (elem == node->element()) {
+    if (!compare_(elem, node->element()) && !compare_(node->element(), elem)) {
         return iterator(node);
     }
     res = allocate_node(std::forward<V>(elem), node, nullptr, nullptr);
-    if (elem > node->element()) {
+    if (compare_(node->element(), elem)) {
         node->right_ = res;
     } else {
         node->left_ = res;
@@ -587,8 +591,8 @@ avl_tree<T, Alloc>::insert(V&& elem) noexcept {
     return iterator(res);
 }
 
-template <typename T, typename Alloc>
-void avl_tree<T, Alloc>::remove_node(NdPtr node) {
+template <typename T, typename Compare, typename Alloc>
+void avl_tree<T, Compare, Alloc>::remove_node(NdPtr node) {
     if (node == nullptr) {
         return;
     }
@@ -654,15 +658,15 @@ void avl_tree<T, Alloc>::remove_node(NdPtr node) {
     }
 }
 
-template <typename T, typename Alloc>
-int avl_tree<T, Alloc>::remove(const T& elem) noexcept {
+template <typename T, typename Compare, typename Alloc>
+int avl_tree<T, Compare, Alloc>::remove(const T& elem) noexcept {
     int res = 0;
     if (root_ == nullptr) {
         return res;
     }
 
     NdPtr node = find_node(elem);
-    if (node->element() == elem) {
+    if (!compare_(node->element(), elem) && !compare_(elem, node->element())) {
         remove_node(node);
         --size_;
         res = 1;
@@ -670,29 +674,33 @@ int avl_tree<T, Alloc>::remove(const T& elem) noexcept {
     return res;
 }
 
-template <typename T, typename Alloc>
-typename avl_tree<T, Alloc>::iterator
-avl_tree<T, Alloc>::remove(iterator itr) noexcept {
+template <typename T, typename Compare, typename Alloc>
+typename avl_tree<T, Compare, Alloc>::iterator
+avl_tree<T, Compare, Alloc>::remove(iterator itr) noexcept {
     auto res = itr++;
     if (res.node()) {
+        bool has_two = res.node()->has_right() && res.node()->has_left();
         remove_node(res.node());
         --size_;
+        if (has_two) {
+            return res;  // res was replaced with successor, still valid
+        }
     }
     return itr;
 }
 
-template <typename T, typename Alloc>
-typename avl_tree<T, Alloc>::NdPtr
-avl_tree<T, Alloc>::find_node(const T& elem) const {
+template <typename T, typename Compare, typename Alloc>
+typename avl_tree<T, Compare, Alloc>::NdPtr
+avl_tree<T, Compare, Alloc>::find_node(const T& elem) const {
     if (root_ == nullptr) {
         return nullptr;
     }
 
     NdPtr node = root_;
     while (true) {
-        if (elem > node->element() && node->has_right()) {
+        if (compare_(node->element(), elem) && node->has_right()) {
             node = node->right_;
-        } else if (elem < node->element() && node->has_left()) {
+        } else if (compare_(elem, node->element()) && node->has_left()) {
             node = node->left_;
         } else {
             break;
@@ -701,20 +709,20 @@ avl_tree<T, Alloc>::find_node(const T& elem) const {
     return node;
 }
 
-template <typename T, typename Alloc>
-typename avl_tree<T, Alloc>::const_iterator
-avl_tree<T, Alloc>::find(const T& elem) const {
+template <typename T, typename Compare, typename Alloc>
+typename avl_tree<T, Compare, Alloc>::const_iterator
+avl_tree<T, Compare, Alloc>::find(const T& elem) const {
     NdPtr res = find_node(elem);
-    if (!res || res->element() != elem) {
+    if (!res || compare_(res->element(), elem) || compare_(elem, res->element())) {
         return const_iterator();
     }
     return const_iterator(res);
 }
 
-template <typename T, typename Alloc>
-typename avl_tree<T, Alloc>::iterator avl_tree<T, Alloc>::find(const T& elem) {
+template <typename T, typename Compare, typename Alloc>
+typename avl_tree<T, Compare, Alloc>::iterator avl_tree<T, Compare, Alloc>::find(const T& elem) {
     NdPtr res = find_node(elem);
-    if (!res || res->element() != elem) {
+    if (!res || compare_(res->element(), elem) || compare_(elem, res->element())) {
         return iterator();
     }
     return iterator(res);
@@ -726,8 +734,8 @@ typename avl_tree<T, Alloc>::iterator avl_tree<T, Alloc>::find(const T& elem) {
  * @tparam T element type
  * @tparam Alloc allocator type
  */
-template <typename T, typename Alloc>
-class avl_tree<T, Alloc>::Node {
+template <typename T, typename Compare, typename Alloc>
+class avl_tree<T, Compare, Alloc>::Node {
 private:
     T element_;
     // its parent node
@@ -854,14 +862,14 @@ public:
         return bool(right_);
     }
 
-    friend class avl_tree<T, Alloc>;
+    friend class avl_tree<T, Compare, Alloc>;
     template <typename Ref, typename Ptr>
-    friend class avl_tree<T, Alloc>::avl_iterator;
+    friend class avl_tree<T, Compare, Alloc>::avl_iterator;
 };
 
-template <typename T, typename Alloc>
+template <typename T, typename Compare, typename Alloc>
 template <typename Ref, typename Ptr>
-class avl_tree<T, Alloc>::avl_iterator {
+class avl_tree<T, Compare, Alloc>::avl_iterator {
 private:
     // the pointer to the node
     NdPtr node_;
@@ -1158,10 +1166,10 @@ public:
     }
 };
 
-template <typename T, typename Alloc>
+template <typename T, typename Compare, typename Alloc>
 template <typename Ref, typename Ptr>
-typename avl_tree<T, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
-avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator++() {
+typename avl_tree<T, Compare, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
+avl_tree<T, Compare, Alloc>::avl_iterator<Ref, Ptr>::operator++() {
     if (node_ == nullptr) {
         throw NullIterator();
     }
@@ -1178,10 +1186,10 @@ avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator++() {
     return *this;
 }
 
-template <typename T, typename Alloc>
+template <typename T, typename Compare, typename Alloc>
 template <typename Ref, typename Ptr>
-typename avl_tree<T, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
-avl_tree<T, Alloc>::avl_iterator<Ref, Ptr>::operator--() {
+typename avl_tree<T, Compare, Alloc>::template avl_iterator<Ref, Ptr>::self_t&
+avl_tree<T, Compare, Alloc>::avl_iterator<Ref, Ptr>::operator--() {
     if (node_ == nullptr) {
         throw NullIterator();
     }
