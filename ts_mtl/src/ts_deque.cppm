@@ -77,7 +77,8 @@ public:
     ts_deque(const self_t& rhs) {
         std::scoped_lock lock(rhs.head_mtx_, rhs.tail_mtx_);
         init_sentinels();
-        for (node_ptr src = rhs.head_->next_; src != rhs.tail_; src = src->next_) {
+        for (node_ptr src = rhs.head_->next_; src != rhs.tail_;
+             src = src->next_) {
             push_back_copy(src->elem());
         }
         size_.store(rhs.size_.load(std::memory_order_acquire),

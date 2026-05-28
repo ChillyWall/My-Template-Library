@@ -184,9 +184,11 @@ struct CaseInsensitiveHash {
 
 struct CaseInsensitiveEqual {
     bool operator()(const std::string& a, const std::string& b) const {
-        if (a.size() != b.size()) return false;
+        if (a.size() != b.size())
+            return false;
         for (size_t i = 0; i < a.size(); ++i) {
-            if (std::tolower(a[i]) != std::tolower(b[i])) return false;
+            if (std::tolower(a[i]) != std::tolower(b[i]))
+                return false;
         }
         return true;
     }

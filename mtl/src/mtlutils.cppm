@@ -5,7 +5,6 @@ import std;
 
 export namespace mtl {
 
-using std::move;
 using std::swap;
 
 /**
@@ -248,12 +247,13 @@ difference_t distance(Iter first, Iter last) {
  * @param begin Begin of source range.
  * @param end End of source range.
  * @param dest Begin of destination range.
- * @note The caller must ensure the destination has enough space; lengths are not checked.
+ * @note The caller must ensure the destination has enough space; lengths are
+ * not checked.
  */
 template <Iterator Iter1, Iterator Iter2>
 void move_ranges(Iter1 begin, Iter1 end, Iter2 dest) noexcept {
     while (begin != end) {
-        *(dest++) = move(*(begin++));
+        *(dest++) = std::move(*(begin++));
     }
 }
 

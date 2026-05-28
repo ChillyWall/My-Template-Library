@@ -36,21 +36,43 @@ public:
     self_t& operator=(const self_t& rhs) = default;
     self_t& operator=(self_t&& rhs) noexcept = default;
 
-    [[nodiscard]] bool empty() const { return table_.size() == 0; }
-    [[nodiscard]] size_t size() const { return table_.size(); }
-    void clear() { table_.clear(); }
+    [[nodiscard]] bool empty() const {
+        return table_.size() == 0;
+    }
+    [[nodiscard]] size_t size() const {
+        return table_.size();
+    }
+    void clear() {
+        table_.clear();
+    }
 
-    iterator begin() { return table_.begin(); }
-    const_iterator begin() const { return table_.begin(); }
-    const_iterator cbegin() const { return table_.cbegin(); }
+    iterator begin() {
+        return table_.begin();
+    }
+    const_iterator begin() const {
+        return table_.begin();
+    }
+    const_iterator cbegin() const {
+        return table_.cbegin();
+    }
 
-    iterator end() { return table_.end(); }
-    const_iterator end() const { return table_.end(); }
-    const_iterator cend() const { return table_.cend(); }
+    iterator end() {
+        return table_.end();
+    }
+    const_iterator end() const {
+        return table_.end();
+    }
+    const_iterator cend() const {
+        return table_.cend();
+    }
 
-    bool insert(const T& elem) { return table_.insert(elem); }
+    bool insert(const T& elem) {
+        return table_.insert(elem);
+    }
 
-    size_t erase(const T& elem) { return table_.remove(elem) ? 1 : 0; }
+    size_t erase(const T& elem) {
+        return table_.remove(elem) ? 1 : 0;
+    }
 
     bool erase(iterator itr) {
         if (itr != end()) {
@@ -59,10 +81,16 @@ public:
         return false;
     }
 
-    iterator find(const T& elem) { return table_.find(elem); }
-    const_iterator find(const T& elem) const { return table_.find(elem); }
+    iterator find(const T& elem) {
+        return table_.find(elem);
+    }
+    const_iterator find(const T& elem) const {
+        return table_.find(elem);
+    }
 
-    [[nodiscard]] bool contains(const T& elem) const { return table_.contains(elem); }
+    [[nodiscard]] bool contains(const T& elem) const {
+        return table_.contains(elem);
+    }
 };
 
 }  // namespace mtl

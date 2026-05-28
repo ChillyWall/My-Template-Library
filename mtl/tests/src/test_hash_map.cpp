@@ -165,8 +165,8 @@ TEST(HashMapTest, IterationCoversAllEntries) {
         sum_vals += it->second;
     }
     EXPECT_EQ(count, 3);
-    EXPECT_EQ(sum_keys, 6);   // 1 + 2 + 3
-    EXPECT_EQ(sum_vals, 600); // 100 + 200 + 300
+    EXPECT_EQ(sum_keys, 6);    // 1 + 2 + 3
+    EXPECT_EQ(sum_vals, 600);  // 100 + 200 + 300
 }
 
 TEST(HashMapTest, ModifyThroughIterator) {
@@ -229,16 +229,19 @@ TEST(HashMapTest, MoveAssignment) {
 struct CIHash {
     size_t operator()(const std::string& s) const {
         size_t h = 0;
-        for (char c : s) h = h * 31 + static_cast<size_t>(std::tolower(c));
+        for (char c : s)
+            h = h * 31 + static_cast<size_t>(std::tolower(c));
         return h;
     }
 };
 
 struct CIEqual {
     bool operator()(const std::string& a, const std::string& b) const {
-        if (a.size() != b.size()) return false;
+        if (a.size() != b.size())
+            return false;
         for (size_t i = 0; i < a.size(); ++i) {
-            if (std::tolower(a[i]) != std::tolower(b[i])) return false;
+            if (std::tolower(a[i]) != std::tolower(b[i]))
+                return false;
         }
         return true;
     }

@@ -349,7 +349,8 @@ hashing<T, hash_func, KeyEqual, Alloc>::hashing(size_t init_max_size) {
 template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
 size_t hashing<T, hash_func, KeyEqual, Alloc>::find_pos(const T& elem) const {
     size_t pos = hash_value(elem);
-    while (data_[pos].is_occupied() && !key_equal_(data_[pos].element(), elem)) {
+    while (data_[pos].is_occupied() &&
+           !key_equal_(data_[pos].element(), elem)) {
         ++pos;
         if (pos == max_size_) {
             pos = 0;

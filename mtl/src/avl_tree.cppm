@@ -13,8 +13,8 @@ export namespace mtl {
  * @brief Self-balancing binary search tree (AVL) container.
  *
  * @tparam T       Type of elements stored in the tree.
- * @tparam Compare Comparator type (strict weak ordering). Defaults to std::less<T>.
- *                 Must be default-constructible and stateless is recommended.
+ * @tparam Compare Comparator type (strict weak ordering). Defaults to
+ * std::less<T>. Must be default-constructible and stateless is recommended.
  * @tparam Alloc   Allocator type used to allocate nodes.
  */
 template <typename T, typename Compare = std::less<T>,
@@ -374,7 +374,8 @@ avl_tree<T, Compare, Alloc>::avl_tree(const self_t& rhs)
     : root_(copy_node(rhs.root_)), size_(rhs.size_) {}
 
 template <typename T, typename Compare, typename Alloc>
-avl_tree<T, Compare, Alloc>::self_t& avl_tree<T, Compare, Alloc>::operator=(const self_t& rhs) {
+avl_tree<T, Compare, Alloc>::self_t&
+avl_tree<T, Compare, Alloc>::operator=(const self_t& rhs) {
     if (&rhs == this) {
         return *this;
     }
@@ -436,7 +437,8 @@ bool avl_tree<T, Compare, Alloc>::contain(const T& elem) const {
 }
 
 template <typename T, typename Compare, typename Alloc>
-typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::copy_node(NdPtr node) {
+typename avl_tree<T, Compare, Alloc>::NdPtr
+avl_tree<T, Compare, Alloc>::copy_node(NdPtr node) {
     if (node == nullptr) {
         return nullptr;
     }
@@ -457,7 +459,8 @@ typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::copy_no
 }
 
 template <typename T, typename Compare, typename Alloc>
-typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::find_max(NdPtr node) {
+typename avl_tree<T, Compare, Alloc>::NdPtr
+avl_tree<T, Compare, Alloc>::find_max(NdPtr node) {
     if (node == nullptr) {
         return node;
     }
@@ -469,7 +472,8 @@ typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::find_ma
 }
 
 template <typename T, typename Compare, typename Alloc>
-typename avl_tree<T, Compare, Alloc>::NdPtr avl_tree<T, Compare, Alloc>::find_min(NdPtr node) {
+typename avl_tree<T, Compare, Alloc>::NdPtr
+avl_tree<T, Compare, Alloc>::find_min(NdPtr node) {
     if (node == nullptr) {
         return node;
     }
@@ -713,16 +717,19 @@ template <typename T, typename Compare, typename Alloc>
 typename avl_tree<T, Compare, Alloc>::const_iterator
 avl_tree<T, Compare, Alloc>::find(const T& elem) const {
     NdPtr res = find_node(elem);
-    if (!res || compare_(res->element(), elem) || compare_(elem, res->element())) {
+    if (!res || compare_(res->element(), elem) ||
+        compare_(elem, res->element())) {
         return const_iterator();
     }
     return const_iterator(res);
 }
 
 template <typename T, typename Compare, typename Alloc>
-typename avl_tree<T, Compare, Alloc>::iterator avl_tree<T, Compare, Alloc>::find(const T& elem) {
+typename avl_tree<T, Compare, Alloc>::iterator
+avl_tree<T, Compare, Alloc>::find(const T& elem) {
     NdPtr res = find_node(elem);
-    if (!res || compare_(res->element(), elem) || compare_(elem, res->element())) {
+    if (!res || compare_(res->element(), elem) ||
+        compare_(elem, res->element())) {
         return iterator();
     }
     return iterator(res);

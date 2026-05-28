@@ -1,3 +1,5 @@
+module;
+
 export module mtl.hash_map;
 
 import mtl.core;
@@ -39,7 +41,8 @@ struct pair_equal {
  * @tparam K        Key type.
  * @tparam V        Mapped value type.
  * @tparam Hash     Hash function type for keys. Defaults to std::hash<K>.
- * @tparam KeyEqual Equality comparison type for keys. Defaults to std::equal_to<K>.
+ * @tparam KeyEqual Equality comparison type for keys. Defaults to
+ * std::equal_to<K>.
  * @tparam Alloc    Allocator type.
  */
 template <typename K, typename V, typename Hash = std::hash<K>,
@@ -53,11 +56,8 @@ public:
     using self_t = hash_map<K, V, Hash, KeyEqual, Alloc>;
 
 private:
-    using table_t =
-        hashing<value_type,
-                detail::pair_hash<value_type, Hash>,
-                detail::pair_equal<value_type, KeyEqual>,
-                Alloc>;
+    using table_t = hashing<value_type, detail::pair_hash<value_type, Hash>,
+                            detail::pair_equal<value_type, KeyEqual>, Alloc>;
     table_t table_;
 
 public:
@@ -72,26 +72,44 @@ public:
     self_t& operator=(const self_t& rhs) = default;
     self_t& operator=(self_t&& rhs) noexcept = default;
 
-    [[nodiscard]] bool empty() const { return table_.size() == 0; }
-    [[nodiscard]] size_t size() const { return table_.size(); }
-    void clear() { table_.clear(); }
+    [[nodiscard]] bool empty() const {
+        return table_.size() == 0;
+    }
+    [[nodiscard]] size_t size() const {
+        return table_.size();
+    }
+    void clear() {
+        table_.clear();
+    }
 
-    iterator begin() { return table_.begin(); }
-    const_iterator begin() const { return table_.begin(); }
-    const_iterator cbegin() const { return table_.cbegin(); }
+    iterator begin() {
+        return table_.begin();
+    }
+    const_iterator begin() const {
+        return table_.begin();
+    }
+    const_iterator cbegin() const {
+        return table_.cbegin();
+    }
 
-    iterator end() { return table_.end(); }
-    const_iterator end() const { return table_.end(); }
-    const_iterator cend() const { return table_.cend(); }
+    iterator end() {
+        return table_.end();
+    }
+    const_iterator end() const {
+        return table_.end();
+    }
+    const_iterator cend() const {
+        return table_.cend();
+    }
 
     template <typename Key, typename Val>
     bool insert(Key&& key, Val&& val) {
         return table_.insert(
-            value_type(static_cast<Key&&>(key), static_cast<Val&&>(val)));
+            value_type(std::forward<Key>(key), std::forward<Val>(val)));
     }
 
     size_t erase(const K& key) {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return table_.remove(probe) ? 1 : 0;
     }
 
@@ -103,17 +121,17 @@ public:
     }
 
     iterator find(const K& key) {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return table_.find(probe);
     }
 
     const_iterator find(const K& key) const {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return table_.find(probe);
     }
 
     [[nodiscard]] bool contains(const K& key) const {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return table_.contains(probe);
     }
 
@@ -124,7 +142,7 @@ public:
     V& operator[](const K& key) {
         auto it = find(key);
         if (it == end()) {
-            insert(key, V{});
+            insert(key, V {});
             it = find(key);
         }
         return it->second;
@@ -137,7 +155,7 @@ public:
     V& operator[](K&& key) {
         auto it = find(key);
         if (it == end()) {
-            insert(static_cast<K&&>(key), V{});
+            insert(std::move(key), V {});
             it = find(key);
         }
         return it->second;

@@ -1,3 +1,5 @@
+module;
+
 export module mtl.map;
 
 import mtl.avl_tree;
@@ -40,7 +42,8 @@ public:
     using self_t = map<K, V, Compare, Alloc>;
 
 private:
-    using tree_t = avl_tree<value_type, detail::pair_less<value_type, Compare>, Alloc>;
+    using tree_t =
+        avl_tree<value_type, detail::pair_less<value_type, Compare>, Alloc>;
     tree_t tree_;
 
 public:
@@ -55,43 +58,63 @@ public:
     self_t& operator=(const self_t& rhs) = default;
     self_t& operator=(self_t&& rhs) noexcept = default;
 
-    [[nodiscard]] bool empty() const { return tree_.empty(); }
-    [[nodiscard]] size_t size() const { return tree_.size(); }
-    void clear() { tree_.clear(); }
+    [[nodiscard]] bool empty() const {
+        return tree_.empty();
+    }
+    [[nodiscard]] size_t size() const {
+        return tree_.size();
+    }
+    void clear() {
+        tree_.clear();
+    }
 
-    iterator begin() { return tree_.begin(); }
-    const_iterator begin() const { return tree_.begin(); }
-    const_iterator cbegin() const { return tree_.cbegin(); }
+    iterator begin() {
+        return tree_.begin();
+    }
+    const_iterator begin() const {
+        return tree_.begin();
+    }
+    const_iterator cbegin() const {
+        return tree_.cbegin();
+    }
 
-    iterator end() { return tree_.end(); }
-    const_iterator end() const { return tree_.end(); }
-    const_iterator cend() const { return tree_.cend(); }
+    iterator end() {
+        return tree_.end();
+    }
+    const_iterator end() const {
+        return tree_.end();
+    }
+    const_iterator cend() const {
+        return tree_.cend();
+    }
 
     template <typename Key, typename Val>
     iterator insert(Key&& key, Val&& val) {
         return tree_.insert(
-            value_type(static_cast<Key&&>(key), static_cast<Val&&>(val)));
+            value_type(std::forward<Key>(key), std::forward<Val>(val)));
     }
 
     size_t erase(const K& key) {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return static_cast<size_t>(tree_.remove(probe));
     }
 
-    iterator erase(iterator itr) { return tree_.remove(itr); }
+    iterator erase(iterator itr) {
+        return tree_.remove(itr);
+    }
 
     iterator find(const K& key) {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return tree_.find(probe);
     }
 
     const_iterator find(const K& key) const {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return tree_.find(probe);
     }
 
     [[nodiscard]] bool contains(const K& key) const {
-        value_type probe(key, mapped_type{});
+        value_type probe(key, mapped_type {});
         return tree_.contain(probe);
     }
 
@@ -102,7 +125,7 @@ public:
     V& operator[](const K& key) {
         auto it = find(key);
         if (it == end()) {
-            it = insert(key, V{});
+            it = insert(key, V {});
         }
         return it->second;
     }
@@ -114,7 +137,7 @@ public:
     V& operator[](K&& key) {
         auto it = find(key);
         if (it == end()) {
-            it = insert(static_cast<K&&>(key), V{});
+            it = insert(std::move(key), V {});
         }
         return it->second;
     }

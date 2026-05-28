@@ -1,3 +1,5 @@
+module;
+
 export module mtl.pair;
 
 import std;
@@ -22,15 +24,18 @@ struct pair {
     pair() = default;
 
     /**
-     * @brief Construct a pair from two values.
-     * @tparam TR First value argument type.
-     * @tparam VR Second value argument type.
+     * @brief Copy-construct a pair from lvalue references.
      * @param fir First value.
      * @param sec Second value.
      */
-    template <typename TR, typename VR>
-    pair(TR&& fir, VR&& sec)
-        : first(static_cast<TR&&>(fir)), second(static_cast<VR&&>(sec)) {}
+    pair(const T& fir, const V& sec) : first(fir), second(sec) {}
+
+    /**
+     * @brief Move-construct a pair from rvalue references.
+     * @param fir First value.
+     * @param sec Second value.
+     */
+    pair(T&& fir, V&& sec) : first(std::move(fir)), second(std::move(sec)) {}
 
     /**
      * @brief Copy-construct a pair.
@@ -83,8 +88,10 @@ bool operator!=(const pair<T, V>& lhs, const pair<T, V>& rhs) {
  */
 template <typename T, typename V>
 bool operator<(const pair<T, V>& lhs, const pair<T, V>& rhs) {
-    if (lhs.first < rhs.first) return true;
-    if (rhs.first < lhs.first) return false;
+    if (lhs.first < rhs.first)
+        return true;
+    if (rhs.first < lhs.first)
+        return false;
     return lhs.second < rhs.second;
 }
 
