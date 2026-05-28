@@ -1,5 +1,3 @@
-module;
-
 export module mtl.pair;
 
 import std;

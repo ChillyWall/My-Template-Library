@@ -46,7 +46,11 @@ mtl (umbrella module, re-exports everything)
   │    └─ mtl.algorithms:merge_sort
   ├─ mtl.avl_tree          — AVL self-balancing BST
   ├─ mtl.hashing           — Hopscotch hash table
-  ├─ mtl.pair              — simple pair struct
+  ├─ mtl.pair              — simple pair struct with comparison operators
+  ├─ mtl.set               — ordered set adapter over avl_tree
+  ├─ mtl.map               — ordered map adapter over avl_tree (key-only comparison)
+  ├─ mtl.hash_set          — unordered set adapter over hashing
+  ├─ mtl.hash_map          — unordered map adapter over hashing (key-only hash/comparison)
   ├─ mtl.priority_queue    — heap-based priority queue
   ├─ mtl.queue             — queue adapter
   └─ mtl.stack             — stack adapter
@@ -61,3 +65,15 @@ mtl (umbrella module, re-exports everything)
 - **Test framework**: Google Test (GTest). Each test file includes `<gtest/gtest.h>`, imports the relevant module, and defines its own `main()` calling `InitGoogleTest` + `RUN_ALL_TESTS`.
 - **C++23**: Uses `import std;` (standard library modules), CMake C++ module support (`CMAKE_CXX_MODULE_STD ON`). Compiler: clang++.
 - **Currently active**: `mtl` subdirectory. `ts_mtl` (TypeScript C++ wrapper, header-only) is commented out in the root CMakeLists.txt.
+
+## Code Style
+
+```bash
+# Format all C++ source files (run from repo root)
+clang-format -i mtl/src/*.cppm mtl/tests/src/*.cpp ts_mtl/src/*.cppm ts_mtl/tests/src/*.cpp
+```
+
+- **clang-format**: Uses `.clang-format` at repo root (BasedOnStyle: Google, C++20, IndentWidth: 4).
+- **Never format CMakeLists.txt** with clang-format — it corrupts CMake syntax.
+- Always use fully qualified `std::forward` and `std::move`, never replace them with `static_cast` or unqualified names.
+- The global module fragment (`module;` at the top of a `.cppm` file) is only needed when the file uses `#include` directives to bring in headers. It has nothing to do with name visibility for `import std;`.

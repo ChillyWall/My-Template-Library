@@ -1,5 +1,3 @@
-module;
-
 export module mtl.map;
 
 import mtl.avl_tree;

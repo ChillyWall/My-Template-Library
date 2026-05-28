@@ -1,5 +1,3 @@
-module;
-
 export module mtl.hash_map;
 
 import mtl.core;
