@@ -1,10 +1,10 @@
-#ifndef TS_MTL_STACK_H
-#define TS_MTL_STACK_H
+export module ts_mtl.stack;
 
-#include <mtl/stack.h>
-#include <mutex>
+import mtl.stack;
+import mtl.core;
+import std;
 
-namespace mtl {
+export namespace mtl {
 
 template <typename T, typename Alloc = std::allocator<T>>
 class ts_stack {
@@ -68,5 +68,3 @@ public:
 };
 
 }  // namespace mtl
-
-#endif

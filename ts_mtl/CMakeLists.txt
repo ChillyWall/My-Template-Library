@@ -1,12 +1,11 @@
-add_library(ts_mtl INTERFACE)
-target_include_directories(
+add_library(ts_mtl STATIC)
+file(GLOB TS_MTL_MODULE_SOURCES "src/*.cppm")
+target_sources(
     ts_mtl
-    INTERFACE
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-        "$<INSTALL_INTERFACE:include>"
+    PUBLIC FILE_SET CXX_MODULES FILES ${TS_MTL_MODULE_SOURCES}
 )
-target_compile_features(ts_mtl INTERFACE cxx_std_20)
-target_link_libraries(ts_mtl INTERFACE mtl)
+target_compile_features(ts_mtl PUBLIC cxx_std_23)
+target_link_libraries(ts_mtl PUBLIC mtl)
 
 add_subdirectory(tests)
 
@@ -14,13 +13,13 @@ install(
     TARGETS ts_mtl
     EXPORT ts_mtl-targets
     COMPONENT ts_mtl
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILE_SET CXX_MODULES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ts_mtl
 )
-install(DIRECTORY include/ts_mtl DESTINATION include)
+
 install(
     EXPORT ts_mtl-targets
     FILE ts_mtl-targets.cmake
     NAMESPACE mtl::
     COMPONENT ts_mtl
-    DESTINATION lib/cmake/mtl
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mtl
 )

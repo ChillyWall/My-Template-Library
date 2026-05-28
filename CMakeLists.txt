@@ -8,17 +8,19 @@ set(CMAKE_CXX_STANDARD 23)
 
 enable_testing()
 
+include(GNUInstallDirs)
+
 add_subdirectory(mtl)
+add_subdirectory(ts_mtl)
 
-# add_subdirectory(ts_mtl)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/mtl-config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mtl
+)
 
-# include(CMakePackageConfigHelpers)
-# configure_package_config_file(
-#     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in
-#     "${CMAKE_CURRENT_BINARY_DIR}/mtl-config.cmake"
-#     INSTALL_DESTINATION lib/cmake/mtl
-# )
-# install(
-#     FILES "${CMAKE_CURRENT_BINARY_DIR}/mtl-config.cmake"
-#     DESTINATION lib/cmake/mtl
-# )
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/mtl-config.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mtl
+)
