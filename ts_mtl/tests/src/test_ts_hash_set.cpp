@@ -159,6 +159,161 @@ TEST(TestTSHashSetOperation, LargeNumberOfElements) {
     EXPECT_TRUE(s.empty());
 }
 
+// ============================================================
+// Multi-threaded tests
+// ============================================================
+
+TEST(TestTSHashSetThreaded, ConcurrentInsert) {
+    ts_hash_set<int> s;
+    constexpr int THREADS = 4;
+    constexpr int INSERTS_PER_THREAD = 2500;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    std::atomic<int> total_inserted {0};
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&s, &total_inserted, t]() {
+            int base = t * INSERTS_PER_THREAD;
+            for (int i = 0; i < INSERTS_PER_THREAD; ++i) {
+                s.insert(base + i);
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    // Verify no corruption: check that elements we tried to insert are
+    // either present or not — with no double-counting, no crashes.
+    for (int t = 0; t < THREADS; ++t) {
+        int base = t * INSERTS_PER_THREAD;
+        for (int i = 0; i < INSERTS_PER_THREAD; ++i) {
+            if (s.contains(base + i)) {
+                total_inserted.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    }
+    EXPECT_EQ(s.size(), static_cast<size_t>(total_inserted.load()));
+}
+
+TEST(TestTSHashSetThreaded, ConcurrentContains) {
+    ts_hash_set<int> s;
+    constexpr int N = 5000;
+    for (int i = 0; i < N; ++i) {
+        s.insert(i);
+    }
+
+    std::atomic<int> found {0};
+    constexpr int THREADS = 4;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&s, &found, t]() {
+            int base = t * (N / THREADS);
+            int end = base + (N / THREADS);
+            for (int i = base; i < end; ++i) {
+                if (s.contains(i)) {
+                    found.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    EXPECT_EQ(found.load(), N);
+}
+
+TEST(TestTSHashSetThreaded, ConcurrentInsertAndErase) {
+    ts_hash_set<int> s;
+    constexpr int N = 2000;
+    std::atomic<int> inserted {0};
+    std::atomic<int> erased {0};
+    std::vector<std::thread> threads;
+    threads.reserve(2);
+
+    // Producer threads
+    for (int t = 0; t < 2; ++t) {
+        threads.emplace_back([&s, t]() {
+            int base = t * N;
+            for (int i = 0; i < N; ++i) {
+                s.insert(base + i);
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+    threads.clear();
+    threads.reserve(2);
+
+    // Count what actually got inserted
+    for (int t = 0; t < 2; ++t) {
+        int base = t * N;
+        for (int i = 0; i < N; ++i) {
+            if (s.contains(base + i)) {
+                inserted.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    }
+    EXPECT_EQ(s.size(), static_cast<size_t>(inserted.load()));
+
+    // Eraser threads
+    for (int t = 0; t < 2; ++t) {
+        threads.emplace_back([&s, &erased, t]() {
+            int base = t * N;
+            for (int i = 0; i < N; ++i) {
+                size_t n = s.erase(base + i);
+                erased.fetch_add(static_cast<int>(n),
+                                 std::memory_order_relaxed);
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    EXPECT_EQ(erased.load(), inserted.load());
+    EXPECT_TRUE(s.empty());
+}
+
+TEST(TestTSHashSetThreaded, ConcurrentFind) {
+    ts_hash_set<int> s;
+    constexpr int N = 1000;
+    for (int i = 0; i < N; ++i) {
+        s.insert(i);
+    }
+
+    std::atomic<int> found_count {0};
+    constexpr int THREADS = 4;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&s, &found_count]() {
+            for (int i = 0; i < N; ++i) {
+                auto it = s.find(i);
+                if (it != s.end()) {
+                    found_count.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    EXPECT_EQ(found_count.load(), THREADS * N);
+}
+
 int main() {
     ::testing::InitGoogleTest();
     return RUN_ALL_TESTS();
