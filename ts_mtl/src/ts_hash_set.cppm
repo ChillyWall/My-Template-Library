@@ -36,6 +36,36 @@ public:
 
     ts_hash_set() = default;
 
+    [[nodiscard]] iterator begin() {
+        std::shared_lock lock(mtx_);
+        return data_.begin();
+    }
+
+    [[nodiscard]] const_iterator begin() const {
+        std::shared_lock lock(mtx_);
+        return data_.begin();
+    }
+
+    [[nodiscard]] const_iterator cbegin() const {
+        std::shared_lock lock(mtx_);
+        return data_.cbegin();
+    }
+
+    [[nodiscard]] iterator end() {
+        std::shared_lock lock(mtx_);
+        return data_.end();
+    }
+
+    [[nodiscard]] const_iterator end() const {
+        std::shared_lock lock(mtx_);
+        return data_.end();
+    }
+
+    [[nodiscard]] const_iterator cend() const {
+        std::shared_lock lock(mtx_);
+        return data_.cend();
+    }
+
     ts_hash_set(const self_t& rhs) {
         std::shared_lock lock(rhs.mtx_);
         data_ = rhs.data_;
