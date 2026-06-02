@@ -415,27 +415,39 @@ bool hashing<T, hash_func, KeyEqual, Alloc>::insert(const T& elem) {
     if (contains(elem)) {
         return false;
     }
-    if (size_ >= static_cast<size_t>(max_size_ * MAX_LOAD_FACTOR)) {
+
+    constexpr int MAX_RETRIES = 3;
+
+    for (int attempt = 0; attempt < MAX_RETRIES; ++attempt) {
+        if (size_ >= static_cast<size_t>(max_size_ * MAX_LOAD_FACTOR)) {
+            expand();
+        }
+
+        size_t hash_val = hash_value(elem);
+        size_t pos = find_pos(elem);
+
+        while ((pos >= hash_val ? pos - hash_val
+                                 : max_size_ - hash_val + pos) >= MAX_DIST) {
+            pos = move_elem(pos);
+            if (pos == max_size_) {
+                break;
+            }
+        }
+
+        if (pos != max_size_) {
+            data_[pos].set_element(elem);
+            size_t offset = pos >= hash_val ? pos - hash_val
+                                            : max_size_ - hash_val + pos;
+            data_[hash_val].set_hop(offset);
+            ++size_;
+            return true;
+        }
+
+        // move_elem failed — expand and retry
         expand();
     }
 
-    size_t hash_val = hash_value(elem);
-    size_t pos = find_pos(elem);
-
-    while ((pos >= hash_val ? pos - hash_val : max_size_ - hash_val + pos) >=
-           MAX_DIST) {
-        pos = move_elem(pos);
-        if (pos == max_size_) {
-            return false;
-        }
-    }
-
-    data_[pos].set_element(elem);
-    size_t offset =
-        pos >= hash_val ? pos - hash_val : max_size_ - hash_val + pos;
-    data_[hash_val].set_hop(offset);
-    ++size_;
-    return true;
+    return false;
 }
 
 template <typename T, typename hash_func, typename KeyEqual, typename Alloc>
