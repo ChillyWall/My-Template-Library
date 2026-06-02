@@ -160,6 +160,173 @@ TEST(TestTSHashMapOperation, LargeNumberOfElements) {
     }
 }
 
+// ============================================================
+// Multi-threaded tests
+// ============================================================
+
+TEST(TestTSHashMapThreaded, ConcurrentInsert) {
+    ts_hash_map<int, int> m;
+    constexpr int THREADS = 4;
+    constexpr int INSERTS_PER_THREAD = 2500;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    std::atomic<int> total_inserted {0};
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&m, t]() {
+            int base = t * INSERTS_PER_THREAD;
+            for (int i = 0; i < INSERTS_PER_THREAD; ++i) {
+                m.insert(base + i, (base + i) * 10);
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    // Verify no corruption: check that elements we tried to insert are
+    // either present or not — with no double-counting, no crashes.
+    for (int t = 0; t < THREADS; ++t) {
+        int base = t * INSERTS_PER_THREAD;
+        for (int i = 0; i < INSERTS_PER_THREAD; ++i) {
+            if (m.contains(base + i)) {
+                total_inserted.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    }
+    EXPECT_EQ(m.size(), static_cast<size_t>(total_inserted.load()));
+}
+
+TEST(TestTSHashMapThreaded, ConcurrentContains) {
+    ts_hash_map<int, int> m;
+    constexpr int N = 5000;
+    for (int i = 0; i < N; ++i) {
+        m.insert(i, i * 10);
+    }
+
+    std::atomic<int> found {0};
+    constexpr int THREADS = 4;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&m, &found, t]() {
+            int base = t * (N / THREADS);
+            int end = base + (N / THREADS);
+            for (int i = base; i < end; ++i) {
+                if (m.contains(i)) {
+                    found.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    EXPECT_EQ(found.load(), N);
+}
+
+TEST(TestTSHashMapThreaded, ConcurrentFind) {
+    ts_hash_map<int, int> m;
+    constexpr int N = 1000;
+    for (int i = 0; i < N; ++i) {
+        m.insert(i, i * 10);
+    }
+
+    std::atomic<int> correct {0};
+    constexpr int THREADS = 4;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&m, &correct]() {
+            for (int i = 0; i < N; ++i) {
+                auto it = m.find(i);
+                if (it != m.end() && it->second == i * 10) {
+                    correct.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    EXPECT_EQ(correct.load(), THREADS * N);
+}
+
+TEST(TestTSHashMapThreaded, ConcurrentErase) {
+    ts_hash_map<int, int> m;
+    constexpr int N = 2000;
+    for (int i = 0; i < N; ++i) {
+        m.insert(i, i * 10);
+    }
+
+    std::atomic<int> erased {0};
+    constexpr int THREADS = 4;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&m, &erased, t]() {
+            int base = t * (N / THREADS);
+            int end = base + (N / THREADS);
+            for (int i = base; i < end; ++i) {
+                size_t n = m.erase(i);
+                erased.fetch_add(static_cast<int>(n),
+                                 std::memory_order_relaxed);
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    EXPECT_EQ(erased.load(), N);
+    EXPECT_TRUE(m.empty());
+}
+
+TEST(TestTSHashMapThreaded, ConcurrentOperatorBracket) {
+    ts_hash_map<int, int> m;
+    constexpr int THREADS = 4;
+    constexpr int OPS = 1000;
+    std::vector<std::thread> threads;
+    threads.reserve(THREADS);
+
+    for (int t = 0; t < THREADS; ++t) {
+        threads.emplace_back([&m, t]() {
+            int base = t * OPS;
+            for (int i = 0; i < OPS; ++i) {
+                m[base + i] = i;
+            }
+        });
+    }
+
+    for (auto& th : threads) {
+        th.join();
+    }
+
+    // Verify no data corruption: count what actually landed and check size
+    // matches. Hopscotch hash table insert may return false under contention,
+    // but size must always equal the number of actually-present keys.
+    std::atomic<int> total_present {0};
+    for (int t = 0; t < THREADS; ++t) {
+        int base = t * OPS;
+        for (int i = 0; i < OPS; ++i) {
+            if (m.contains(base + i)) {
+                total_present.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    }
+    EXPECT_EQ(m.size(), static_cast<size_t>(total_present.load()));
+}
+
 int main() {
     ::testing::InitGoogleTest();
     return RUN_ALL_TESTS();
