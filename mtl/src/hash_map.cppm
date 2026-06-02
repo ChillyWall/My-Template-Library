@@ -153,8 +153,9 @@ public:
     V& operator[](K&& key) {
         auto it = find(key);
         if (it == end()) {
+            K key_for_lookup(key);
             insert(std::move(key), V {});
-            it = find(key);
+            it = find(key_for_lookup);
         }
         return it->second;
     }
