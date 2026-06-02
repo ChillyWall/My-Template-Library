@@ -13,3 +13,6 @@ add_test(NAME test_ts_deque COMMAND test_ts_deque)
 
 add_executable(test_ts_hash_set src/test_ts_hash_set.cpp)
 add_test(NAME test_ts_hash_set COMMAND test_ts_hash_set)
+
+add_executable(test_ts_hash_map src/test_ts_hash_map.cpp)
+add_test(NAME test_ts_hash_map COMMAND test_ts_hash_map)
