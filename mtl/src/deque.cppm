@@ -50,7 +50,8 @@ private:
     MapAlloc map_allocator_;
 
     /**
-     * @brief Allocate a new map array capable of holding map_size node pointers.
+     * @brief Allocate a new map array capable of holding map_size node
+     * pointers.
      *
      * @param map_size Number of entries to allocate in the map.
      * @return Pointer to the newly allocated map (uninitialized entries
